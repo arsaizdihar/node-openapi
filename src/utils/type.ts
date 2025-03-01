@@ -33,9 +33,9 @@ export type HandlerResponse<
   format?: Format;
 };
 
-export type Context<Req extends Request, Input = {}> = {
+export type Context<Req extends Request, I extends Input = {}> = {
   req: Req;
-  input: Input;
+  input: I['in'];
 };
 
 type ExtractContent<T> = T extends {
@@ -79,9 +79,9 @@ export type RoutingPath<P extends string> =
 export type Handler<
   Req extends Request,
   _Path extends string,
-  Input = {},
+  I extends Input = {},
   Res extends HandlerResponse = HandlerResponse,
-> = (c: Context<Req, Input>) => MaybePromise<Res>;
+> = (c: Context<Req, I>) => MaybePromise<Res>;
 
 export type Input = {
   in?: {};

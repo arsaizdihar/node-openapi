@@ -126,6 +126,10 @@ export class RouteFactory<Req extends Request> {
     },
   >(target: Target, schema: T): MiddlewareHandler<Req, I> {
     return (c) => {
+      if (!c.input) {
+        c.input = {};
+      }
+
       if (target === 'query') {
         const result = schema.safeParse(c.req.query);
 
@@ -133,7 +137,20 @@ export class RouteFactory<Req extends Request> {
           throw new Error('Validation failed');
         }
 
-        return result.data;
+        (c.input as any).query = result.data;
+        return;
+      }
+
+      if (target === 'json') {
+        const result = schema.safeParse(c.req.json);
+
+        if (!result.success) {
+          throw new Error('Validation failed');
+        }
+
+        console.log(result);
+        (c.input as any).json = result.data;
+        return;
       }
     };
   }
