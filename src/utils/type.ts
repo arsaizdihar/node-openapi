@@ -135,7 +135,7 @@ export type RequestPart<
   Part extends string,
 > = Part extends keyof R['request'] ? R['request'][Part] : {};
 
-type HasUndefined<T> = undefined extends T ? true : false;
+export type HasUndefined<T> = undefined extends T ? true : false;
 
 type InputTypeBase<
   R extends RouteConfig,
@@ -248,3 +248,7 @@ export type RouteHandler<
     InputTypeJson<R>,
   P extends string = ConvertPathType<R['path']>,
 > = Handler<Req, P, I, RouteConfigToHandlerResponse<R>>;
+
+export type MiddlewareHandler<Req extends Request, I extends Input = {}> = (
+  c: Context<Req, I>,
+) => MaybePromise<void>;
