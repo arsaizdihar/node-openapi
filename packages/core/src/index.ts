@@ -3,10 +3,9 @@ import {
   ZodMediaTypeObject,
 } from '@asteasolutions/zod-to-openapi';
 import { z, ZodSchema, ZodType } from 'zod';
-import type { Request } from './request';
+import type { RequestLike } from './request';
 import {
-  ConvertPathType,
-  Handler,
+  Context,
   HasUndefined,
   Input,
   InputTypeCookie,
@@ -17,12 +16,14 @@ import {
   InputTypeQuery,
   MiddlewareHandler,
   RouteConfig,
-  RouteConfigToHandlerResponse,
   RoutingPath,
   ValidationTargets,
-} from './utils/type';
+} from './type';
+export * from './type';
+export * from './status';
+export * from './request';
 
-export class RouteFactory<Req extends Request> {
+export class RouteFactory<Req extends RequestLike> {
   openAPIRegistry: OpenAPIRegistry;
 
   constructor() {
@@ -47,7 +48,7 @@ export class RouteFactory<Req extends Request> {
     });
   }
 
-  route<
+  protected async _route<
     R extends RouteConfig,
     I extends Input = InputTypeParam<R> &
       InputTypeQuery<R> &
@@ -55,11 +56,7 @@ export class RouteFactory<Req extends Request> {
       InputTypeCookie<R> &
       InputTypeForm<R> &
       InputTypeJson<R>,
-    P extends string = ConvertPathType<R['path']>,
-  >(
-    route: R,
-    handler: Handler<Req, P, I, RouteConfigToHandlerResponse<R>>,
-  ): Handler<Req, P, I, RouteConfigToHandlerResponse<R>> {
+  >(route: R, c: Context<Req, I>): Promise<Context<Req, I>> {
     this.openAPIRegistry.registerPath(route);
 
     const validators: MiddlewareHandler<Req>[] = [];
@@ -96,13 +93,11 @@ export class RouteFactory<Req extends Request> {
       }
     }
 
-    return async (c) => {
-      for (const validator of validators) {
-        await validator(c);
-      }
+    for (const validator of validators) {
+      await validator(c);
+    }
 
-      return handler(c);
-    };
+    return c;
   }
 
   zValidator<
@@ -148,7 +143,6 @@ export class RouteFactory<Req extends Request> {
           throw new Error('Validation failed');
         }
 
-        console.log(result);
         (c.input as any).json = result.data;
         return;
       }

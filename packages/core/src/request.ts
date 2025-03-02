@@ -1,6 +1,6 @@
-import { MaybePromise } from './utils/type';
+import { MaybePromise } from './type';
 
-export abstract class Request {
+export abstract class RequestLike {
   abstract get url(): string;
   abstract get method(): string;
   abstract get headers(): Record<string, string | string[] | undefined>;

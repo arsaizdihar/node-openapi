@@ -7,16 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@asteasolutions/zod-to-openapi':
-        specifier: ^7.2.0
-        version: 7.2.0(zod@3.23.8)
-      express:
-        specifier: ^4.21.2
-        version: 4.21.2
-      zod:
-        specifier: ^3.23.8
-        version: 3.23.8
     devDependencies:
       '@eslint/js':
         specifier: ^9.14.0
@@ -48,18 +38,50 @@ importers:
       prettier:
         specifier: ^3.3.3
         version: 3.3.3
-      tsup:
-        specifier: ^8.3.5
-        version: 8.3.5(tsx@4.19.3)(typescript@5.6.3)(yaml@2.6.0)
-      tsx:
-        specifier: ^4.19.3
-        version: 4.19.3
       typescript:
         specifier: ^5.6.3
         version: 5.6.3
       typescript-eslint:
         specifier: ^8.12.2
         version: 8.12.2(eslint@9.14.0)(typescript@5.6.3)
+
+  packages/core:
+    dependencies:
+      '@asteasolutions/zod-to-openapi':
+        specifier: ^7.2.0
+        version: 7.2.0(zod@3.23.8)
+      zod:
+        specifier: ^3.23.8
+        version: 3.23.8
+    devDependencies:
+      tsup:
+        specifier: ^8.3.5
+        version: 8.3.5(tsx@4.19.3)(typescript@5.6.3)(yaml@2.6.0)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.6.3
+
+  packages/express:
+    dependencies:
+      '@node-openapi/core':
+        specifier: workspace:*
+        version: link:../core
+      express:
+        specifier: ^4.21.2
+        version: 4.21.2
+      zod:
+        specifier: ^3.23.8
+        version: 3.23.8
+    devDependencies:
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.0
+      tsup:
+        specifier: ^8.3.5
+        version: 8.3.5(tsx@4.19.3)(typescript@5.6.3)(yaml@2.6.0)
+      typescript:
+        specifier: ^5.6.3
+        version: 5.6.3
 
 packages:
 
@@ -2240,6 +2262,7 @@ snapshots:
       '@esbuild/win32-arm64': 0.25.0
       '@esbuild/win32-ia32': 0.25.0
       '@esbuild/win32-x64': 0.25.0
+    optional: true
 
   escape-html@1.0.3: {}
 
@@ -2454,6 +2477,7 @@ snapshots:
   get-tsconfig@4.10.0:
     dependencies:
       resolve-pkg-maps: 1.0.0
+    optional: true
 
   glob-parent@5.1.2:
     dependencies:
@@ -2714,7 +2738,8 @@ snapshots:
 
   resolve-from@5.0.0: {}
 
-  resolve-pkg-maps@1.0.0: {}
+  resolve-pkg-maps@1.0.0:
+    optional: true
 
   reusify@1.0.4: {}
 
@@ -2933,6 +2958,7 @@ snapshots:
       get-tsconfig: 4.10.0
     optionalDependencies:
       fsevents: 2.3.3
+    optional: true
 
   type-check@0.4.0:
     dependencies:

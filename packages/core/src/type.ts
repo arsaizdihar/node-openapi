@@ -5,7 +5,7 @@ import type {
   ZodRequestBody,
 } from '@asteasolutions/zod-to-openapi';
 import { ZodSchema, ZodType, z } from 'zod';
-import { Request } from '../request';
+import { RequestLike } from './request';
 import { JSONParsed } from './json';
 import {
   ClientErrorStatusCode,
@@ -33,9 +33,9 @@ export type HandlerResponse<
   format?: Format;
 };
 
-export type Context<Req extends Request, I extends Input = {}> = {
+export type Context<Req extends RequestLike, I extends Input = {}> = {
   req: Req;
-  input: I['in'];
+  input: I['out'];
 };
 
 type ExtractContent<T> = T extends {
@@ -77,7 +77,7 @@ export type RoutingPath<P extends string> =
     : P;
 
 export type Handler<
-  Req extends Request,
+  Req extends RequestLike,
   _Path extends string,
   I extends Input = {},
   Res extends HandlerResponse = HandlerResponse,
@@ -164,54 +164,58 @@ type InputTypeBase<
 
 export type InputTypeJson<R extends RouteConfig> =
   R['request'] extends RequestTypes
-    ? R['request']['body'] extends ZodRequestBody
-      ? R['request']['body']['content'] extends ZodContentObject
-        ? IsJson<keyof R['request']['body']['content']> extends never
-          ? {}
-          : R['request']['body']['content'][keyof R['request']['body']['content']] extends Record<
-                'schema',
-                ZodSchema<any>
-              >
-            ? {
-                in: {
-                  json: z.input<
-                    R['request']['body']['content'][keyof R['request']['body']['content']]['schema']
-                  >;
-                };
-                out: {
-                  json: z.output<
-                    R['request']['body']['content'][keyof R['request']['body']['content']]['schema']
-                  >;
-                };
-              }
-            : {}
+    ? 'body' extends keyof R['request']
+      ? R['request']['body'] extends ZodRequestBody
+        ? R['request']['body']['content'] extends ZodContentObject
+          ? IsJson<keyof R['request']['body']['content']> extends never
+            ? {}
+            : R['request']['body']['content'][keyof R['request']['body']['content']] extends Record<
+                  'schema',
+                  ZodSchema<any>
+                >
+              ? {
+                  in: {
+                    json: z.input<
+                      R['request']['body']['content'][keyof R['request']['body']['content']]['schema']
+                    >;
+                  };
+                  out: {
+                    json: z.output<
+                      R['request']['body']['content'][keyof R['request']['body']['content']]['schema']
+                    >;
+                  };
+                }
+              : {}
+          : {}
         : {}
       : {}
     : {};
 
 export type InputTypeForm<R extends RouteConfig> =
   R['request'] extends RequestTypes
-    ? R['request']['body'] extends ZodRequestBody
-      ? R['request']['body']['content'] extends ZodContentObject
-        ? IsForm<keyof R['request']['body']['content']> extends never
-          ? {}
-          : R['request']['body']['content'][keyof R['request']['body']['content']] extends Record<
-                'schema',
-                ZodSchema<any>
-              >
-            ? {
-                in: {
-                  form: z.input<
-                    R['request']['body']['content'][keyof R['request']['body']['content']]['schema']
-                  >;
-                };
-                out: {
-                  form: z.output<
-                    R['request']['body']['content'][keyof R['request']['body']['content']]['schema']
-                  >;
-                };
-              }
-            : {}
+    ? 'body' extends keyof R['request']
+      ? R['request']['body'] extends ZodRequestBody
+        ? R['request']['body']['content'] extends ZodContentObject
+          ? IsForm<keyof R['request']['body']['content']> extends never
+            ? {}
+            : R['request']['body']['content'][keyof R['request']['body']['content']] extends Record<
+                  'schema',
+                  ZodSchema<any>
+                >
+              ? {
+                  in: {
+                    form: z.input<
+                      R['request']['body']['content'][keyof R['request']['body']['content']]['schema']
+                    >;
+                  };
+                  out: {
+                    form: z.output<
+                      R['request']['body']['content'][keyof R['request']['body']['content']]['schema']
+                    >;
+                  };
+                }
+              : {}
+          : {}
         : {}
       : {}
     : {};
@@ -238,7 +242,7 @@ export type InputTypeCookie<R extends RouteConfig> = InputTypeBase<
 >;
 
 export type RouteHandler<
-  Req extends Request,
+  Req extends RequestLike,
   R extends RouteConfig,
   I extends Input = InputTypeParam<R> &
     InputTypeQuery<R> &
@@ -249,6 +253,6 @@ export type RouteHandler<
   P extends string = ConvertPathType<R['path']>,
 > = Handler<Req, P, I, RouteConfigToHandlerResponse<R>>;
 
-export type MiddlewareHandler<Req extends Request, I extends Input = {}> = (
+export type MiddlewareHandler<Req extends RequestLike, I extends Input = {}> = (
   c: Context<Req, I>,
 ) => MaybePromise<void>;
