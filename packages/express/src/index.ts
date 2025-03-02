@@ -11,8 +11,14 @@ import {
   RouteConfigToHandlerResponse,
   RouteFactory,
 } from '@node-openapi/core';
-import express, { Express, RequestHandler } from 'express';
-import z from 'zod';
+import express, {
+  Express,
+  NextFunction,
+  Request,
+  RequestHandler,
+  Response,
+} from 'express';
+import z, { ZodError } from 'zod';
 import { ExpressRequestAdapter } from './request';
 
 // const app = express();
@@ -42,6 +48,7 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
       I['out'] extends {} ? I['out'] : any
     >,
   ) {
+    const _route = this._route(route);
     this.app[route.method](
       route.path,
       async (req, res, next) => {
@@ -49,10 +56,14 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
           req: new ExpressRequestAdapter(req as any),
           input: {},
         };
-        const c = await this._route(route, context);
-
-        res.locals = c.input as any;
-        next();
+        try {
+          const c = await _route(context);
+          res.locals = c.input as any;
+          next();
+        } catch (error) {
+          next(error);
+          return;
+        }
       },
       handler,
     );
@@ -96,6 +107,26 @@ factory.route(route, async (_, res) => {
     message: res.locals.json.message,
   });
 });
+
+const errorHandler = (
+  err: Error,
+  _: Request,
+  res: Response,
+  __: NextFunction,
+) => {
+  if (err instanceof ZodError) {
+    res.status(400).json({
+      error: err,
+    });
+    return;
+  }
+
+  res.status(500).json({
+    message: 'Internal Server Error',
+  });
+};
+
+app.use(errorHandler);
 
 app.listen(3000, () => {
   console.log('Server is running on port 3000');

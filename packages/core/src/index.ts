@@ -48,7 +48,7 @@ export class RouteFactory<Req extends RequestLike> {
     });
   }
 
-  protected async _route<
+  protected _route<
     R extends RouteConfig,
     I extends Input = InputTypeParam<R> &
       InputTypeQuery<R> &
@@ -56,7 +56,7 @@ export class RouteFactory<Req extends RequestLike> {
       InputTypeCookie<R> &
       InputTypeForm<R> &
       InputTypeJson<R>,
-  >(route: R, c: Context<Req, I>): Promise<Context<Req, I>> {
+  >(route: R): (c: Context<Req>) => Promise<Context<Req, I>> {
     this.openAPIRegistry.registerPath(route);
 
     const validators: MiddlewareHandler<Req>[] = [];
@@ -93,11 +93,13 @@ export class RouteFactory<Req extends RequestLike> {
       }
     }
 
-    for (const validator of validators) {
-      await validator(c);
-    }
+    return async (c) => {
+      for (const validator of validators) {
+        await validator(c);
+      }
 
-    return c;
+      return c as Context<Req, I>;
+    };
   }
 
   zValidator<
@@ -126,24 +128,16 @@ export class RouteFactory<Req extends RequestLike> {
       }
 
       if (target === 'query') {
-        const result = schema.safeParse(c.req.query);
+        const data = schema.parse(c.req.query);
 
-        if (!result.success) {
-          throw new Error('Validation failed');
-        }
-
-        (c.input as any).query = result.data;
+        (c.input as any).query = data;
         return;
       }
 
       if (target === 'json') {
-        const result = schema.safeParse(c.req.json);
+        const data = schema.parse(c.req.json);
 
-        if (!result.success) {
-          throw new Error('Validation failed');
-        }
-
-        (c.input as any).json = result.data;
+        (c.input as any).json = data;
         return;
       }
     };
