@@ -1,0 +1,43 @@
+{
+  "name": "@node-openapi/koa",
+  "version": "1.0.0",
+  "description": "Koa adapter for node-openapi",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup ./src/index.ts --format esm,cjs --dts"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@koa/bodyparser": "^5.1.1",
+    "@node-openapi/core": "workspace:*",
+    "koa": "^2.16.0",
+    "koa-router": "^13.0.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.15.0",
+    "@types/koa-router": "^7.4.8",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.3",
+    "typescript": "^5.6.3"
+  }
+}
