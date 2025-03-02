@@ -15,6 +15,8 @@ import { KoaRequestAdapter } from './request';
 import bodyParser from '@koa/bodyparser';
 import Router, { IMiddleware } from 'koa-router';
 import { z } from 'zod';
+import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
+import { koaSwagger } from 'koa2-swagger-ui';
 
 export class KoaRouteFactory extends RouteFactory<KoaRequestAdapter> {
   public readonly router = new Router();
@@ -57,6 +59,18 @@ export class KoaRouteFactory extends RouteFactory<KoaRequestAdapter> {
       handler,
     );
   }
+
+  doc<P extends string>(path: P, configure: OpenAPIObjectConfigV31) {
+    this.router.get(path, (ctx) => {
+      try {
+        const document = this.getOpenAPIDocument(configure);
+        ctx.body = document;
+      } catch (error) {
+        ctx.status = 500;
+        ctx.body = { error: error };
+      }
+    });
+  }
 }
 
 const app = new Koa();
@@ -95,6 +109,22 @@ factory.route(route, async (ctx) => {
   ctx.body = ctx.state.input.json;
 });
 
+factory.doc('/docs', {
+  openapi: '3.1.0',
+  info: {
+    title: 'API',
+    version: '1.0.0',
+  },
+});
+
+app.use(
+  koaSwagger({
+    routePrefix: '/api-docs',
+    swaggerOptions: {
+      url: '/docs',
+    },
+  }),
+);
 app.listen(3000, () => {
   console.log('Server is running on port 3000');
 });

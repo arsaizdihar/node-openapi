@@ -20,6 +20,8 @@ import express, {
 } from 'express';
 import z, { ZodError } from 'zod';
 import { ExpressRequestAdapter } from './request';
+import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
+import swaggerUi from 'swagger-ui-express';
 
 // const app = express();
 
@@ -68,6 +70,19 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
       handler,
     );
   }
+
+  doc<P extends string>(path: P, configure: OpenAPIObjectConfigV31) {
+    this.app.get(path, (_, res) => {
+      try {
+        const document = this.getOpenAPIDocument(configure);
+        res.json(document);
+      } catch (error) {
+        res.status(500).json({
+          error: error,
+        });
+      }
+    });
+  }
 }
 
 const app = express();
@@ -107,6 +122,24 @@ factory.route(route, async (_, res) => {
     message: res.locals.json.message,
   });
 });
+
+factory.doc('/docs', {
+  openapi: '3.1.0',
+  info: {
+    title: 'API',
+    version: '1.0.0',
+  },
+});
+
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(null, {
+    swaggerOptions: {
+      url: '/docs',
+    },
+  }),
+);
 
 const errorHandler = (
   err: Error,

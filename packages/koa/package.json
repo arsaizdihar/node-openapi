@@ -27,10 +27,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.2.0",
     "@koa/bodyparser": "^5.1.1",
     "@node-openapi/core": "workspace:*",
     "koa": "^2.16.0",
     "koa-router": "^13.0.1",
+    "koa2-swagger-ui": "^5.11.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
