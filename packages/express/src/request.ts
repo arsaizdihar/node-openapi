@@ -1,7 +1,7 @@
 import { Request as ExpressRequest } from 'express';
 import { MaybePromise, RequestLike } from '@node-openapi/core';
 
-export class ExpressRequestAdapter extends RequestLike {
+export class ExpressRequestAdapter extends RequestLike<File> {
   constructor(private readonly req: ExpressRequest) {
     super();
   }
@@ -28,5 +28,17 @@ export class ExpressRequestAdapter extends RequestLike {
 
   get query() {
     return this.req.query as Record<string, string | string[] | undefined>;
+  }
+
+  get cookies() {
+    return this.req.cookies;
+  }
+
+  get params() {
+    return this.req.params as Record<string, string>;
+  }
+
+  get form() {
+    return this.req.body;
   }
 }

@@ -1,7 +1,10 @@
+/**
+ * Core functionality for API route generation with OpenAPI integration.
+ * Provides types, validation, and OpenAPI documentation utilities.
+ */
 import {
   OpenApiGeneratorV31,
   OpenAPIRegistry,
-  ZodMediaTypeObject,
 } from '@asteasolutions/zod-to-openapi';
 import { z, ZodSchema, ZodType } from 'zod';
 import type { RequestLike } from './request';
@@ -17,40 +20,59 @@ import {
   InputTypeQuery,
   MiddlewareHandler,
   RouteConfig,
-  RoutingPath,
   ValidationTargets,
 } from './type';
 import { OpenAPIObjectConfig } from '@asteasolutions/zod-to-openapi/dist/v3.0/openapi-generator';
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 export * from './type';
 export * from './status';
 export * from './request';
 
-export abstract class RouteFactory<Req extends RequestLike> {
+extendZodWithOpenApi(z);
+
+/**
+ * Abstract base class for creating API routes with schema validation and OpenAPI documentation.
+ * @template Req - Request type extending RequestLike
+ * @template FormValueType - Type of form values for the framework
+ */
+export abstract class RouteFactory<
+  Req extends RequestLike,
+  FormValueType extends NonNullable<
+    Req['form'][keyof Req['form']]
+  > = NonNullable<Req['form'][keyof Req['form']]>,
+> {
   openAPIRegistry: OpenAPIRegistry;
 
   constructor() {
     this.openAPIRegistry = new OpenAPIRegistry();
   }
 
-  createRoute<
-    P extends string,
-    R extends Omit<RouteConfig, 'path'> & { path: P },
-  >(routeConfig: R) {
+  /**
+   * Converts OpenAPI-style path params to framework-specific format
+   * @example /users/{id} → /users/:id
+   */
+  protected getRoutingPath<P extends string>(path: P) {
+    return path.replaceAll(/\/{(.+?)}/g, '/:$1');
+  }
+
+  /**
+   * Creates a route configuration with additional utility methods
+   */
+  createRoute<R extends RouteConfig>(routeConfig: R) {
     const route = {
       ...routeConfig,
-      getRoutingPath(): RoutingPath<R['path']> {
-        return routeConfig.path.replaceAll(
-          /\/{(.+?)}/g,
-          '/:$1',
-        ) as RoutingPath<P>;
-      },
+      getRoutingPath: () => this.getRoutingPath(routeConfig.path),
     };
     return Object.defineProperty(route, 'getRoutingPath', {
       enumerable: false,
     });
   }
 
+  /**
+   * Creates middleware to validate requests against schemas defined in route config
+   * Registers the route with OpenAPI documentation
+   */
   protected _route<
     R extends RouteConfig,
     I extends Input = InputTypeParam<R> &
@@ -87,12 +109,28 @@ export abstract class RouteFactory<Req extends RequestLike> {
     const bodyContent = route.request?.body?.content;
 
     if (bodyContent) {
-      const schema = (bodyContent['application/json'] as ZodMediaTypeObject)[
-        'schema'
-      ];
-      if (schema instanceof ZodType) {
-        const validator = this.zValidator('json', schema);
-        validators.push(validator as MiddlewareHandler<Req>);
+      if (bodyContent['application/json']) {
+        const schema = bodyContent['application/json']['schema'];
+        if (schema instanceof ZodType) {
+          const validator = this.zValidator('json', schema);
+          validators.push(validator as MiddlewareHandler<Req>);
+        }
+      }
+
+      if (bodyContent['multipart/form-data']) {
+        const schema = bodyContent['multipart/form-data']['schema'];
+        if (schema instanceof ZodType) {
+          const validator = this.zValidator('form', schema);
+          validators.push(validator as MiddlewareHandler<Req>);
+        }
+      }
+
+      if (bodyContent['text/plain']) {
+        const schema = bodyContent['text/plain']['schema'];
+        if (schema instanceof ZodType) {
+          const validator = this.zValidator('text', schema);
+          validators.push(validator as MiddlewareHandler<Req>);
+        }
       }
     }
 
@@ -105,11 +143,18 @@ export abstract class RouteFactory<Req extends RequestLike> {
     };
   }
 
+  /**
+   * Generate OpenAPI documentation for a path
+   * @abstract
+   */
   abstract doc<P extends string>(
     path: P,
     configure: OpenAPIObjectConfigV31,
   ): void;
 
+  /**
+   * Generates a complete OpenAPI document based on registered routes
+   */
   getOpenAPIDocument(
     config: OpenAPIObjectConfig,
   ): ReturnType<OpenApiGeneratorV31['generateDocument']> {
@@ -119,22 +164,28 @@ export abstract class RouteFactory<Req extends RequestLike> {
     return document;
   }
 
+  /**
+   * Creates a middleware that validates request data against a zod schema
+   * @param target - Part of the request to validate (query, json, form, etc.)
+   * @param schema - Zod schema to validate against
+   * @returns Middleware handler that validates and adds parsed data to context
+   */
   zValidator<
     T extends ZodSchema,
-    Target extends keyof ValidationTargets,
+    Target extends keyof ValidationTargets<FormValueType>,
     In = z.input<T>,
     Out = z.output<T>,
     I extends Input = {
       in: HasUndefined<In> extends true
         ? {
-            [K in Target]?: In extends ValidationTargets[K]
+            [K in Target]?: In extends ValidationTargets<FormValueType>[K]
               ? In
-              : { [K2 in keyof In]?: ValidationTargets[K][K2] };
+              : { [K2 in keyof In]?: ValidationTargets<FormValueType>[K][K2] };
           }
         : {
-            [K in Target]: In extends ValidationTargets[K]
+            [K in Target]: In extends ValidationTargets<FormValueType>[K]
               ? In
-              : { [K2 in keyof In]: ValidationTargets[K][K2] };
+              : { [K2 in keyof In]: ValidationTargets<FormValueType>[K][K2] };
           };
       out: { [K in Target]: Out };
     },
@@ -151,15 +202,62 @@ export abstract class RouteFactory<Req extends RequestLike> {
         return;
       }
 
-      if (target === 'json') {
+      if (
+        target === 'json' &&
+        c.req.headers['content-type'] === 'application/json'
+      ) {
         const data = schema.parse(c.req.json);
 
         (c.input as any).json = data;
         return;
       }
+
+      if (
+        target === 'form' &&
+        c.req.headers['content-type'] === 'multipart/form-data'
+      ) {
+        const data = schema.parse(c.req.form);
+
+        (c.input as any).form = data;
+        return;
+      }
+
+      if (target === 'text') {
+        const data = schema.parse(c.req.body);
+
+        (c.input as any).text = data;
+        return;
+      }
+
+      if (target === 'header') {
+        const data = schema.parse(c.req.headers);
+
+        (c.input as any).headers = data;
+        return;
+      }
+
+      if (target === 'cookie') {
+        const data = schema.parse(c.req.cookies);
+
+        (c.input as any).cookies = data;
+        return;
+      }
+
+      if (target === 'param') {
+        const data = schema.parse(c.req.params);
+
+        (c.input as any).params = data;
+        return;
+      }
     };
   }
 
+  /**
+   * Adds a base path to all routes in an OpenAPI document
+   * @param document - OpenAPI document to modify
+   * @param basePath - Base path to add to all routes
+   * @returns Updated OpenAPI document
+   */
   addBasePathToDocument(document: Record<string, any>, basePath: string) {
     const updatedPaths: Record<string, any> = {};
 

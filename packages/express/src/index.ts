@@ -46,7 +46,7 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
       Record<string, string>,
       RouteConfigToHandlerResponse<R>['data'],
       'json' extends keyof I['out'] ? I['out']['json'] : any,
-      'params' extends keyof I['out'] ? I['out']['params'] : any,
+      'query' extends keyof I['out'] ? I['out']['query'] : any,
       I['out'] extends {} ? I['out'] : any
     >,
   ) {
@@ -60,7 +60,11 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
         };
         try {
           const c = await _route(context);
-          res.locals = c.input as any;
+          const input = c.input as any;
+          res.locals = {
+            ...res.locals,
+            ...input,
+          };
           next();
         } catch (error) {
           next(error);
@@ -77,6 +81,7 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
         const document = this.getOpenAPIDocument(configure);
         res.json(document);
       } catch (error) {
+        console.log(error);
         res.status(500).json({
           error: error,
         });
@@ -97,7 +102,9 @@ const route = factory.createRoute({
       content: {
         'application/json': {
           schema: z.object({
-            message: z.string(),
+            message: z.string().openapi({
+              example: 'Hello, world!',
+            }),
           }),
         },
       },

@@ -18,8 +18,6 @@ import {
 
 export type RouteConfig = RouteConfigBase;
 
-export type FormValue = string | Blob;
-export type ParsedFormValue = string | File;
 export type KnownResponseFormat = 'json' | 'text' | 'redirect';
 export type ResponseFormat = KnownResponseFormat | string;
 
@@ -71,11 +69,6 @@ export type RouteConfigToHandlerResponse<R extends RouteConfig> = {
       >;
 }[keyof R['responses'] & RouteConfigStatusCode];
 
-export type RoutingPath<P extends string> =
-  P extends `${infer Head}/{${infer Param}}${infer Tail}`
-    ? `${Head}/:${Param}${RoutingPath<Tail>}`
-    : P;
-
 export type Handler<
   Req extends RequestLike,
   _Path extends string,
@@ -90,11 +83,13 @@ export type Input = {
 };
 
 export type ValidationTargets<
-  T extends FormValue = ParsedFormValue,
+  FormValue = any,
+  T extends FormValue = FormValue,
   P extends string = string,
 > = {
   json: any;
   form: Record<string, T | T[]>;
+  text: string;
   query: Record<string, string | string[]>;
   param: Record<P, P extends `${infer _}?` ? string | undefined : string>;
   header: Record<string, string>;
