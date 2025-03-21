@@ -52,17 +52,17 @@ export abstract class RouteFactory<
    * Converts OpenAPI-style path params to framework-specific format
    * @example /users/{id} → /users/:id
    */
-  protected getRoutingPath<P extends string>(path: P) {
+  protected static getRoutingPath<P extends string>(path: P) {
     return path.replaceAll(/\/{(.+?)}/g, '/:$1');
   }
 
   /**
    * Creates a route configuration with additional utility methods
    */
-  createRoute<R extends RouteConfig>(routeConfig: R) {
+  static createRoute<R extends RouteConfig>(routeConfig: R) {
     const route = {
       ...routeConfig,
-      getRoutingPath: () => this.getRoutingPath(routeConfig.path),
+      getRoutingPath: () => RouteFactory.getRoutingPath(routeConfig.path),
     };
     return Object.defineProperty(route, 'getRoutingPath', {
       enumerable: false,

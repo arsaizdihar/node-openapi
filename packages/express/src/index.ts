@@ -1,3 +1,4 @@
+import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
   Context,
   Input,
@@ -7,29 +8,35 @@ import {
   InputTypeJson,
   InputTypeParam,
   InputTypeQuery,
+  mergePath,
   RouteConfig,
   RouteConfigToHandlerResponse,
   RouteFactory,
 } from '@node-openapi/core';
 import express, {
-  Express,
   NextFunction,
   Request,
   RequestHandler,
   Response,
+  Router,
 } from 'express';
+import swaggerUi from 'swagger-ui-express';
 import z, { ZodError } from 'zod';
 import { ExpressRequestAdapter } from './request';
-import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
-import swaggerUi from 'swagger-ui-express';
 
 // const app = express();
 
 // app.use(express.json());
 
 export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
-  constructor(private readonly app: Express) {
+  private readonly _middlewares: Array<RequestHandler> = [];
+
+  constructor(private readonly _router: Router) {
     super();
+  }
+
+  middleware<R extends RequestHandler>(handler: R) {
+    this._middlewares.push(handler);
   }
 
   route<
@@ -42,17 +49,49 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
       InputTypeJson<R>,
   >(
     route: R,
-    handler: RequestHandler<
-      Record<string, string>,
-      RouteConfigToHandlerResponse<R>['data'],
-      'json' extends keyof I['out'] ? I['out']['json'] : any,
-      'query' extends keyof I['out'] ? I['out']['query'] : any,
-      I['out'] extends {} ? I['out'] : any
-    >,
+    ...handlers: Array<
+      RequestHandler<
+        Record<string, string>,
+        RouteConfigToHandlerResponse<R>['data'],
+        'json' extends keyof I['out'] ? I['out']['json'] : any,
+        'query' extends keyof I['out'] ? I['out']['query'] : any,
+        I['out'] extends {} ? I['out'] : any
+      >
+    >
   ) {
     const _route = this._route(route);
-    this.app[route.method](
+    this._router[route.method](
       route.path,
+      async (req, res, next) => {
+        let nextCalled = false;
+        let error: Error | string | undefined;
+
+        const _next = (err?: Error | string) => {
+          nextCalled = true;
+          if (err) {
+            error = err;
+          }
+        };
+
+        for (const middleware of this._middlewares) {
+          nextCalled = false;
+          await middleware(req as any, res as any, _next);
+
+          // If next wasn't called, assume middleware handled the response
+          if (!nextCalled) {
+            return;
+          }
+
+          // If there was an error, pass it to the next error handler
+          if (error) {
+            next(error);
+            return;
+          }
+        }
+
+        // Continue to the next middleware in the route
+        next();
+      },
       async (req, res, next) => {
         const context: Context<ExpressRequestAdapter> = {
           req: new ExpressRequestAdapter(req as any),
@@ -71,12 +110,58 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
           return;
         }
       },
-      handler,
+      ...handlers,
     );
   }
 
+  router(path: string, routeFactory: ExpressRouteFactory) {
+    this._router.use(path, routeFactory._router);
+
+    const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');
+
+    routeFactory.openAPIRegistry.definitions.forEach((def) => {
+      switch (def.type) {
+        case 'component':
+          return this.openAPIRegistry.registerComponent(
+            def.componentType,
+            def.name,
+            def.component,
+          );
+
+        case 'route':
+          return this.openAPIRegistry.registerPath({
+            ...def.route,
+            path: mergePath(pathForOpenAPI, def.route.path),
+          });
+
+        case 'webhook':
+          return this.openAPIRegistry.registerWebhook({
+            ...def.webhook,
+            path: mergePath(pathForOpenAPI, def.webhook.path),
+          });
+
+        case 'schema':
+          return this.openAPIRegistry.register(
+            def.schema._def.openapi._internal.refId,
+            def.schema,
+          );
+
+        case 'parameter':
+          return this.openAPIRegistry.registerParameter(
+            def.schema._def.openapi._internal.refId,
+            def.schema,
+          );
+
+        default: {
+          const errorIfNotExhaustive: never = def;
+          throw new Error(`Unknown registry type: ${errorIfNotExhaustive}`);
+        }
+      }
+    });
+  }
+
   doc<P extends string>(path: P, configure: OpenAPIObjectConfigV31) {
-    this.app.get(path, (_, res) => {
+    this._router.get(path, (_, res) => {
       try {
         const document = this.getOpenAPIDocument(configure);
         res.json(document);
@@ -90,11 +175,13 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
   }
 }
 
+export const { createRoute } = ExpressRouteFactory;
+
 const app = express();
 app.use(express.json());
 const factory = new ExpressRouteFactory(app);
 
-const route = factory.createRoute({
+const route = ExpressRouteFactory.createRoute({
   method: 'post',
   path: '/',
   request: {

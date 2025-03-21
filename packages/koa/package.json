@@ -27,19 +27,19 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@asteasolutions/zod-to-openapi": "^7.2.0",
+    "@asteasolutions/zod-to-openapi": "catalog:",
     "@koa/bodyparser": "^5.1.1",
     "@node-openapi/core": "workspace:*",
     "koa": "^2.16.0",
     "koa-router": "^13.0.1",
     "koa2-swagger-ui": "^5.11.0",
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/koa": "^2.15.0",
     "@types/koa-router": "^7.4.8",
-    "tsup": "^8.3.5",
+    "tsup": "catalog:",
     "tsx": "^4.19.3",
-    "typescript": "^5.6.3"
+    "typescript": "catalog:"
   }
 }
