@@ -1,0 +1,26 @@
+{
+  "name": "example-koa",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsx watch ./src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@koa/bodyparser": "^5.1.1",
+    "@node-openapi/koa": "workspace:*",
+    "koa": "^2.16.0",
+    "koa-router": "^13.0.1",
+    "koa2-swagger-ui": "^5.11.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.15.0",
+    "@types/koa-router": "^7.4.8",
+    "@types/node": "^22.8.6",
+    "tsup": "catalog:",
+    "tsx": "^4.19.3",
+    "typescript": "catalog:"
+  }
+}

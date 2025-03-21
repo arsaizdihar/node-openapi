@@ -279,6 +279,56 @@ export abstract class RouteFactory<
       paths: updatedPaths,
     };
   }
+
+  /**
+   * Register routes and components in the OpenAPI registry as a sub-router
+   * @param pathForOpenAPI - The base path for the OpenAPI document
+   * @param routeFactory - The route factory to register
+   */
+  protected _registerRouter(
+    pathForOpenAPI: string,
+    routeFactory: RouteFactory<Req>,
+  ) {
+    routeFactory.openAPIRegistry.definitions.forEach((def) => {
+      switch (def.type) {
+        case 'component':
+          return this.openAPIRegistry.registerComponent(
+            def.componentType,
+            def.name,
+            def.component,
+          );
+
+        case 'route':
+          return this.openAPIRegistry.registerPath({
+            ...def.route,
+            path: mergePath(pathForOpenAPI, def.route.path),
+          });
+
+        case 'webhook':
+          return this.openAPIRegistry.registerWebhook({
+            ...def.webhook,
+            path: mergePath(pathForOpenAPI, def.webhook.path),
+          });
+
+        case 'schema':
+          return this.openAPIRegistry.register(
+            def.schema._def.openapi._internal.refId,
+            def.schema,
+          );
+
+        case 'parameter':
+          return this.openAPIRegistry.registerParameter(
+            def.schema._def.openapi._internal.refId,
+            def.schema,
+          );
+
+        default: {
+          const errorIfNotExhaustive: never = def;
+          throw new Error(`Unknown registry type: ${errorIfNotExhaustive}`);
+        }
+      }
+    });
+  }
 }
 
 /**
@@ -318,3 +368,15 @@ export const mergePath: (...paths: string[]) => string = (
 
   return result;
 };
+
+export type RecursiveArray<T> = Array<T | RecursiveArray<T>>;
+
+export function flattenRecursiveArray<T>(array: RecursiveArray<T>): T[] {
+  return array.reduce<T[]>((acc, item) => {
+    if (Array.isArray(item)) {
+      return acc.concat(flattenRecursiveArray(item));
+    }
+
+    return acc.concat(item);
+  }, []);
+}

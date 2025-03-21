@@ -1,5 +1,6 @@
 packages:
   - 'packages/*'
+  - 'examples/*'
 
 catalog:
   zod: ^3.23.8

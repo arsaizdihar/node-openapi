@@ -1,30 +1,29 @@
+import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
-  InputTypeQuery,
-  InputTypeHeader,
+  Context,
+  Input,
   InputTypeCookie,
   InputTypeForm,
+  InputTypeHeader,
   InputTypeJson,
+  InputTypeParam,
+  InputTypeQuery,
   RouteConfig,
   RouteFactory,
-  Input,
-  InputTypeParam,
-  Context,
 } from '@node-openapi/core';
 import Koa from 'koa';
-import { KoaRequestAdapter } from './request';
-import bodyParser from '@koa/bodyparser';
 import Router, { IMiddleware } from 'koa-router';
-import { z } from 'zod';
-import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
-import { koaSwagger } from 'koa2-swagger-ui';
+import { KoaRequestAdapter } from './request';
 
 export class KoaRouteFactory extends RouteFactory<KoaRequestAdapter> {
-  public readonly router = new Router();
+  private readonly _middlewares: Array<IMiddleware> = [];
 
-  constructor(app: Koa) {
+  constructor(private readonly _router: Router = new Router()) {
     super();
+  }
 
-    app.use(this.router.routes()).use(this.router.allowedMethods());
+  registerApp(app: Koa) {
+    app.use(this._router.routes()).use(this._router.allowedMethods());
   }
 
   route<
@@ -37,31 +36,46 @@ export class KoaRouteFactory extends RouteFactory<KoaRequestAdapter> {
       InputTypeJson<R>,
   >(
     route: R,
-    handler: IMiddleware<
-      'json' extends keyof I['out'] ? { input: I['out'] } : any
-    >,
+    ...handlers: Array<
+      IMiddleware<'json' extends keyof I['out'] ? { input: I['out'] } : any>
+    >
   ) {
     if (route.method === 'trace') {
       throw new Error('trace method is not supported');
     }
     const _router = this._route(route);
-    this.router[route.method](
+    this._router[route.method](
       route.path,
+      this.applyMiddlewares.bind(this),
       async (ctx, next) => {
         const context: Context<KoaRequestAdapter, I> = {
-          req: new KoaRequestAdapter(ctx.request),
+          req: new KoaRequestAdapter(
+            ctx.request,
+            new Proxy(
+              {},
+              {
+                get: (_, prop) => {
+                  if (typeof prop === 'string') {
+                    return ctx.cookies.get(prop);
+                  }
+                  return undefined;
+                },
+              },
+            ),
+            ctx.params,
+          ),
           input: {},
         };
         const c = await _router(context);
         ctx.state.input = c.input;
         next();
       },
-      handler,
+      ...handlers,
     );
   }
 
   doc<P extends string>(path: P, configure: OpenAPIObjectConfigV31) {
-    this.router.get(path, (ctx) => {
+    this._router.get(path, (ctx) => {
       try {
         const document = this.getOpenAPIDocument(configure);
         ctx.body = document;
@@ -71,60 +85,27 @@ export class KoaRouteFactory extends RouteFactory<KoaRequestAdapter> {
       }
     });
   }
+
+  router(path: string, routeFactory: KoaRouteFactory) {
+    this._router.use(path, this.applyMiddlewares.bind(this) as any);
+    this._router.use(path, routeFactory._router.routes());
+
+    const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');
+    this._registerRouter(pathForOpenAPI, routeFactory);
+  }
+
+  async applyMiddlewares(ctx: Koa.ParameterizedContext, next: Koa.Next) {
+    // Create a middleware execution chain
+    const dispatch = async (index: number): Promise<void> => {
+      if (index >= this._middlewares.length) {
+        return next();
+      }
+
+      const middleware = this._middlewares[index];
+      return middleware(ctx as any, () => dispatch(index + 1));
+    };
+
+    // Start executing middleware chain from the beginning
+    return dispatch(0);
+  }
 }
-
-const app = new Koa();
-app.use(bodyParser());
-const factory = new KoaRouteFactory(app);
-
-const route = factory.createRoute({
-  method: 'post',
-  path: '/',
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            message: z.string(),
-          }),
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            message: z.string(),
-          }),
-        },
-      },
-      description: 'OK',
-    },
-  },
-});
-
-factory.route(route, async (ctx) => {
-  ctx.body = ctx.state.input.json;
-});
-
-factory.doc('/docs', {
-  openapi: '3.1.0',
-  info: {
-    title: 'API',
-    version: '1.0.0',
-  },
-});
-
-app.use(
-  koaSwagger({
-    routePrefix: '/api-docs',
-    swaggerOptions: {
-      url: '/docs',
-    },
-  }),
-);
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
-});

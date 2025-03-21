@@ -3,7 +3,11 @@ import { RequestLike } from '@node-openapi/core';
 import { Context } from 'koa';
 
 export class KoaRequestAdapter extends RequestLike {
-  constructor(private readonly req: Context['request']) {
+  constructor(
+    private readonly req: Context['request'],
+    public readonly cookies: Record<string, string | string[] | undefined> = {},
+    public readonly params: Record<string, string | string[] | undefined> = {},
+  ) {
     super();
   }
 
@@ -29,5 +33,9 @@ export class KoaRequestAdapter extends RequestLike {
 
   get query() {
     return this.req.query;
+  }
+
+  get form() {
+    return this.req.body;
   }
 }

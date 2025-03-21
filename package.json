@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-all": "pnpm --filter=@node-openapi/* run build",
     "lint": "eslint ."
   },
   "keywords": [],
