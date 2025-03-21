@@ -125,6 +125,15 @@ export abstract class RouteFactory<
         }
       }
 
+      if (bodyContent['application/x-www-form-urlencoded']) {
+        const schema =
+          bodyContent['application/x-www-form-urlencoded']['schema'];
+        if (schema instanceof ZodType) {
+          const validator = this.zValidator('form', schema);
+          validators.push(validator as MiddlewareHandler<Req>);
+        }
+      }
+
       if (bodyContent['text/plain']) {
         const schema = bodyContent['text/plain']['schema'];
         if (schema instanceof ZodType) {
