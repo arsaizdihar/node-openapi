@@ -296,12 +296,25 @@ export const mergePath: (...paths: string[]) => string = (
   sub: string | undefined,
   ...rest: string[]
 ): string => {
-  if (rest.length) {
-    sub = mergePath(sub as string, ...rest);
+  const paths = [base, sub, ...rest].filter(Boolean);
+  if (paths.length === 0) {
+    return '';
   }
-  return `${base?.[0] === '/' ? '' : '/'}${base}${
-    sub === '/'
-      ? ''
-      : `${base?.at(-1) === '/' ? '' : '/'}${sub?.[0] === '/' ? sub.slice(1) : sub}`
-  }`;
+
+  let result = paths[0] || '';
+
+  for (let i = 1; i < paths.length; i++) {
+    const segment = paths[i] || '';
+    if (result.endsWith('/')) {
+      result = result + (segment.startsWith('/') ? segment.slice(1) : segment);
+    } else {
+      result = result + (segment.startsWith('/') ? segment : '/' + segment);
+    }
+  }
+
+  if (!result.startsWith('/')) {
+    result = '/' + result;
+  }
+
+  return result;
 };

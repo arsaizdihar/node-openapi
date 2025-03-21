@@ -9,7 +9,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup ./src/index.ts --format esm,cjs --dts"
+    "build": "tsup ./src/index.ts --format esm,cjs --dts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "exports": {
     ".": {
@@ -31,7 +34,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
