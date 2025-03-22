@@ -6,7 +6,20 @@ import { z, ZodError } from 'zod';
 const app = express();
 app.use(express.json());
 
-const factory = new ExpressRouteFactory(app);
+const factory = new ExpressRouteFactory<{
+  user: {
+    id: string;
+    name: string;
+  };
+}>();
+
+factory.middleware((_, res, next) => {
+  res.locals.user = {
+    id: '1',
+    name: 'John Doe',
+  };
+  next();
+});
 
 const route = ExpressRouteFactory.createRoute({
   method: 'post',

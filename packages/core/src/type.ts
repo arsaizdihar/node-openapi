@@ -357,3 +357,7 @@ export type RouteHandler<
 export type MiddlewareHandler<Req extends RequestLike, I extends Input = {}> = (
   c: Context<Req, I>,
 ) => MaybePromise<void>;
+
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+} & {};

@@ -8,6 +8,7 @@ import {
   InputTypeJson,
   InputTypeParam,
   InputTypeQuery,
+  Prettify,
   RouteConfig,
   RouteConfigToHandlerResponse,
   RouteFactory,
@@ -15,14 +16,20 @@ import {
 import { NextFunction, RequestHandler, Router } from 'express';
 import { ExpressRequestAdapter } from './request';
 
-export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
-  private readonly _middlewares: Array<RequestHandler> = [];
+export class ExpressRouteFactory<
+  Locals extends Record<string, any> = Record<string, any>,
+> extends RouteFactory<ExpressRequestAdapter> {
+  private readonly _middlewares: Array<
+    RequestHandler<Record<string, string>, any, any, any, Locals>
+  > = [];
 
   constructor(private readonly _router: Router = Router()) {
     super();
   }
 
-  middleware<R extends RequestHandler>(handler: R) {
+  middleware<
+    R extends RequestHandler<Record<string, string>, any, any, any, Locals>,
+  >(handler: R) {
     this._middlewares.push(handler);
   }
 
@@ -42,7 +49,7 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
         RouteConfigToHandlerResponse<R>['data'],
         'json' extends keyof I['out'] ? I['out']['json'] : any,
         'query' extends keyof I['out'] ? I['out']['query'] : any,
-        I['out'] extends {} ? I['out'] : any
+        I['out'] extends {} ? Prettify<I['out'] & Locals> : Locals
       >
     >
   ) {
@@ -94,7 +101,11 @@ export class ExpressRouteFactory extends RouteFactory<ExpressRequestAdapter> {
     });
   }
 
-  async applyMiddlewares(req: Request, res: Response, next: NextFunction) {
+  private async applyMiddlewares(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
     let nextCalled = false;
     let error: Error | string | undefined;
 

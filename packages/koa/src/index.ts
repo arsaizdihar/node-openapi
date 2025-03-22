@@ -8,6 +8,7 @@ import {
   InputTypeJson,
   InputTypeParam,
   InputTypeQuery,
+  Prettify,
   RouteConfig,
   RouteFactory,
 } from '@node-openapi/core';
@@ -15,8 +16,10 @@ import Koa from 'koa';
 import Router, { IMiddleware } from 'koa-router';
 import { KoaRequestAdapter } from './request';
 
-export class KoaRouteFactory extends RouteFactory<KoaRequestAdapter> {
-  private readonly _middlewares: Array<IMiddleware> = [];
+export class KoaRouteFactory<
+  StateT = unknown,
+> extends RouteFactory<KoaRequestAdapter> {
+  private readonly _middlewares: Array<IMiddleware<StateT>> = [];
 
   constructor(private readonly _router: Router = new Router()) {
     super();
@@ -24,6 +27,10 @@ export class KoaRouteFactory extends RouteFactory<KoaRequestAdapter> {
 
   registerApp(app: Koa) {
     app.use(this._router.routes()).use(this._router.allowedMethods());
+  }
+
+  middleware<R extends IMiddleware<StateT>>(handler: R) {
+    this._middlewares.push(handler);
   }
 
   route<
@@ -37,7 +44,11 @@ export class KoaRouteFactory extends RouteFactory<KoaRequestAdapter> {
   >(
     route: R,
     ...handlers: Array<
-      IMiddleware<'json' extends keyof I['out'] ? { input: I['out'] } : any>
+      IMiddleware<
+        'json' extends keyof I['out']
+          ? Prettify<{ input: I['out'] } & StateT>
+          : StateT
+      >
     >
   ) {
     if (route.method === 'trace') {
@@ -94,7 +105,10 @@ export class KoaRouteFactory extends RouteFactory<KoaRequestAdapter> {
     this._registerRouter(pathForOpenAPI, routeFactory);
   }
 
-  async applyMiddlewares(ctx: Koa.ParameterizedContext, next: Koa.Next) {
+  private async applyMiddlewares(
+    ctx: Koa.ParameterizedContext<StateT>,
+    next: Koa.Next,
+  ) {
     // Create a middleware execution chain
     const dispatch = async (index: number): Promise<void> => {
       if (index >= this._middlewares.length) {

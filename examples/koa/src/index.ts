@@ -6,7 +6,21 @@ import { z } from 'zod';
 
 const app = new Koa();
 app.use(bodyParser());
-const factory = new KoaRouteFactory();
+const factory = new KoaRouteFactory<{
+  user: {
+    id: string;
+    name: string;
+  };
+}>();
+
+factory.middleware(async (ctx, next) => {
+  ctx.state.user = {
+    id: '1',
+    name: 'John Doe',
+  };
+  await next();
+});
+
 factory.registerApp(app);
 
 const route = KoaRouteFactory.createRoute({
