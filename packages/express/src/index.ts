@@ -13,7 +13,7 @@ import {
   RouteConfigToHandlerResponse,
   RouteFactory,
 } from '@node-openapi/core';
-import { NextFunction, RequestHandler, Router } from 'express';
+import { RequestHandler, Router } from 'express';
 import { ExpressRequestAdapter } from './request';
 
 export class ExpressRouteFactory<
@@ -56,7 +56,7 @@ export class ExpressRouteFactory<
     const _route = this._route(route);
     this._router[route.method](
       route.path,
-      this.applyMiddlewares.bind(this) as any,
+      ...this._middlewares,
       async (req, res, next) => {
         const context: Context<ExpressRequestAdapter> = {
           req: new ExpressRequestAdapter(req as any),
@@ -80,7 +80,7 @@ export class ExpressRouteFactory<
   }
 
   router(path: string, routeFactory: ExpressRouteFactory) {
-    this._router.use(path, this.applyMiddlewares.bind(this) as any);
+    this._router.use(path, ...this._middlewares);
     this._router.use(path, routeFactory._router);
 
     const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');
@@ -93,47 +93,11 @@ export class ExpressRouteFactory<
         const document = this.getOpenAPIDocument(configure);
         res.json(document);
       } catch (error) {
-        console.log(error);
         res.status(500).json({
           error: error,
         });
       }
     });
-  }
-
-  private async applyMiddlewares(
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) {
-    let nextCalled = false;
-    let error: Error | string | undefined;
-
-    const _next = (err?: Error | string) => {
-      nextCalled = true;
-      if (err) {
-        error = err;
-      }
-    };
-
-    for (const middleware of this._middlewares) {
-      nextCalled = false;
-      await middleware(req as any, res as any, _next);
-
-      // If next wasn't called, assume middleware handled the response
-      if (!nextCalled) {
-        return;
-      }
-
-      // If there was an error, pass it to the next error handler
-      if (error) {
-        next(error);
-        return;
-      }
-    }
-
-    // Continue to the next middleware in the route
-    next();
   }
 }
 

@@ -1,0 +1,23 @@
+{
+  "name": "example-hono",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsx watch ./src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@hono/node-server": "^1.14.0",
+    "@hono/swagger-ui": "^0.5.1",
+    "@node-openapi/hono": "workspace:*",
+    "hono": "^4.7.5",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.6",
+    "tsup": "catalog:",
+    "tsx": "^4.19.3",
+    "typescript": "catalog:"
+  }
+}

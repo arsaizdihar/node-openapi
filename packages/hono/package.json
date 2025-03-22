@@ -1,7 +1,7 @@
 {
-  "name": "@node-openapi/koa",
+  "name": "@node-openapi/hono",
   "version": "1.0.0",
-  "description": "Koa adapter for node-openapi",
+  "description": "Hono adapter for node-openapi",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -28,16 +28,11 @@
   "license": "ISC",
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
-    "@koa/bodyparser": "^5.1.1",
     "@node-openapi/core": "workspace:*",
-    "koa": "^2.16.0",
-    "koa-router": "^13.0.1",
-    "koa2-swagger-ui": "^5.11.0",
+    "hono": "^4.7.5",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/koa": "^2.15.0",
-    "@types/koa-router": "^7.4.8",
     "tsup": "catalog:",
     "typescript": "catalog:"
   }

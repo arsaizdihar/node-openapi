@@ -57,7 +57,7 @@ export class KoaRouteFactory<
     const _router = this._route(route);
     this._router[route.method](
       route.path,
-      this.applyMiddlewares.bind(this),
+      ...this._middlewares,
       async (ctx, next) => {
         const context: Context<KoaRequestAdapter, I> = {
           req: new KoaRequestAdapter(
@@ -98,28 +98,12 @@ export class KoaRouteFactory<
   }
 
   router(path: string, routeFactory: KoaRouteFactory) {
-    this._router.use(path, this.applyMiddlewares.bind(this) as any);
+    this._router.use(path, ...this._middlewares);
     this._router.use(path, routeFactory._router.routes());
 
     const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');
     this._registerRouter(pathForOpenAPI, routeFactory);
   }
-
-  private async applyMiddlewares(
-    ctx: Koa.ParameterizedContext<StateT>,
-    next: Koa.Next,
-  ) {
-    // Create a middleware execution chain
-    const dispatch = async (index: number): Promise<void> => {
-      if (index >= this._middlewares.length) {
-        return next();
-      }
-
-      const middleware = this._middlewares[index];
-      return middleware(ctx as any, () => dispatch(index + 1));
-    };
-
-    // Start executing middleware chain from the beginning
-    return dispatch(0);
-  }
 }
+
+export const { createRoute } = KoaRouteFactory;

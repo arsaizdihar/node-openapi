@@ -1,4 +1,4 @@
-import { ExpressRouteFactory } from '@node-openapi/express';
+import { createRoute, ExpressRouteFactory } from '@node-openapi/express';
 import express, { NextFunction, Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { z, ZodError } from 'zod';
@@ -21,7 +21,7 @@ factory.middleware((_, res, next) => {
   next();
 });
 
-const route = ExpressRouteFactory.createRoute({
+const route = createRoute({
   method: 'post',
   path: '/',
   request: {
