@@ -52,7 +52,9 @@ const route = KoaRouteFactory.createRoute({
 });
 
 factory.route(route, async (ctx) => {
-  ctx.body = ctx.state.input.json;
+  ctx.body = {
+    message: ctx.state.input.json.message,
+  };
 });
 
 factory.doc('/docs', {

@@ -10,16 +10,17 @@ import {
   InputTypeQuery,
   Prettify,
   RouteConfig,
+  RouteConfigToHandlerResponse,
   RouteFactory,
 } from '@node-openapi/core';
 import Koa from 'koa';
-import Router, { IMiddleware } from 'koa-router';
+import Router from 'koa-router';
 import { KoaRequestAdapter } from './request';
 
 export class KoaRouteFactory<
   StateT = unknown,
 > extends RouteFactory<KoaRequestAdapter> {
-  private readonly _middlewares: Array<IMiddleware<StateT>> = [];
+  private readonly _middlewares: Array<Koa.Middleware<StateT>> = [];
 
   constructor(private readonly _router: Router = new Router()) {
     super();
@@ -29,7 +30,7 @@ export class KoaRouteFactory<
     app.use(this._router.routes()).use(this._router.allowedMethods());
   }
 
-  middleware<R extends IMiddleware<StateT>>(handler: R) {
+  middleware<R extends Koa.Middleware<StateT>>(handler: R) {
     this._middlewares.push(handler);
   }
 
@@ -44,10 +45,14 @@ export class KoaRouteFactory<
   >(
     route: R,
     ...handlers: Array<
-      IMiddleware<
+      Koa.Middleware<
         'json' extends keyof I['out']
           ? Prettify<{ input: I['out'] } & StateT>
-          : StateT
+          : StateT,
+        Koa.DefaultContext,
+        'data' extends keyof RouteConfigToHandlerResponse<R>
+          ? RouteConfigToHandlerResponse<R>['data']
+          : any
       >
     >
   ) {
