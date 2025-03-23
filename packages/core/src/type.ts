@@ -9,7 +9,7 @@ import type {
 } from '@asteasolutions/zod-to-openapi';
 import { ZodSchema, ZodType, z } from 'zod';
 import { RequestLike } from './request';
-import { JSONParsed } from './json';
+import { JSONParsed, JSONValue } from './json';
 import {
   ClientErrorStatusCode,
   InfoStatusCode,
@@ -42,10 +42,10 @@ export type ResponseFormat = KnownResponseFormat | string;
  */
 export type HandlerResponse<
   Body = unknown,
-  StatusCode extends number = number,
+  Status extends StatusCode = StatusCode,
   Format extends ResponseFormat = ResponseFormat,
 > = {
-  status: StatusCode;
+  status: Status;
   data: Body;
   format: Format;
 };
@@ -90,20 +90,74 @@ export type ExtractStatusCode<T extends RouteConfigStatusCode> =
     ? StatusCodeRangeDefinitions[T]
     : T;
 
+export type DefinedStatusCodes<R extends RouteConfig> = keyof R['responses'] &
+  RouteConfigStatusCode;
+
+/**
+ * Useful to flatten the type output to improve type hints shown in editors. And also to transform an interface into a type to aide with assignability.
+ * @copyright from sindresorhus/type-fest
+ */
+export type Simplify<T> = {
+  [KeyType in keyof T]: T[KeyType];
+} & {};
+
+/**
+ * A simple extension of Simplify that will deeply traverse array elements.
+ */
+export type SimplifyDeepArray<T> = T extends any[]
+  ? {
+      [E in keyof T]: SimplifyDeepArray<T[E]>;
+    }
+  : Simplify<T>;
+
+type ReturnJsonOrTextOrResponse<
+  ContentType,
+  Content,
+  Status extends keyof StatusCodeRangeDefinitions | StatusCode,
+> = ContentType extends string
+  ? ContentType extends `application/${infer Start}json${infer _End}`
+    ? Start extends '' | `${string}+` | `vnd.${string}+`
+      ? HandlerResponse<
+          SimplifyDeepArray<Content> extends JSONValue
+            ? JSONValue extends SimplifyDeepArray<Content>
+              ? never
+              : JSONParsed<Content>
+            : never,
+          ExtractStatusCode<Status>,
+          'json'
+        >
+      : never
+    : ContentType extends `text/plain${infer _Rest}`
+      ? HandlerResponse<Content, ExtractStatusCode<Status>, 'text'>
+      : Response
+  : never;
+
 /**
  * Converts a route config to the expected handler response type
  */
-export type RouteConfigToHandlerResponse<R extends RouteConfig> = {
-  [Status in keyof R['responses'] & RouteConfigStatusCode]: IsJson<
-    keyof R['responses'][Status]['content']
-  > extends never
-    ? HandlerResponse<{}, ExtractStatusCode<Status>, string>
-    : HandlerResponse<
-        JSONParsed<ExtractContent<R['responses'][Status]['content']>>,
-        ExtractStatusCode<Status>,
-        'json' | 'text'
-      >;
-}[keyof R['responses'] & RouteConfigStatusCode];
+export type RouteConfigToHandlerResponse<R extends RouteConfig> =
+  | {
+      [Status in DefinedStatusCodes<R>]: undefined extends R['responses'][Status]['content']
+        ? HandlerResponse<{}, ExtractStatusCode<Status>, string>
+        : ReturnJsonOrTextOrResponse<
+            keyof R['responses'][Status]['content'],
+            ExtractContent<R['responses'][Status]['content']>,
+            Status
+          >;
+    }[DefinedStatusCodes<R>]
+  | ('default' extends keyof R['responses']
+      ? undefined extends R['responses']['default']['content']
+        ? HandlerResponse<
+            {},
+            Exclude<StatusCode, ExtractStatusCode<DefinedStatusCodes<R>>>,
+            string
+          >
+        : ReturnJsonOrTextOrResponse<
+            keyof R['responses']['default']['content'],
+            ExtractContent<R['responses']['default']['content']>,
+            Exclude<StatusCode, ExtractStatusCode<DefinedStatusCodes<R>>>
+          >
+      : never);
 
 /**
  * Input type structure for route handlers

@@ -46,7 +46,9 @@ export class ExpressRouteFactory<
     ...handlers: Array<
       RequestHandler<
         Record<string, string>,
-        RouteConfigToHandlerResponse<R>['data'],
+        'data' extends keyof RouteConfigToHandlerResponse<R>
+          ? RouteConfigToHandlerResponse<R>['data']
+          : any,
         'json' extends keyof I['out'] ? I['out']['json'] : any,
         'query' extends keyof I['out'] ? I['out']['query'] : any,
         I['out'] extends {} ? Prettify<I['out'] & Locals> : Locals

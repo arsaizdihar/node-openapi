@@ -1,8 +1,8 @@
+import { serve } from '@hono/node-server';
+import { swaggerUI } from '@hono/swagger-ui';
 import { createRoute, HonoRouteFactory } from '@node-openapi/hono';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { swaggerUI } from '@hono/swagger-ui';
-import { serve } from '@hono/node-server';
 
 const app = new Hono();
 
