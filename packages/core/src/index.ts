@@ -28,6 +28,7 @@ import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 export * from './type';
 export * from './status';
 export * from './request';
+export * from './json';
 
 extendZodWithOpenApi(z);
 

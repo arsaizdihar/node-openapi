@@ -45,9 +45,9 @@ export type HandlerResponse<
   StatusCode extends number = number,
   Format extends ResponseFormat = ResponseFormat,
 > = {
-  status?: StatusCode;
-  data?: Body;
-  format?: Format;
+  status: StatusCode;
+  data: Body;
+  format: Format;
 };
 
 /**
@@ -74,15 +74,18 @@ type ExtractContent<T> = T extends {
 /**
  * Maps status code ranges to specific status codes
  */
-type StatusCodeRangeDefinitions = {
+export type StatusCodeRangeDefinitions = {
   '1XX': InfoStatusCode;
   '2XX': SuccessStatusCode;
   '3XX': RedirectStatusCode;
   '4XX': ClientErrorStatusCode;
   '5XX': ServerErrorStatusCode;
 };
-type RouteConfigStatusCode = keyof StatusCodeRangeDefinitions | StatusCode;
-type ExtractStatusCode<T extends RouteConfigStatusCode> =
+export type RouteConfigStatusCode =
+  | keyof StatusCodeRangeDefinitions
+  | StatusCode;
+
+export type ExtractStatusCode<T extends RouteConfigStatusCode> =
   T extends keyof StatusCodeRangeDefinitions
     ? StatusCodeRangeDefinitions[T]
     : T;
@@ -101,20 +104,6 @@ export type RouteConfigToHandlerResponse<R extends RouteConfig> = {
         'json' | 'text'
       >;
 }[keyof R['responses'] & RouteConfigStatusCode];
-
-/**
- * Route handler function type
- * @template Req - Request type
- * @template _Path - Route path
- * @template I - Input type
- * @template Res - Response type
- */
-export type Handler<
-  Req extends RequestLike,
-  _Path extends string,
-  I extends Input = {},
-  Res extends HandlerResponse = HandlerResponse,
-> = (c: Context<Req, I>) => MaybePromise<Res>;
 
 /**
  * Input type structure for route handlers
@@ -335,21 +324,6 @@ export type InputTypeCookie<R extends RouteConfig> = InputTypeBase<
   'cookies',
   'cookie'
 >;
-
-/**
- * Complete route handler type with all validations
- */
-export type RouteHandler<
-  Req extends RequestLike,
-  R extends RouteConfig,
-  I extends Input = InputTypeParam<R> &
-    InputTypeQuery<R> &
-    InputTypeHeader<R> &
-    InputTypeCookie<R> &
-    InputTypeForm<R> &
-    InputTypeJson<R>,
-  P extends string = ConvertPathType<R['path']>,
-> = Handler<Req, P, I, RouteConfigToHandlerResponse<R>>;
 
 /**
  * Middleware handler type for request processing
