@@ -10,5 +10,7 @@
     "skipLibCheck": true,
     "noUnusedLocals": false,
     "noUnusedParameters": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   }
 }
