@@ -1,6 +1,10 @@
 import { inject, injectable } from 'inversify';
 import { Database, DB_SYMBOL, schema, Transaction } from '../db';
-import { UserCreateDTO, UserEntity, UserRole } from '../domain/user.domain';
+import {
+  UserCreateDTO,
+  UserEntity,
+  UserListParams,
+} from '../domain/user.domain';
 import { first, firstSure } from '../db/helpers';
 import { eq, and, like, sql, SQL } from 'drizzle-orm';
 import { userRoles } from '../db/schema';
@@ -9,9 +13,19 @@ import { userRoles } from '../db/schema';
 export class UserRepository {
   constructor(@inject(DB_SYMBOL) private db: Database) {}
 
-  async createUser(user: UserCreateDTO): Promise<UserEntity> {
-    const result = await this.db.insert(schema.users).values(user).returning();
-    return firstSure(result);
+  async createUser(user: UserCreateDTO): Promise<UserEntity | null> {
+    try {
+      const result = await this.db
+        .insert(schema.users)
+        .values(user)
+        .returning();
+      return firstSure(result);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('UNIQUE')) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   async getUserById(id: string, tx?: Transaction): Promise<UserEntity | null> {
@@ -39,15 +53,12 @@ export class UserRepository {
 
   async updateUser(
     id: string,
-    user: Partial<UserEntity>,
+    user: Partial<UserCreateDTO>,
     tx?: Transaction,
   ): Promise<UserEntity | null> {
     const result = await (tx ?? this.db)
       .update(schema.users)
-      .set({
-        ...user,
-        updatedAt: new Date(),
-      })
+      .set(user)
       .where(eq(schema.users.id, id))
       .returning();
     return first(result);
@@ -62,13 +73,7 @@ export class UserRepository {
   }
 
   async listUsers(
-    params: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      role?: UserRole;
-      isActive?: boolean;
-    },
+    params: UserListParams,
     tx?: Transaction,
   ): Promise<{
     users: UserEntity[];
@@ -77,7 +82,7 @@ export class UserRepository {
     limit: number;
     totalPages: number;
   }> {
-    const { page = 1, limit = 10, search, role, isActive } = params;
+    const { page, limit, search, role, isActive } = params;
     const offset = (page - 1) * limit;
 
     const db = tx ?? this.db;
