@@ -4,6 +4,12 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "scripts": {
+    "dbml": "tsx dbml.ts",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "studio": "drizzle-kit studio"
+  },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^7.3.0",
     "@paralleldrive/cuid2": "^2.2.2",
@@ -18,7 +24,9 @@
   },
   "devDependencies": {
     "@types/node": "^22.8.6",
+    "drizzle-dbml-generator": "^0.10.0",
     "tsup": "catalog:",
+    "tsx": "^4.19.3",
     "typescript": "catalog:"
   }
 }
