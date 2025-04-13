@@ -1,0 +1,22 @@
+{
+  "name": "hapi-example",
+  "version": "1.0.0",
+  "description": "Example of using @node-openapi/hapi",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch ./src/index.ts"
+  },
+  "dependencies": {
+    "@hapi/hapi": "^21.3.2",
+    "@hapi/inert": "^7.0.0",
+    "@node-openapi/core": "workspace:*",
+    "@node-openapi/hapi": "workspace:*",
+    "swagger-ui-dist": "^5.20.8",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/swagger-ui-dist": "^3.30.5",
+    "tsx": "^4.19.3",
+    "typescript": "^5.3.3"
+  }
+}
