@@ -1,3 +1,11 @@
+export const HTTP_ERRORS = {
+  NOT_FOUND: 'NOT_FOUND',
+  BAD_REQUEST: 'BAD_REQUEST',
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  FORBIDDEN: 'FORBIDDEN',
+  INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+} as const;
+
 export class HttpError extends Error {
   constructor(
     public readonly statusCode: number,

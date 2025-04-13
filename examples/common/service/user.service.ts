@@ -17,6 +17,7 @@ import {
 import { UserRepository } from '../repository/user.repo';
 import { ConfigService } from './config.service';
 import jwt from 'jsonwebtoken';
+import ms from 'ms';
 
 @injectable()
 export class UserService {
@@ -27,7 +28,11 @@ export class UserService {
     private readonly config: ConfigService,
   ) {}
 
-  async login(dto: LoginDTO): Promise<{ user: UserDTO; token: string }> {
+  async login(dto: LoginDTO): Promise<{
+    user: UserDTO;
+    token: string;
+    expiresIn: ms.StringValue;
+  }> {
     const user = await this.userRepository.getUserByEmail(dto.email);
 
     if (!user || !user.isActive) {
@@ -43,10 +48,15 @@ export class UserService {
     return {
       user: this.toDTO(user),
       token: this.getToken(user),
+      expiresIn: this.config.get('JWT_EXPIRES_IN'),
     };
   }
 
-  async register(dto: RegisterDTO): Promise<{ user: UserDTO; token: string }> {
+  async register(dto: RegisterDTO): Promise<{
+    user: UserDTO;
+    token: string;
+    expiresIn: ms.StringValue;
+  }> {
     const { password, ...rest } = dto;
     const hashedPassword = await bcrypt.hash(password, 12);
 
@@ -59,7 +69,11 @@ export class UserService {
       throw new UserAlreadyExistsError();
     }
 
-    return { user: this.toDTO(user), token: this.getToken(user) };
+    return {
+      user: this.toDTO(user),
+      token: this.getToken(user),
+      expiresIn: this.config.get('JWT_EXPIRES_IN'),
+    };
   }
 
   getToken(user: UserEntity): string {
@@ -123,8 +137,8 @@ export class UserService {
       name: user.name,
       role: user.role,
       isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
     };
   }
 }

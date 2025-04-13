@@ -11,10 +11,11 @@ export const users = sqliteTable('users', {
   password: text('password').notNull(),
   role: text('role', { enum: userRoles }).notNull().default('customer'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
@@ -37,10 +38,11 @@ export const stores = sqliteTable('stores', {
   name: text('name').notNull(),
   description: text('description'),
   logo: text('logo'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
@@ -58,10 +60,11 @@ export const categories = sqliteTable('categories', {
   name: text('name').notNull(),
   description: text('description'),
   parentId: text('parent_id'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
@@ -89,10 +92,11 @@ export const products = sqliteTable('products', {
   stock: integer('stock').notNull().default(0),
   images: text('images'), // JSON string of image URLs
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
@@ -120,10 +124,11 @@ export const cart = sqliteTable('cart', {
     .notNull()
     .references(() => products.id),
   quantity: integer('quantity').notNull().default(1),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
@@ -151,10 +156,11 @@ export const orders = sqliteTable('orders', {
     .default('pending'),
   totalAmount: real('total_amount').notNull(),
   shippingAddress: text('shipping_address').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
@@ -179,9 +185,9 @@ export const orderItems = sqliteTable('order_items', {
     .references(() => products.id),
   quantity: integer('quantity').notNull(),
   price: real('price').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
 });
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({
@@ -208,10 +214,11 @@ export const payments = sqliteTable('payments', {
     .default('pending'),
   paymentMethod: text('payment_method').notNull(),
   transactionId: text('transaction_id'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });
@@ -236,10 +243,11 @@ export const reviews = sqliteTable('reviews', {
     .references(() => orders.id),
   rating: integer('rating').notNull(),
   comment: text('comment'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(
-    () => new Date(),
-  ),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
 });

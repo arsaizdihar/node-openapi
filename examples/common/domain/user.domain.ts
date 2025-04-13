@@ -14,6 +14,12 @@ export type UserCreateDTO = z.infer<typeof userCreateSchema>;
 export const userSchema = createSelectSchema(schema.users)
   .omit({
     password: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
   })
   .openapi('User');
 

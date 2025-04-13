@@ -1,11 +1,9 @@
 {
-    "extends": "../../tsconfig.json",
-    "include": [
-      "src/"
-    ],
-    "exclude": [
-      "node_modules",
-      "dist"
-    ]
-  }
-  
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": ["src/"],
+  "exclude": ["node_modules", "dist"]
+}

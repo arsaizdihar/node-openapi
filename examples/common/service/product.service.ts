@@ -60,6 +60,10 @@ export class ProductService {
   }
 
   private toDTO(product: ProductEntity): ProductDTO {
-    return product;
+    return {
+      ...product,
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
+    };
   }
 }

@@ -27,6 +27,12 @@ export class ExpressRouteFactory<
     super();
   }
 
+  extend<NewLocals extends Locals>(): ExpressRouteFactory<NewLocals> {
+    const factory = new ExpressRouteFactory<NewLocals>();
+    factory._middlewares.push(...this._middlewares);
+    return factory;
+  }
+
   middleware<
     R extends RequestHandler<Record<string, string>, any, any, any, Locals>,
   >(handler: R) {
@@ -82,7 +88,9 @@ export class ExpressRouteFactory<
   }
 
   router(path: string, routeFactory: ExpressRouteFactory) {
-    this._router.use(path, ...this._middlewares);
+    if (this._middlewares.length > 0) {
+      this._router.use(path, ...this._middlewares);
+    }
     this._router.use(path, routeFactory._router);
 
     const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');

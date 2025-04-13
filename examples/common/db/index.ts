@@ -6,10 +6,13 @@ import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
 import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import { ExtractTablesWithRelations } from 'drizzle-orm';
+import path from 'path';
 
 extendZodWithOpenApi(z);
 
-const sqlite = new Database('./sqlite.db');
+const dbPath = path.join(__dirname, '../sqlite.db');
+
+const sqlite = new Database(dbPath);
 export const db = drizzle(sqlite, { schema });
 
 export const DB_SYMBOL = Symbol('db');

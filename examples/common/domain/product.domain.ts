@@ -10,9 +10,16 @@ export const productCreateSchema = createInsertSchema(schema.products).omit({
 
 export type ProductCreateDTO = z.infer<typeof productCreateSchema>;
 
-export const productSchema = createSelectSchema(schema.products).openapi(
-  'Product',
-);
+export const productSchema = createSelectSchema(schema.products)
+  .omit({
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+  })
+  .openapi('Product');
 
 export type ProductDTO = z.infer<typeof productSchema>;
 

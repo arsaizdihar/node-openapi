@@ -3,8 +3,8 @@ table cart {
   user_id text [not null]
   product_id text [not null]
   quantity integer [not null, default: 1]
-  created_at integer
-  updated_at integer
+  created_at integer [not null]
+  updated_at integer [not null]
 }
 
 table categories {
@@ -12,8 +12,8 @@ table categories {
   name text [not null]
   description text
   parent_id text
-  created_at integer
-  updated_at integer
+  created_at integer [not null]
+  updated_at integer [not null]
 }
 
 table order_items {
@@ -22,7 +22,7 @@ table order_items {
   product_id text [not null]
   quantity integer [not null]
   price real [not null]
-  created_at integer
+  created_at integer [not null]
 }
 
 table orders {
@@ -31,8 +31,8 @@ table orders {
   status text [not null, default: 'pending']
   total_amount real [not null]
   shipping_address text [not null]
-  created_at integer
-  updated_at integer
+  created_at integer [not null]
+  updated_at integer [not null]
 }
 
 table payments {
@@ -42,8 +42,8 @@ table payments {
   status text [not null, default: 'pending']
   payment_method text [not null]
   transaction_id text
-  created_at integer
-  updated_at integer
+  created_at integer [not null]
+  updated_at integer [not null]
 }
 
 table products {
@@ -56,8 +56,8 @@ table products {
   stock integer [not null, default: 0]
   images text
   is_active integer [not null, default: 1]
-  created_at integer
-  updated_at integer
+  created_at integer [not null]
+  updated_at integer [not null]
 }
 
 table reviews {
@@ -67,8 +67,8 @@ table reviews {
   order_id text [not null]
   rating integer [not null]
   comment text
-  created_at integer
-  updated_at integer
+  created_at integer [not null]
+  updated_at integer [not null]
 }
 
 table stores {
@@ -77,8 +77,8 @@ table stores {
   name text [not null]
   description text
   logo text
-  created_at integer
-  updated_at integer
+  created_at integer [not null]
+  updated_at integer [not null]
 }
 
 table users {
@@ -88,8 +88,8 @@ table users {
   password text [not null]
   role text [not null, default: 'customer']
   is_active integer [not null, default: 1]
-  created_at integer
-  updated_at integer
+  created_at integer [not null]
+  updated_at integer [not null]
 }
 
 ref: cart.user_id > users.id
