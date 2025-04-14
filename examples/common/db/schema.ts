@@ -23,7 +23,7 @@ export const users = sqliteTable('users', {
 export const usersRelations = relations(users, ({ one, many }) => ({
   store: one(stores, {
     fields: [users.id],
-    references: [stores.userId],
+    references: [stores.ownerId],
   }),
   cart: many(cart),
   orders: many(orders),
@@ -32,7 +32,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 
 export const stores = sqliteTable('stores', {
   id: text('id').primaryKey().$defaultFn(createId),
-  userId: text('user_id')
+  ownerId: text('owner_id')
     .notNull()
     .references(() => users.id),
   name: text('name').notNull(),
@@ -48,34 +48,9 @@ export const stores = sqliteTable('stores', {
 });
 
 export const storesRelations = relations(stores, ({ one, many }) => ({
-  user: one(users, {
-    fields: [stores.userId],
+  owner: one(users, {
+    fields: [stores.ownerId],
     references: [users.id],
-  }),
-  products: many(products),
-}));
-
-export const categories = sqliteTable('categories', {
-  id: text('id').primaryKey().$defaultFn(createId),
-  name: text('name').notNull(),
-  description: text('description'),
-  parentId: text('parent_id'),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .notNull()
-    .$defaultFn(() => new Date())
-    .$onUpdateFn(() => new Date()),
-});
-
-export const categoriesRelations = relations(categories, ({ one, many }) => ({
-  parent: one(categories, {
-    fields: [categories.parentId],
-    references: [categories.id],
-  }),
-  children: many(categories, {
-    relationName: 'parent',
   }),
   products: many(products),
 }));
@@ -85,7 +60,6 @@ export const products = sqliteTable('products', {
   storeId: text('store_id')
     .notNull()
     .references(() => stores.id),
-  categoryId: text('category_id').references(() => categories.id),
   name: text('name').notNull(),
   description: text('description'),
   price: real('price').notNull(),
@@ -105,10 +79,6 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   store: one(stores, {
     fields: [products.storeId],
     references: [stores.id],
-  }),
-  category: one(categories, {
-    fields: [products.categoryId],
-    references: [categories.id],
   }),
   cart: many(cart),
   orderItems: many(orderItems),

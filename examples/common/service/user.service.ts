@@ -6,6 +6,7 @@ import {
   UserCreateDTO,
   UserDTO,
   UserEntity,
+  userEntityToDTO,
   UserListParams,
   UserListResponse,
 } from '../domain/user.domain';
@@ -18,6 +19,8 @@ import { UserRepository } from '../repository/user.repo';
 import { ConfigService } from './config.service';
 import jwt from 'jsonwebtoken';
 import ms from 'ms';
+import { StoreService } from './store.service';
+import { TransactionManager } from '../repository/transaction-manager';
 
 @injectable()
 export class UserService {
@@ -26,6 +29,10 @@ export class UserService {
     private readonly userRepository: UserRepository,
     @inject(ConfigService)
     private readonly config: ConfigService,
+    @inject(StoreService)
+    private readonly storeService: StoreService,
+    @inject(TransactionManager)
+    private readonly transactionManager: TransactionManager,
   ) {}
 
   async login(dto: LoginDTO): Promise<{
@@ -46,7 +53,7 @@ export class UserService {
     }
 
     return {
-      user: this.toDTO(user),
+      user: userEntityToDTO(user),
       token: this.getToken(user),
       expiresIn: this.config.get('JWT_EXPIRES_IN'),
     };
@@ -57,20 +64,37 @@ export class UserService {
     token: string;
     expiresIn: ms.StringValue;
   }> {
-    const { password, ...rest } = dto;
+    const { password, email, name, ...rest } = dto;
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const user = await this.userRepository.createUser({
-      ...rest,
-      password: hashedPassword,
+    const user = await this.transactionManager.runInTransaction(async (tx) => {
+      const user = await this.userRepository.createUser(
+        {
+          password: hashedPassword,
+          email,
+          name,
+          role: rest.role,
+        },
+        tx,
+      );
+
+      if (!user) {
+        throw new UserAlreadyExistsError();
+      }
+
+      if (rest.role === 'seller') {
+        await this.storeService.createStore(
+          userEntityToDTO(user),
+          rest.store,
+          tx,
+        );
+      }
+
+      return user;
     });
 
-    if (!user) {
-      throw new UserAlreadyExistsError();
-    }
-
     return {
-      user: this.toDTO(user),
+      user: userEntityToDTO(user),
       token: this.getToken(user),
       expiresIn: this.config.get('JWT_EXPIRES_IN'),
     };
@@ -99,7 +123,7 @@ export class UserService {
 
   async getUserById(id: string): Promise<UserDTO | null> {
     const user = await this.userRepository.getUserById(id);
-    return user ? this.toDTO(user) : null;
+    return user ? userEntityToDTO(user) : null;
   }
 
   async updateUser(id: string, dto: Partial<UserCreateDTO>): Promise<UserDTO> {
@@ -118,7 +142,7 @@ export class UserService {
       throw new UserNotFoundError();
     }
 
-    return this.toDTO(user);
+    return userEntityToDTO(user);
   }
 
   async listUsers(params: UserListParams): Promise<UserListResponse> {
@@ -126,19 +150,7 @@ export class UserService {
 
     return {
       ...result,
-      users: result.users.map(this.toDTO),
-    };
-  }
-
-  private toDTO(user: UserEntity): UserDTO {
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      isActive: user.isActive,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
+      users: result.users.map(userEntityToDTO),
     };
   }
 }

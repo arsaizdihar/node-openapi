@@ -13,9 +13,12 @@ import { userRoles } from '../db/schema';
 export class UserRepository {
   constructor(@inject(DB_SYMBOL) private db: Database) {}
 
-  async createUser(user: UserCreateDTO): Promise<UserEntity | null> {
+  async createUser(
+    user: UserCreateDTO,
+    tx?: Transaction,
+  ): Promise<UserEntity | null> {
     try {
-      const result = await this.db
+      const result = await (tx ?? this.db)
         .insert(schema.users)
         .values(user)
         .returning();

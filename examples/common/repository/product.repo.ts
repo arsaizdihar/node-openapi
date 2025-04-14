@@ -12,12 +12,18 @@ import { eq, and, like, sql, SQL, gte, lte } from 'drizzle-orm';
 export class ProductRepository {
   constructor(@inject(DB_SYMBOL) private db: Database) {}
 
-  async createProduct(product: ProductCreateDTO): Promise<ProductEntity> {
-    const result = await this.db
-      .insert(schema.products)
-      .values(product)
-      .returning();
-    return firstSure(result);
+  async createProduct(
+    product: ProductCreateDTO,
+    tx?: Transaction,
+  ): Promise<ProductEntity | null> {
+    const db = tx ?? this.db;
+    return await db.transaction(async (tx) => {
+      const result = await tx
+        .insert(schema.products)
+        .values(product)
+        .returning();
+      return this.getProductById(firstSure(result).id, tx);
+    });
   }
 
   async getProductById(
@@ -27,8 +33,11 @@ export class ProductRepository {
     const result = await (tx ?? this.db).query.products.findFirst({
       where: eq(schema.products.id, id),
       with: {
-        store: true,
-        category: true,
+        store: {
+          with: {
+            owner: true,
+          },
+        },
       },
     });
     return result ?? null;
@@ -39,23 +48,38 @@ export class ProductRepository {
     product: Partial<ProductCreateDTO>,
     tx?: Transaction,
   ): Promise<ProductEntity | null> {
-    const result = await (tx ?? this.db)
-      .update(schema.products)
-      .set(product)
-      .where(eq(schema.products.id, id))
-      .returning();
-    return first(result);
+    const db = tx ?? this.db;
+    return await db.transaction(async (tx) => {
+      const result = await tx
+        .update(schema.products)
+        .set(product)
+        .where(eq(schema.products.id, id))
+        .returning()
+        .then(first);
+      if (!result) {
+        return null;
+      }
+      return this.getProductById(result.id, tx);
+    });
   }
 
   async deleteProduct(
     id: string,
     tx?: Transaction,
   ): Promise<ProductEntity | null> {
-    const result = await (tx ?? this.db)
-      .delete(schema.products)
-      .where(eq(schema.products.id, id))
-      .returning();
-    return first(result);
+    const db = tx ?? this.db;
+    return await db.transaction(async (tx) => {
+      const product = await this.getProductById(id, tx);
+      if (!product) {
+        return null;
+      }
+      await tx
+        .delete(schema.products)
+        .where(eq(schema.products.id, id))
+        .returning()
+        .then(first);
+      return product;
+    });
   }
 
   async listProducts(
@@ -68,16 +92,8 @@ export class ProductRepository {
     limit: number;
     totalPages: number;
   }> {
-    const {
-      page,
-      limit,
-      search,
-      category,
-      minPrice,
-      maxPrice,
-      storeId,
-      isActive,
-    } = params;
+    const { page, limit, search, minPrice, maxPrice, storeId, isActive } =
+      params;
     const offset = (page - 1) * limit;
 
     const db = tx ?? this.db;
@@ -88,9 +104,6 @@ export class ProductRepository {
         like(schema.products.name, `%${search}%`),
         like(schema.products.description, `%${search}%`),
       );
-    }
-    if (category) {
-      whereConditions.push(eq(schema.products.categoryId, category));
     }
     if (minPrice) {
       whereConditions.push(gte(schema.products.price, minPrice));
@@ -114,8 +127,11 @@ export class ProductRepository {
           offset,
           orderBy: (products) => products.createdAt,
           with: {
-            store: true,
-            category: true,
+            store: {
+              with: {
+                owner: true,
+              },
+            },
           },
         }),
         tx
@@ -135,24 +151,5 @@ export class ProductRepository {
       limit,
       totalPages: Math.ceil(total / limit),
     };
-  }
-
-  async toggleProductStatus(id: string, tx?: Transaction) {
-    return await (tx ?? this.db).transaction(async (tx) => {
-      const product = await this.getProductById(id, tx);
-      if (!product) {
-        throw new Error('Product not found');
-      }
-
-      const result = await tx
-        .update(schema.products)
-        .set({
-          isActive: !product.isActive,
-          updatedAt: new Date(),
-        })
-        .where(eq(schema.products.id, id))
-        .returning();
-      return firstSure(result);
-    });
   }
 }

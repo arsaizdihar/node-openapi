@@ -1,6 +1,7 @@
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { schema } from '../db';
+import { StoreEntity, storeEntityToDTO, storeSchema } from './store.domain';
 
 export const productCreateSchema = createInsertSchema(schema.products).omit({
   id: true,
@@ -18,12 +19,15 @@ export const productSchema = createSelectSchema(schema.products)
   .extend({
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
+    store: storeSchema,
   })
   .openapi('Product');
 
 export type ProductDTO = z.infer<typeof productSchema>;
 
-export type ProductEntity = typeof schema.products.$inferSelect;
+export type ProductEntity = typeof schema.products.$inferSelect & {
+  store: StoreEntity;
+};
 
 export const productListParamsSchema = z.object({
   page: z.number().int().positive().optional().default(1),
@@ -32,7 +36,6 @@ export const productListParamsSchema = z.object({
     .string()
     .optional()
     .openapi({ description: 'Search by name or description' }),
-  category: z.string().optional(),
   minPrice: z.number().optional(),
   maxPrice: z.number().optional(),
   storeId: z.string().optional(),
@@ -50,3 +53,12 @@ export const productListResponseSchema = z.object({
 });
 
 export type ProductListResponse = z.infer<typeof productListResponseSchema>;
+
+export function productEntityToDTO(product: ProductEntity): ProductDTO {
+  return {
+    ...product,
+    createdAt: product.createdAt.toISOString(),
+    updatedAt: product.updatedAt.toISOString(),
+    store: storeEntityToDTO(product.store),
+  };
+}

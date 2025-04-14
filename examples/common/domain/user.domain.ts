@@ -2,14 +2,27 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { schema } from '../db';
 import { userRoles } from '../db/schema';
+import { storeCreateSchema } from './store.domain';
 
 export const userCreateSchema = createInsertSchema(schema.users).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  isActive: true,
+});
+
+export const userCreateSellerSchema = userCreateSchema.extend({
+  role: z.literal('seller'),
+  store: storeCreateSchema,
+});
+
+export const userCreateCustomerSchema = userCreateSchema.extend({
+  role: z.literal('customer'),
 });
 
 export type UserCreateDTO = z.infer<typeof userCreateSchema>;
+export type UserCreateSellerDTO = z.infer<typeof userCreateSellerSchema>;
+export type UserCreateCustomerDTO = z.infer<typeof userCreateCustomerSchema>;
 
 export const userSchema = createSelectSchema(schema.users)
   .omit({
@@ -36,13 +49,10 @@ export const loginSchema = z.object({
 
 export type LoginDTO = z.infer<typeof loginSchema>;
 
-export const registerSchema = userCreateSchema
-  .omit({
-    isActive: true,
-  })
-  .extend({
-    password: z.string(),
-  });
+export const registerSchema = z.discriminatedUnion('role', [
+  userCreateCustomerSchema,
+  userCreateSellerSchema,
+]);
 
 export type RegisterDTO = z.infer<typeof registerSchema>;
 
@@ -68,3 +78,15 @@ export const userListResponseSchema = z.object({
 });
 
 export type UserListResponse = z.infer<typeof userListResponseSchema>;
+
+export function userEntityToDTO(user: UserEntity): UserDTO {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    isActive: user.isActive,
+    createdAt: user.createdAt.toISOString(),
+    updatedAt: user.updatedAt.toISOString(),
+  };
+}
