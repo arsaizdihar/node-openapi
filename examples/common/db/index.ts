@@ -2,13 +2,9 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from './schema';
 
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import { z } from 'zod';
 import { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import { ExtractTablesWithRelations } from 'drizzle-orm';
 import path from 'path';
-
-extendZodWithOpenApi(z);
 
 const dbPath = path.join(__dirname, '../sqlite.db');
 

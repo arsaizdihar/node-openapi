@@ -1,7 +1,8 @@
 import { ExpressRouteFactory } from '@node-openapi/express';
+import { RequestHandler } from 'express';
 import { inject } from 'inversify';
 import { injectable } from 'inversify';
-import { UserDTO } from 'ws-common/domain/user.domain';
+import { UserDTO, UserRole } from 'ws-common/domain/user.domain';
 import { UnauthorizedError } from 'ws-common/errors/http.errors';
 import { UserService } from 'ws-common/service/user.service';
 
@@ -52,5 +53,17 @@ export class Factories {
     });
 
     return factory;
+  }
+
+  roleMiddleware(
+    role: UserRole,
+  ): RequestHandler<Record<string, string>, any, any, any, { user: UserDTO }> {
+    return (_, res, next) => {
+      if (res.locals.user.role !== role) {
+        next(new UnauthorizedError('Unauthorized'));
+        return;
+      }
+      next();
+    };
   }
 }

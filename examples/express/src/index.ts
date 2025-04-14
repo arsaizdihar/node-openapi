@@ -13,6 +13,7 @@ import { UserController } from './controller/user.controller';
 import { ExpressRouteFactory } from '@node-openapi/express';
 import swaggerUi from 'swagger-ui-express';
 import cookieParser from 'cookie-parser';
+import { StoreController } from './controller/store.controller';
 
 const app = express();
 app.use(express.json());
@@ -23,10 +24,12 @@ const config = new ConfigService(baseConfigSchema.parse(process.env));
 container.bind(ConfigService).toConstantValue(config);
 
 const userController = container.get(UserController);
+const storeController = container.get(StoreController);
 
 const mainFactory = new ExpressRouteFactory(app);
 
-mainFactory.router('/user', userController.factory);
+mainFactory.router('/users', userController.factory);
+mainFactory.router('/stores', storeController.factory);
 
 mainFactory.doc('/docs', {
   openapi: '3.1.0',

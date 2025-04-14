@@ -1,10 +1,7 @@
 import { createRoute } from '@node-openapi/express';
-import {
-  loginSchema,
-  registerSchema,
-  userSchema,
-} from 'ws-common/domain/user.domain';
+import { userSchema } from 'ws-common/domain/user.domain';
 import { errorSchema } from 'ws-common/domain/errors.domain';
+import { loginSchema, registerSchema } from 'ws-common/domain/auth.domain';
 
 export const loginRoute = createRoute({
   tags: ['user'],

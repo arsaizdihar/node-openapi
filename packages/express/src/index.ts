@@ -98,14 +98,12 @@ export class ExpressRouteFactory<
   }
 
   doc<P extends string>(path: P, configure: OpenAPIObjectConfigV31) {
-    this._router.get(path, (_, res) => {
+    this._router.get(path, (_, res, next) => {
       try {
         const document = this.getOpenAPIDocument(configure);
         res.json(document);
       } catch (error) {
-        res.status(500).json({
-          error: error,
-        });
+        next(error);
       }
     });
   }

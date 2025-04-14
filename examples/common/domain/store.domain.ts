@@ -1,7 +1,7 @@
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { schema } from '../db';
-import { UserEntity, userEntityToDTO, userSchema } from './user.domain';
+import { userEntityToDTO, userSchema, type UserEntity } from './user.domain';
 
 export const storeCreateSchema = createInsertSchema(schema.stores).omit({
   id: true,
@@ -30,8 +30,8 @@ export type StoreEntity = typeof schema.stores.$inferSelect & {
 };
 
 export const storeListParamsSchema = z.object({
-  page: z.number().int().positive().optional().default(1),
-  limit: z.number().int().positive().max(50).optional().default(10),
+  page: z.coerce.number().int().positive().optional().default(1),
+  limit: z.coerce.number().int().positive().max(50).optional().default(10),
   search: z
     .string()
     .optional()

@@ -1,8 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { inject, injectable } from 'inversify';
 import {
-  LoginDTO,
-  RegisterDTO,
   UserCreateDTO,
   UserDTO,
   UserEntity,
@@ -21,6 +19,7 @@ import jwt from 'jsonwebtoken';
 import ms from 'ms';
 import { StoreService } from './store.service';
 import { TransactionManager } from '../repository/transaction-manager';
+import { LoginDTO, RegisterDTO } from '../domain/auth.domain';
 
 @injectable()
 export class UserService {
