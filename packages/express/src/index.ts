@@ -15,6 +15,7 @@ import {
 } from '@node-openapi/core';
 import { RequestHandler, Router } from 'express';
 import { ExpressRequestAdapter } from './request';
+export { z } from '@node-openapi/core';
 
 export class ExpressRouteFactory<
   Locals extends Record<string, any> = Record<string, any>,

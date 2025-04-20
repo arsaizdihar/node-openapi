@@ -93,17 +93,20 @@ export abstract class RouteFactory<
     }
 
     if (route.request?.params) {
-      const validator = this.zValidator('param', route.request.params);
+      const validator = this.zValidator('params', route.request.params);
       validators.push(validator as MiddlewareHandler<Req>);
     }
 
     if (route.request?.headers) {
-      const validator = this.zValidator('header', route.request.headers as any);
+      const validator = this.zValidator(
+        'headers',
+        route.request.headers as any,
+      );
       validators.push(validator as MiddlewareHandler<Req>);
     }
 
     if (route.request?.cookies) {
-      const validator = this.zValidator('cookie', route.request.cookies);
+      const validator = this.zValidator('cookies', route.request.cookies);
       validators.push(validator as MiddlewareHandler<Req>);
     }
 
@@ -239,21 +242,21 @@ export abstract class RouteFactory<
         return;
       }
 
-      if (target === 'header') {
+      if (target === 'headers') {
         const data = schema.parse(c.req.headers);
 
         (c.input as any).headers = data;
         return;
       }
 
-      if (target === 'cookie') {
+      if (target === 'cookies') {
         const data = schema.parse(c.req.cookies);
 
         (c.input as any).cookies = data;
         return;
       }
 
-      if (target === 'param') {
+      if (target === 'params') {
         const data = schema.parse(await c.req.params);
 
         (c.input as any).params = data;
@@ -381,3 +384,5 @@ export function flattenRecursiveArray<T>(array: RecursiveArray<T>): T[] {
     return acc.concat(item);
   }, []);
 }
+
+export { z };
