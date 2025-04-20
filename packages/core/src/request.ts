@@ -36,5 +36,7 @@ export abstract class RequestLike<FormValueType = any> {
   abstract get cookies(): Record<string, string | string[] | undefined>;
 
   /** Gets the route parameters (e.g., :id in /users/:id) */
-  abstract get params(): Record<string, string | string[] | undefined>;
+  abstract get params(): MaybePromise<
+    Record<string, string | string[] | undefined>
+  >;
 }

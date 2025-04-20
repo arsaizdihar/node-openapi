@@ -200,7 +200,7 @@ export abstract class RouteFactory<
       out: { [K in Target]: Out };
     },
   >(target: Target, schema: T): MiddlewareHandler<Req, I> {
-    return (c) => {
+    return async (c) => {
       if (!c.input) {
         c.input = {};
       }
@@ -216,7 +216,7 @@ export abstract class RouteFactory<
         target === 'json' &&
         c.req.headers['content-type'] === 'application/json'
       ) {
-        const data = schema.parse(c.req.json);
+        const data = schema.parse(await c.req.json);
 
         (c.input as any).json = data;
         return;
@@ -226,14 +226,14 @@ export abstract class RouteFactory<
         target === 'form' &&
         c.req.headers['content-type'] === 'multipart/form-data'
       ) {
-        const data = schema.parse(c.req.form);
+        const data = schema.parse(await c.req.form);
 
         (c.input as any).form = data;
         return;
       }
 
       if (target === 'text') {
-        const data = schema.parse(c.req.body);
+        const data = schema.parse(await c.req.body);
 
         (c.input as any).text = data;
         return;
@@ -254,7 +254,7 @@ export abstract class RouteFactory<
       }
 
       if (target === 'param') {
-        const data = schema.parse(c.req.params);
+        const data = schema.parse(await c.req.params);
 
         (c.input as any).params = data;
         return;
