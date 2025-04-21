@@ -8,6 +8,7 @@ import {
   updateStoreRoute,
 } from '../routes/store.routes';
 import { StoreNotFoundError } from 'ws-common/errors/store.errors';
+import { helper } from '@node-openapi/express';
 
 @injectable()
 export class StoreController extends BaseController {
@@ -23,7 +24,7 @@ export class StoreController extends BaseController {
     this.factory.route(getStoresRoute, async (_, res, next) => {
       try {
         const stores = await this.storeService.listStores(res.locals.query);
-        res.json(stores);
+        helper(res).json({ status: 200, data: stores });
       } catch (error) {
         next(error);
       }
@@ -38,7 +39,7 @@ export class StoreController extends BaseController {
           return;
         }
 
-        res.json(store);
+        helper(res).json({ status: 200, data: store });
       } catch (error) {
         next(error);
       }
@@ -59,7 +60,7 @@ export class StoreController extends BaseController {
             next(new StoreNotFoundError());
             return;
           }
-          res.json(store);
+          helper(res).json({ status: 200, data: store });
         } catch (error) {
           next(error);
         }

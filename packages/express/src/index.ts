@@ -126,7 +126,7 @@ export class ExpressRouteFactory<
   }
 }
 
-export function helper<Locals extends { helper: Helper<any> }>(
+export function helper<Locals extends Record<string, any>>(
   res: Response<any, Locals>,
 ): Locals['helper'] {
   return res.locals.helper;

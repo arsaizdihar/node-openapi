@@ -10,6 +10,7 @@ import {
 } from '../routes/user.routes';
 import { BaseController } from './base.controller';
 import { Factories } from '../factories';
+import { helper } from '@node-openapi/express';
 
 @injectable()
 export class UserController extends BaseController {
@@ -78,7 +79,7 @@ export class UserController extends BaseController {
     );
 
     checkedAuthFactory.route(meRoute, async (_, res) => {
-      res.status(200).json(res.locals.user);
+      helper(res).json({ status: 200, data: res.locals.user });
     });
 
     this.factory.router('/', checkedAuthFactory);
