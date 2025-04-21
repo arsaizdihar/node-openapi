@@ -110,7 +110,7 @@ describe('RouteFactory Validation', () => {
         'api-key': z.string(),
       });
 
-      const validator = factory.validate('header', headerSchema);
+      const validator = factory.validate('headers', headerSchema);
       const mockReq = new MockRequest();
       mockReq.headers = { 'api-key': 'abc123' };
 
@@ -127,7 +127,7 @@ describe('RouteFactory Validation', () => {
         id: z.string(),
       });
 
-      const validator = factory.validate('param', paramSchema);
+      const validator = factory.validate('params', paramSchema);
       const mockReq = new MockRequest();
       mockReq.params = { id: '123' };
 

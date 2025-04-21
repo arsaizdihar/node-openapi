@@ -1,6 +1,7 @@
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
   Context,
+  Helper,
   Input,
   InputTypeCookie,
   InputTypeForm,
@@ -13,7 +14,7 @@ import {
   RouteConfigToHandlerResponse,
   RouteFactory,
 } from '@node-openapi/core';
-import { RequestHandler, Router } from 'express';
+import { RequestHandler, Router, Response } from 'express';
 import { ExpressRequestAdapter } from './request';
 export { z } from '@node-openapi/core';
 
@@ -58,7 +59,9 @@ export class ExpressRouteFactory<
           : any,
         'json' extends keyof I['out'] ? I['out']['json'] : any,
         'query' extends keyof I['out'] ? I['out']['query'] : any,
-        I['out'] extends {} ? Prettify<I['out'] & Locals> : Locals
+        I['out'] extends {}
+          ? Prettify<I['out'] & Locals & { helper: Helper<R> }>
+          : Locals & { helper: Helper<R> }
       >
     >
   ) {
@@ -77,6 +80,7 @@ export class ExpressRouteFactory<
           res.locals = {
             ...res.locals,
             ...input,
+            helper: this.createHelper(res),
           };
           next();
         } catch (error) {
@@ -86,6 +90,18 @@ export class ExpressRouteFactory<
       },
       ...handlers,
     );
+  }
+
+  createHelper<R extends RouteConfig>(res: Response): Helper<R> {
+    const helper = {
+      json: (response: { data: any; status: number }) => {
+        res.status(response.status).json(response.data);
+      },
+      text: (response: { data: string; status: number }) => {
+        res.status(response.status).send(response.data);
+      },
+    };
+    return helper as Helper<R>;
   }
 
   router(path: string, routeFactory: ExpressRouteFactory) {
@@ -108,6 +124,12 @@ export class ExpressRouteFactory<
       }
     });
   }
+}
+
+export function helper<Locals extends { helper: Helper<any> }>(
+  res: Response<any, Locals>,
+): Locals['helper'] {
+  return res.locals.helper;
 }
 
 export const { createRoute } = ExpressRouteFactory;

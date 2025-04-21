@@ -389,3 +389,21 @@ export type MiddlewareHandler<Req extends RequestLike, I extends Input = {}> = (
 export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
+
+type OmitDistributive<T, K extends keyof any> = T extends any
+  ? Omit<T, K>
+  : never;
+
+type HelperKey<Format extends ResponseFormat, Resp> =
+  Extract<Resp, { format: Format }> extends infer R
+    ? (response: Prettify<OmitDistributive<R, 'format'>>) => void
+    : {};
+
+export type Helper<
+  R extends RouteConfig,
+  Resp extends
+    RouteConfigToHandlerResponse<R> = RouteConfigToHandlerResponse<R>,
+> = {
+  json: HelperKey<'json', Resp>;
+  text: HelperKey<'text', Resp>;
+};

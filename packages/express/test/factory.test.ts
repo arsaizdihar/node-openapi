@@ -1,7 +1,7 @@
-import { createRoute, ExpressRouteFactory, z } from '../src';
-import { describe, it, expect } from 'vitest';
 import express from 'express';
 import request from 'supertest';
+import { describe, expect, it } from 'vitest';
+import { createRoute, ExpressRouteFactory, helper, z } from '../src';
 
 describe('ExpressRouteFactory', () => {
   it('should create an instance', () => {
@@ -31,7 +31,7 @@ describe('ExpressRouteFactory', () => {
         },
       }),
       (_req, res) => {
-        res.json({ message: 'world' });
+        helper(res).json({ status: 200, data: { message: 'world' } });
       },
     );
 
@@ -68,7 +68,7 @@ describe('ExpressRouteFactory', () => {
         },
       }),
       (_req, res) => {
-        res.json({ user: res.locals.user });
+        helper(res).json({ status: 200, data: { user: res.locals.user } });
       },
     );
 
@@ -101,7 +101,10 @@ describe('ExpressRouteFactory', () => {
         },
       }),
       (_req, res) => {
-        res.json({ itemId: res.locals.params.id });
+        helper(res).json({
+          status: 200,
+          data: { itemId: res.locals.params.id },
+        });
       },
     );
 
@@ -134,7 +137,10 @@ describe('ExpressRouteFactory', () => {
         },
       }),
       (_req, res) => {
-        res.json({ query: res.locals.query.q });
+        helper(res).json({
+          status: 200,
+          data: { query: res.locals.query.q },
+        });
       },
     );
 
@@ -155,34 +161,51 @@ describe('ExpressRouteFactory', () => {
       age: z.number().int(),
     });
 
-    factory.route(
-      createRoute({
-        method: 'post',
-        path: '/users',
-        request: {
-          body: {
-            content: {
-              'application/json': {
-                schema: BodySchema,
-              },
+    const route = createRoute({
+      method: 'post',
+      path: '/users',
+      request: {
+        body: {
+          content: {
+            'application/json': {
+              schema: BodySchema,
             },
           },
         },
-        responses: {
-          201: {
-            description: 'Created',
-            content: {
-              'application/json': {
-                schema: BodySchema,
-              },
-            },
-          },
-        },
-      }),
-      (_req, res) => {
-        res.status(201).json(res.locals.json);
       },
-    );
+      responses: {
+        201: {
+          description: 'Created',
+          content: {
+            'application/json': {
+              schema: BodySchema,
+            },
+          },
+        },
+        202: {
+          description: 'Accepted',
+          content: {
+            'application/json': {
+              schema: z.object({
+                hello: z.string(),
+              }),
+            },
+          },
+        },
+        200: {
+          description: 'Success',
+          content: {
+            'text/plain': {
+              schema: z.string(),
+            },
+          },
+        },
+      },
+    });
+
+    factory.route(route, (_req, res) => {
+      helper(res).json({ status: 201, data: { name: 'John Doe', age: 30 } });
+    });
 
     const userData = { name: 'John Doe', age: 30 };
     const response = await request(app).post('/users').send(userData);

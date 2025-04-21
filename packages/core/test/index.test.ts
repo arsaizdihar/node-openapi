@@ -13,7 +13,7 @@ import {
   RouteFactory,
   mergePath,
 } from '../src/index';
-import type { Context } from '../src/type';
+import type { Context, ValidationTargets } from '../src/type';
 
 // Create a mock implementation of RouteFactory for testing
 class TestRouteFactory extends RouteFactory<any, any> {
@@ -47,7 +47,7 @@ class TestRouteFactory extends RouteFactory<any, any> {
     return this._route(route);
   }
 
-  validate(target: any, schema: z.ZodSchema) {
+  validate(target: keyof ValidationTargets, schema: z.ZodSchema) {
     return this.zValidator(target, schema);
   }
 }
@@ -236,7 +236,7 @@ describe('RouteFactory', () => {
 
   // Add tests for zValidator with different targets
   describe('zValidator', () => {
-    it('should validate query parameters', () => {
+    it('should validate query parameters', async () => {
       const schema = z.object({ id: z.string() });
       const validator = factory.validate('query', schema);
 
@@ -245,12 +245,12 @@ describe('RouteFactory', () => {
         input: {} as any,
       };
 
-      validator(context);
+      await validator(context);
       expect(context.input).toHaveProperty('query');
       expect(context.input.query).toEqual({ id: '123' });
     });
 
-    it('should validate JSON body', () => {
+    it('should validate JSON body', async () => {
       const schema = z.object({ name: z.string() });
       const validator = factory.validate('json', schema);
 
@@ -262,12 +262,13 @@ describe('RouteFactory', () => {
         input: {} as any,
       };
 
-      validator(context);
+      await validator(context);
+
       expect(context.input).toHaveProperty('json');
       expect(context.input.json).toEqual({ name: 'Test User' });
     });
 
-    it('should validate form data', () => {
+    it('should validate form data', async () => {
       const schema = z.object({ email: z.string().email() });
       const validator = factory.validate('form', schema);
 
@@ -279,12 +280,12 @@ describe('RouteFactory', () => {
         input: {} as any,
       };
 
-      validator(context);
+      await validator(context);
       expect(context.input).toHaveProperty('form');
       expect(context.input.form).toEqual({ email: 'user@example.com' });
     });
 
-    it('should validate text body', () => {
+    it('should validate text body', async () => {
       const schema = z.string();
       const validator = factory.validate('text', schema);
 
@@ -293,49 +294,49 @@ describe('RouteFactory', () => {
         input: {} as any,
       };
 
-      validator(context);
+      await validator(context);
       expect(context.input).toHaveProperty('text');
       expect(context.input.text).toEqual('plain text content');
     });
 
-    it('should validate headers', () => {
+    it('should validate headers', async () => {
       const schema = z.object({ 'api-key': z.string() });
-      const validator = factory.validate('header', schema);
+      const validator = factory.validate('headers', schema);
 
       const context = {
         req: { headers: { 'api-key': 'secret-key' } },
         input: {} as any,
       };
 
-      validator(context);
+      await validator(context);
       expect(context.input).toHaveProperty('headers');
       expect(context.input.headers).toEqual({ 'api-key': 'secret-key' });
     });
 
-    it('should validate cookies', () => {
+    it('should validate cookies', async () => {
       const schema = z.object({ session: z.string() });
-      const validator = factory.validate('cookie', schema);
+      const validator = factory.validate('cookies', schema);
 
       const context = {
         req: { cookies: { session: 'abc123' } },
         input: {} as any,
       };
 
-      validator(context);
+      await validator(context);
       expect(context.input).toHaveProperty('cookies');
       expect(context.input.cookies).toEqual({ session: 'abc123' });
     });
 
-    it("should create input object if it doesn't exist", () => {
+    it("should create input object if it doesn't exist", async () => {
       const schema = z.object({ id: z.string() });
-      const validator = factory.validate('param', schema);
+      const validator = factory.validate('params', schema);
 
       const context = {
         req: { params: { id: '123' } },
         input: {} as any,
       };
 
-      validator(context);
+      await validator(context);
       expect(context).toHaveProperty('input');
       expect(context.input).toHaveProperty('params');
       expect(context.input.params).toEqual({ id: '123' });
