@@ -394,10 +394,10 @@ type OmitDistributive<T, K extends keyof any> = T extends any
   ? Omit<T, K>
   : never;
 
-type HelperKey<Format extends ResponseFormat, Resp> =
+type HelperKey<Format extends ResponseFormat, Resp, DefaultData = any> =
   Extract<Resp, { format: Format }> extends infer R
     ? (response: Prettify<OmitDistributive<R, 'format'>>) => void
-    : {};
+    : (response: { status: StatusCode; data: DefaultData }) => void;
 
 export type Helper<
   R extends RouteConfig,
@@ -405,5 +405,5 @@ export type Helper<
     RouteConfigToHandlerResponse<R> = RouteConfigToHandlerResponse<R>,
 > = {
   json: HelperKey<'json', Resp>;
-  text: HelperKey<'text', Resp>;
+  text: HelperKey<'text', Resp, string>;
 };
