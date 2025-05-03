@@ -1,155 +1,174 @@
-import bcrypt from 'bcryptjs';
-import { inject, injectable } from 'inversify';
 import {
-  UserCreateDTO,
-  UserDTO,
-  UserEntity,
-  userEntityToDTO,
-  UserListParams,
-  UserListResponse,
+  userCreate,
+  UserDB,
+  userFollowProfile,
+  userGet,
+  userGetByEmail,
+  userUnFollowProfile,
+  userUpdate,
+} from 'ws-db';
+import {
+  LoginUser,
+  Profile,
+  RegisterUser,
+  TokenPayload,
+  tokenPayloadSchema,
+  UpdateUser,
+  User,
 } from '../domain/user.domain';
-import {
-  InvalidCredentialsError,
-  UserAlreadyExistsError,
-  UserNotFoundError,
-} from '../errors/user.errors';
-import { UserRepository } from '../repository/user.repo';
-import { ConfigService } from './config.service';
 import jwt from 'jsonwebtoken';
-import ms from 'ms';
-import { StoreService } from './store.service';
-import { TransactionManager } from '../repository/transaction-manager';
-import { LoginDTO, RegisterDTO } from '../domain/auth.domain';
+import bcrypt from 'bcrypt';
+import { HttpError } from './error.service';
 
-@injectable()
-export class UserService {
-  constructor(
-    @inject(UserRepository)
-    private readonly userRepository: UserRepository,
-    @inject(ConfigService)
-    private readonly config: ConfigService,
-    @inject(StoreService)
-    private readonly storeService: StoreService,
-    @inject(TransactionManager)
-    private readonly transactionManager: TransactionManager,
-  ) {}
+const JWT_SECRET = process.env.JWT_SECRET!;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET missing in environment.');
+}
 
-  async login(dto: LoginDTO): Promise<{
-    user: UserDTO;
-    token: string;
-    expiresIn: ms.StringValue;
-  }> {
-    const user = await this.userRepository.getUserByEmail(dto.email);
+export async function getUserByToken(token: string) {
+  try {
+    const payload = tokenPayloadSchema.parse(jwt.verify(token, JWT_SECRET));
+    const username = payload.user.username;
+    const user = await userGet(username);
+    return user ? toUserView(user, token) : null;
+  } catch {
+    return null;
+  }
+}
 
-    if (!user || !user.isActive) {
-      throw new InvalidCredentialsError();
-    }
+export async function updateUser(username: string, updateUser: UpdateUser) {
+  const hashedPassword = updateUser.password
+    ? await hashPassword(updateUser.password)
+    : undefined;
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-
-    if (!isPasswordValid) {
-      throw new InvalidCredentialsError();
-    }
-
-    return {
-      user: userEntityToDTO(user),
-      token: this.getToken(user),
-      expiresIn: this.config.get('JWT_EXPIRES_IN'),
-    };
+  const user = await userUpdate(username, {
+    ...updateUser,
+    password: hashedPassword,
+  });
+  if (!user) {
+    throw new UserNotFoundError('User not found');
   }
 
-  async register(dto: RegisterDTO): Promise<{
-    user: UserDTO;
-    token: string;
-    expiresIn: ms.StringValue;
-  }> {
-    const { password, email, name, ...rest } = dto;
-    const hashedPassword = await bcrypt.hash(password, 12);
+  const token = createUserToken(user);
+  return toUserView(user, token);
+}
 
-    const user = await this.transactionManager.runInTransaction(async (tx) => {
-      const user = await this.userRepository.createUser(
-        {
-          password: hashedPassword,
-          email,
-          name,
-          role: rest.role,
-        },
-        tx,
-      );
-
-      if (!user) {
-        throw new UserAlreadyExistsError();
-      }
-
-      if (rest.role === 'seller') {
-        await this.storeService.createStore(
-          userEntityToDTO(user),
-          rest.store,
-          tx,
-        );
-      }
-
-      return user;
-    });
-
-    return {
-      user: userEntityToDTO(user),
-      token: this.getToken(user),
-      expiresIn: this.config.get('JWT_EXPIRES_IN'),
-    };
+export async function loginUser(payload: LoginUser) {
+  const user = await userGetByEmail(payload.email);
+  if (!user) {
+    throw new UserNotFoundError('User not found');
   }
 
-  getToken(user: UserEntity): string {
-    return jwt.sign(
-      { userId: user.id, email: user.email },
-      this.config.get('JWT_SECRET'),
-      { algorithm: 'HS256', expiresIn: this.config.get('JWT_EXPIRES_IN') },
-    );
+  if (!compareWithHash(user.password, user.password)) {
+    throw new InvalidCredentialsError('Invalid credentials');
   }
 
-  verifyToken(token: string): { userId: string; email: string } | null {
-    try {
-      return jwt.verify(token, this.config.get('JWT_SECRET'), {
-        algorithms: ['HS256'],
-      }) as {
-        userId: string;
-        email: string;
-      };
-    } catch {
-      return null;
-    }
+  const token = createUserToken(user);
+  return toUserView(user, token);
+}
+
+export async function registerUser(payload: RegisterUser) {
+  const existingUser = await userGetByEmail(payload.email);
+  if (existingUser) {
+    throw new UserAlreadyExistsError('User already exists');
   }
 
-  async getUserById(id: string): Promise<UserDTO | null> {
-    const user = await this.userRepository.getUserById(id);
-    return user ? userEntityToDTO(user) : null;
+  const hashedPassword = await hashPassword(payload.password);
+
+  const user = await userCreate(
+    payload.username,
+    payload.email,
+    hashedPassword,
+  );
+  const token = createUserToken(user);
+  return toUserView(user, token);
+}
+
+function createUserToken(user: { username: string; email: string }) {
+  const tokenObject: TokenPayload = {
+    user: { username: user.username, email: user.email },
+  };
+  const userJSON = JSON.stringify(tokenObject);
+  const token = jwt.sign(userJSON, JWT_SECRET);
+  return token;
+}
+
+export async function getProfile(username: string, currentUser?: User) {
+  const user = await userGet(username);
+  if (!user) {
+    throw new UserNotFoundError('User not found');
   }
+  return toProfileView(user, currentUser);
+}
 
-  async updateUser(id: string, dto: Partial<UserCreateDTO>): Promise<UserDTO> {
-    const { password, ...rest } = dto;
+export async function followProfile(currentUser: User, username: string) {
+  const profile = await userFollowProfile(currentUser.id, username);
+  return toProfileView(profile, currentUser);
+}
 
-    const hashedPassword = password
-      ? await bcrypt.hash(password, 12)
-      : undefined;
+export async function unfollowProfile(currentUser: User, username: string) {
+  const profile = await userUnFollowProfile(currentUser.id, username);
+  return toProfileView(profile, currentUser);
+}
 
-    const user = await this.userRepository.updateUser(id, {
-      ...rest,
-      password: hashedPassword,
-    });
+async function hashPassword(password: string) {
+  return await bcrypt.hash(password, 10);
+}
 
-    if (!user) {
-      throw new UserNotFoundError();
-    }
+function compareWithHash(password: string, hash: string) {
+  return bcrypt.compare(password, hash);
+}
 
-    return userEntityToDTO(user);
+export function toUserView(user: UserDB, token: string): User {
+  return {
+    id: user.id,
+    email: user.email,
+    token,
+    username: user.username,
+    bio: user.bio ?? '',
+    image: user.image ?? '',
+  };
+}
+
+type UserWithoutPassword = Omit<UserDB, 'password'>;
+export type UserWithFollow = UserWithoutPassword & {
+  followedBy: UserWithoutPassword[];
+};
+
+export function toProfileView(
+  user: UserWithFollow,
+  currentUser?: UserWithoutPassword,
+): Profile {
+  const follows = currentUser
+    ? Boolean(
+        user.followedBy.find((value) => value.username == currentUser.username),
+      )
+    : false;
+  return {
+    username: user.username,
+    bio: user.bio ?? '',
+    image: user.image ?? '',
+    following: follows,
+  };
+}
+
+export class UserNotFoundError extends HttpError {
+  constructor(message: string) {
+    super(message, 404);
+    this.name = 'UserNotFoundError';
   }
+}
 
-  async listUsers(params: UserListParams): Promise<UserListResponse> {
-    const result = await this.userRepository.listUsers(params);
+export class InvalidCredentialsError extends HttpError {
+  constructor(message: string) {
+    super(message, 401);
+    this.name = 'InvalidCredentialsError';
+  }
+}
 
-    return {
-      ...result,
-      users: result.users.map(userEntityToDTO),
-    };
+export class UserAlreadyExistsError extends HttpError {
+  constructor(message: string) {
+    super(message, 400);
+    this.name = 'UserAlreadyExistsError';
   }
 }

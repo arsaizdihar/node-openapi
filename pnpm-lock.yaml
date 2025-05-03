@@ -156,70 +156,6 @@ importers:
       '@asteasolutions/zod-to-openapi':
         specifier: ^7.3.0
         version: 7.3.0(zod@3.24.3)
-      '@paralleldrive/cuid2':
-        specifier: ^2.2.2
-        version: 2.2.2
-      '@types/better-sqlite3':
-        specifier: ^7.6.13
-        version: 7.6.13
-      bcryptjs:
-        specifier: ^3.0.2
-        version: 3.0.2
-      better-sqlite3:
-        specifier: ^11.9.1
-        version: 11.9.1
-      drizzle-kit:
-        specifier: ^0.30.6
-        version: 0.30.6
-      drizzle-orm:
-        specifier: ^0.41.0
-        version: 0.41.0(@opentelemetry/api@1.4.1)(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.6.3))(typescript@5.6.3))(@types/better-sqlite3@7.6.13)(better-sqlite3@11.9.1)(gel@2.0.2)(prisma@6.7.0(typescript@5.6.3))
-      drizzle-zod:
-        specifier: ^0.7.1
-        version: 0.7.1(drizzle-orm@0.41.0(@opentelemetry/api@1.4.1)(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.6.3))(typescript@5.6.3))(@types/better-sqlite3@7.6.13)(better-sqlite3@11.9.1)(gel@2.0.2)(prisma@6.7.0(typescript@5.6.3)))(zod@3.24.3)
-      inversify:
-        specifier: 7.0.0-alpha.5
-        version: 7.0.0-alpha.5(reflect-metadata@0.2.2)
-      jsonwebtoken:
-        specifier: ^9.0.2
-        version: 9.0.2
-      ms:
-        specifier: ^2.1.3
-        version: 2.1.3
-      reflect-metadata:
-        specifier: ^0.2.2
-        version: 0.2.2
-      zod:
-        specifier: 'catalog:'
-        version: 3.24.3
-    devDependencies:
-      '@types/jsonwebtoken':
-        specifier: ^9.0.9
-        version: 9.0.9
-      '@types/ms':
-        specifier: ^2.1.0
-        version: 2.1.0
-      '@types/node':
-        specifier: ^22.8.6
-        version: 22.8.6
-      drizzle-dbml-generator:
-        specifier: ^0.10.0
-        version: 0.10.0(drizzle-orm@0.41.0(@opentelemetry/api@1.4.1)(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.6.3))(typescript@5.6.3))(@types/better-sqlite3@7.6.13)(better-sqlite3@11.9.1)(gel@2.0.2)(prisma@6.7.0(typescript@5.6.3)))
-      tsup:
-        specifier: 'catalog:'
-        version: 8.3.5(postcss@8.5.3)(tsx@4.19.3)(typescript@5.6.3)(yaml@2.7.1)
-      tsx:
-        specifier: ^4.19.3
-        version: 4.19.3
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.3
-
-  examples/common2:
-    dependencies:
-      '@asteasolutions/zod-to-openapi':
-        specifier: ^7.3.0
-        version: 7.3.0(zod@3.24.3)
       '@node-openapi/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -256,7 +192,7 @@ importers:
         version: 2.1.0
       '@types/node':
         specifier: ^22.8.6
-        version: 22.15.3
+        version: 22.8.6
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -306,9 +242,6 @@ importers:
       express:
         specifier: ^4.19.2
         version: 4.21.2
-      inversify:
-        specifier: 7.0.0-alpha.5
-        version: 7.0.0-alpha.5(reflect-metadata@0.2.2)
       ms:
         specifier: ^2.1.3
         version: 2.1.3
@@ -761,16 +694,8 @@ packages:
     resolution: {integrity: sha512-1gn1Up5YXka3YYAHGKpbideQ5Yjf1tDa9qYcgysz+cNCXukyLl6DjPXhD3VRwSb8c0J9tA4b2+rHEZtc6R0tlw==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/helper-string-parser@7.25.9':
-    resolution: {integrity: sha512-4A/SCr/2KLd5jrtOMFzaKjVtAei3+2r/NChoBNoZ3EyP/+GlhoaEGoWOZUmFmoITP7zOJyHIMm+DYRd8o3PvHA==}
-    engines: {node: '>=6.9.0'}
-
   '@babel/helper-string-parser@7.27.1':
     resolution: {integrity: sha512-qMlSxKbpRlAridDExk92nSobyDdpPijUq2DW6oDnUqd0iOGxmQjyqhMIihI9+zv4LPyZdRje2cavWPbCbWm3eA==}
-    engines: {node: '>=6.9.0'}
-
-  '@babel/helper-validator-identifier@7.25.9':
-    resolution: {integrity: sha512-Ed61U6XJc3CVRfkERJWDz4dJwKe7iLmmJsbOGu9wSloNSFttHV0I8g6UAgb7qnK5ly5bGLPd4oXZlxCdANBOWQ==}
     engines: {node: '>=6.9.0'}
 
   '@babel/helper-validator-identifier@7.27.1':
@@ -784,11 +709,6 @@ packages:
   '@babel/helpers@7.27.1':
     resolution: {integrity: sha512-FCvFTm0sWV8Fxhpp2McP5/W53GPllQ9QeQ7SiqGWjMf/LVG07lFa5+pgK05IRhVwtvafT22KF+ZSnM9I545CvQ==}
     engines: {node: '>=6.9.0'}
-
-  '@babel/parser@7.26.10':
-    resolution: {integrity: sha512-6aQR2zGE/QFi8JpDLjUZEPYOs7+mhKXm86VaKFiLP35JQwQb6bwUE+XbvkH0EptsYhbNBSUGaUBLKqxH1xSgsA==}
-    engines: {node: '>=6.0.0'}
-    hasBin: true
 
   '@babel/parser@7.27.1':
     resolution: {integrity: sha512-I0dZ3ZpCrJ1c04OqlNsQcKiZlsrXf/kkE4FXzID9rIOYICsAbA8mMDzhW/luRNAHdCNt7os/u8wenklZDlUVUQ==}
@@ -900,10 +820,6 @@ packages:
 
   '@babel/traverse@7.27.1':
     resolution: {integrity: sha512-ZCYtZciz1IWJB4U61UPu4KEaqyfj+r5T1Q5mqPo+IBpcG9kHv30Z0aD8LXPgC1trYa6rK0orRyAhqUgk4MjmEg==}
-    engines: {node: '>=6.9.0'}
-
-  '@babel/types@7.26.10':
-    resolution: {integrity: sha512-emqcG3vHrpxUKTrxcblR36dcrcoRDvKmnL/dCL6ZsHaShW80qxCAcNhzQZrpeM765VzEos+xOi4s+r4IXzTwdQ==}
     engines: {node: '>=6.9.0'}
 
   '@babel/types@7.27.1':
@@ -2980,10 +2896,6 @@ packages:
     resolution: {integrity: sha512-AGBHOG5hPYZ5Xl9KXzU5iKq9516yEmvCKDg3ecP5kX2aB6UqTeXZxk2ELnDgDm6BQSMlLt9rDB4LoSMx0rYwww==}
     engines: {node: '>= 10.0.0'}
 
-  bcryptjs@3.0.2:
-    resolution: {integrity: sha512-k38b3XOZKv60C4E2hVsXTolJWfkGRMbILBIe2IBITXciy5bOsTKot5kDrf3ZfufQtQOUN5mXceUEpU1rTl9Uog==}
-    hasBin: true
-
   better-sqlite3@11.9.1:
     resolution: {integrity: sha512-Ba0KR+Fzxh2jDRhdg6TSH0SJGzb8C0aBY4hR8w8madIdIzzC6Y1+kx5qR6eS1Z+Gy20h6ZU28aeyg0z1VIrShQ==}
 
@@ -3451,11 +3363,6 @@ packages:
     resolution: {integrity: sha512-pYxfDYpued//QpnLIm4Avk7rsNtAtQkUES2cwAYSvD/wd2pKD71gN2Ebj3e7klzXwjocvE8c5vx/1fxwpqmSxA==}
     engines: {node: '>=4'}
 
-  drizzle-dbml-generator@0.10.0:
-    resolution: {integrity: sha512-cMZq9E3U3RlmE0uBeXyc6oWJ0royOkC6HiTlc9LDeMe+W87poZTzKoNYUyAxZrs4Q1RQtob+cGKiefV4ZoI8HA==}
-    peerDependencies:
-      drizzle-orm: '>=0.36.0'
-
   drizzle-kit@0.30.6:
     resolution: {integrity: sha512-U4wWit0fyZuGuP7iNmRleQyK2V8wCuv57vf5l3MnG4z4fzNTjY/U13M8owyQ5RavqvqxBifWORaR3wIUzlN64g==}
     hasBin: true
@@ -3548,12 +3455,6 @@ packages:
         optional: true
       sqlite3:
         optional: true
-
-  drizzle-zod@0.7.1:
-    resolution: {integrity: sha512-nZzALOdz44/AL2U005UlmMqaQ1qe5JfanvLujiTHiiT8+vZJTBFhj3pY4Vk+L6UWyKFfNmLhk602Hn4kCTynKQ==}
-    peerDependencies:
-      drizzle-orm: '>=0.36.0'
-      zod: '>=3.0.0'
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -6675,11 +6576,7 @@ snapshots:
 
   '@babel/helper-plugin-utils@7.27.1': {}
 
-  '@babel/helper-string-parser@7.25.9': {}
-
   '@babel/helper-string-parser@7.27.1': {}
-
-  '@babel/helper-validator-identifier@7.25.9': {}
 
   '@babel/helper-validator-identifier@7.27.1': {}
 
@@ -6689,10 +6586,6 @@ snapshots:
     dependencies:
       '@babel/template': 7.27.1
       '@babel/types': 7.27.1
-
-  '@babel/parser@7.26.10':
-    dependencies:
-      '@babel/types': 7.26.10
 
   '@babel/parser@7.27.1':
     dependencies:
@@ -6809,11 +6702,6 @@ snapshots:
       globals: 11.12.0
     transitivePeerDependencies:
       - supports-color
-
-  '@babel/types@7.26.10':
-    dependencies:
-      '@babel/helper-string-parser': 7.25.9
-      '@babel/helper-validator-identifier': 7.25.9
 
   '@babel/types@7.27.1':
     dependencies:
@@ -9128,8 +9016,6 @@ snapshots:
       - encoding
       - supports-color
 
-  bcryptjs@3.0.2: {}
-
   better-sqlite3@11.9.1:
     dependencies:
       bindings: 1.5.0
@@ -9578,10 +9464,6 @@ snapshots:
 
   drange@1.1.1: {}
 
-  drizzle-dbml-generator@0.10.0(drizzle-orm@0.41.0(@opentelemetry/api@1.4.1)(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.6.3))(typescript@5.6.3))(@types/better-sqlite3@7.6.13)(better-sqlite3@11.9.1)(gel@2.0.2)(prisma@6.7.0(typescript@5.6.3))):
-    dependencies:
-      drizzle-orm: 0.41.0(@opentelemetry/api@1.4.1)(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.6.3))(typescript@5.6.3))(@types/better-sqlite3@7.6.13)(better-sqlite3@11.9.1)(gel@2.0.2)(prisma@6.7.0(typescript@5.6.3))
-
   drizzle-kit@0.30.6:
     dependencies:
       '@drizzle-team/brocli': 0.10.2
@@ -9600,11 +9482,6 @@ snapshots:
       better-sqlite3: 11.9.1
       gel: 2.0.2
       prisma: 6.7.0(typescript@5.6.3)
-
-  drizzle-zod@0.7.1(drizzle-orm@0.41.0(@opentelemetry/api@1.4.1)(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.6.3))(typescript@5.6.3))(@types/better-sqlite3@7.6.13)(better-sqlite3@11.9.1)(gel@2.0.2)(prisma@6.7.0(typescript@5.6.3)))(zod@3.24.3):
-    dependencies:
-      drizzle-orm: 0.41.0(@opentelemetry/api@1.4.1)(@prisma/client@6.7.0(prisma@6.7.0(typescript@5.6.3))(typescript@5.6.3))(@types/better-sqlite3@7.6.13)(better-sqlite3@11.9.1)(gel@2.0.2)(prisma@6.7.0(typescript@5.6.3))
-      zod: 3.24.3
 
   dunder-proto@1.0.1:
     dependencies:
@@ -11517,8 +11394,8 @@ snapshots:
 
   magicast@0.3.5:
     dependencies:
-      '@babel/parser': 7.26.10
-      '@babel/types': 7.26.10
+      '@babel/parser': 7.27.1
+      '@babel/types': 7.27.1
       source-map-js: 1.2.1
 
   make-dir@3.1.0:

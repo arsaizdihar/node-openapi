@@ -1,35 +1,22 @@
 import 'dotenv/config';
-import { container } from 'ws-common/container';
 
 import express, { NextFunction, Request, Response } from 'express';
-import { ErrorSchema } from 'ws-common/domain/errors.domain';
-import { HttpError } from 'ws-common/errors/http.errors';
-import {
-  baseConfigSchema,
-  ConfigService,
-} from 'ws-common/service/config.service';
 import { ZodError } from 'zod';
-import { UserController } from './controller/user.controller';
 import { ExpressRouteFactory } from '@node-openapi/express';
 import swaggerUi from 'swagger-ui-express';
 import cookieParser from 'cookie-parser';
-import { StoreController } from './controller/store.controller';
+import { userController } from './controller/user.controller';
+import { profileController } from './controller/profile.controller';
+import { HttpError } from 'ws-common/service/error.service';
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-const config = new ConfigService(baseConfigSchema.parse(process.env));
-
-container.bind(ConfigService).toConstantValue(config);
-
-const userController = container.get(UserController);
-const storeController = container.get(StoreController);
-
 const mainFactory = new ExpressRouteFactory(app);
 
-mainFactory.router('/users', userController.factory);
-mainFactory.router('/stores', storeController.factory);
+mainFactory.router('', profileController);
+mainFactory.router('', userController);
 
 mainFactory.doc('/docs', {
   openapi: '3.1.0',
@@ -37,6 +24,16 @@ mainFactory.doc('/docs', {
     title: 'API',
     version: '1.0.0',
   },
+  tags: [
+    {
+      name: 'profile',
+      description: 'Profile',
+    },
+    {
+      name: 'user',
+      description: 'User and Authentication',
+    },
+  ],
 });
 
 app.use(
@@ -52,7 +49,7 @@ app.use(
 function errorHandler(
   err: Error,
   _req: Request,
-  res: Response<ErrorSchema>,
+  res: Response,
   next: NextFunction,
 ) {
   if (err instanceof ZodError) {
@@ -69,9 +66,7 @@ function errorHandler(
   if (err instanceof HttpError) {
     res.status(err.statusCode).json({
       status: err.statusCode,
-      code: err.code as ErrorSchema['code'],
       message: err.message,
-      details: err.details,
     });
     next(err);
     return;

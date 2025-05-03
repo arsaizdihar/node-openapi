@@ -1,37 +1,39 @@
-import { createRoute } from '@node-openapi/express';
-import { userSchema } from 'ws-common/domain/user.domain';
-import { errorSchema } from 'ws-common/domain/errors.domain';
-import { loginSchema, registerSchema } from 'ws-common/domain/auth.domain';
+import { createRoute, z } from '@node-openapi/express';
+import {
+  loginUserSchema,
+  registerUserSchema,
+  userSchema,
+} from 'ws-common/domain/user.domain';
 
 export const loginRoute = createRoute({
   tags: ['user'],
   method: 'post',
-  path: '/login',
+  description: 'Existing user login',
+  path: '/users/login',
   request: {
     body: {
       content: {
         'application/json': {
-          schema: loginSchema,
+          schema: z.object({
+            user: loginUserSchema,
+          }),
         },
       },
     },
   },
   responses: {
     200: {
-      description: 'Login successful',
       content: {
         'application/json': {
-          schema: userSchema,
+          schema: z.object({
+            user: userSchema,
+          }),
         },
       },
+      description: 'User logged in',
     },
     401: {
-      description: 'Invalid credentials',
-      content: {
-        'application/json': {
-          schema: errorSchema,
-        },
-      },
+      description: 'Unauthorized',
     },
   },
 });
@@ -39,51 +41,76 @@ export const loginRoute = createRoute({
 export const registerRoute = createRoute({
   tags: ['user'],
   method: 'post',
-  path: '/register',
+  description: 'Register a new user',
+  path: '/users',
   request: {
     body: {
       content: {
         'application/json': {
-          schema: registerSchema,
+          schema: z.object({
+            user: registerUserSchema,
+          }),
         },
       },
     },
   },
   responses: {
-    200: {
-      description: 'Register successful',
+    201: {
       content: {
         'application/json': {
-          schema: userSchema,
+          schema: z.object({
+            user: userSchema,
+          }),
         },
       },
+      description: 'User registered',
     },
   },
 });
 
-export const logoutRoute = createRoute({
-  tags: ['user'],
-  method: 'post',
-  path: '/logout',
-  responses: {
-    200: {
-      description: 'Logout successful',
-    },
-  },
-});
-
-export const meRoute = createRoute({
+export const getCurrentUserRoute = createRoute({
   tags: ['user'],
   method: 'get',
-  path: '/me',
+  description: 'Get current user',
+  path: '/user',
   responses: {
     200: {
-      description: 'User details',
       content: {
         'application/json': {
-          schema: userSchema.nullable(),
+          schema: z.object({
+            user: userSchema,
+          }),
         },
       },
+      description: 'Current user',
+    },
+    401: {
+      description: 'Unauthorized',
+    },
+  },
+});
+
+export const updateUserRoute = createRoute({
+  tags: ['user'],
+  method: 'put',
+  description: 'Update current user',
+  path: '/user',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: z.object({ user: userSchema }) },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'User updated',
+      content: {
+        'application/json': { schema: z.object({ user: userSchema }) },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
     },
   },
 });

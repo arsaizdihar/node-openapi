@@ -1,66 +1,65 @@
-import { createInsertSchema } from 'drizzle-zod';
-import { z } from 'zod';
-import { schema } from '../db';
-import { userRoles } from '../db/schema';
+import { z } from '@node-openapi/core';
 
-export const userCreateSchema = createInsertSchema(schema.users).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  isActive: true,
-});
+export const profileSchema = z
+  .object({
+    username: z.string(),
+    bio: z.string(),
+    image: z.string(),
+    following: z.boolean(),
+  })
+  .openapi('Profile');
 
-export type UserCreateDTO = z.infer<typeof userCreateSchema>;
+export type Profile = z.infer<typeof profileSchema>;
 
 export const userSchema = z
   .object({
-    id: z.string(),
+    id: z.number().int(),
     email: z.string().email(),
-    name: z.string(),
-    role: z.enum(userRoles),
-    isActive: z.boolean(),
-    createdAt: z.string().datetime(),
-    updatedAt: z.string().datetime(),
+    token: z.string(),
+    username: z.string(),
+    bio: z.string(),
+    image: z.string(),
   })
   .openapi('User');
 
-export type UserDTO = z.infer<typeof userSchema>;
+export type User = z.infer<typeof userSchema>;
 
-export type UserEntity = typeof schema.users.$inferSelect;
+export const loginUserSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string(),
+  })
+  .openapi('LoginUser');
 
-export type UserRole = UserEntity['role'];
+export type LoginUser = z.infer<typeof loginUserSchema>;
 
-export const userListParamsSchema = z.object({
-  page: z.number().int().positive().optional().default(1),
-  limit: z.number().int().positive().max(50).optional().default(10),
-  search: z
-    .string()
-    .optional()
-    .openapi({ description: 'Search by name or email' }),
-  role: z.enum(userRoles).optional(),
-  isActive: z.boolean().optional(),
+export const registerUserSchema = z
+  .object({
+    username: z.string(),
+    email: z.string().email(),
+    password: z.string(),
+  })
+  .openapi('NewUser');
+
+export type RegisterUser = z.infer<typeof registerUserSchema>;
+
+export const updateUserSchema = z
+  .object({
+    email: z.string().email().optional(),
+    username: z.string().optional(),
+    password: z.string().optional(),
+    bio: z.string().optional(),
+    image: z.string().optional(),
+  })
+  .openapi('UpdateUser');
+
+export type UpdateUser = z.infer<typeof updateUserSchema>;
+
+export const tokenPayloadSchema = z.object({
+  user: z.object({
+    username: z.string(),
+    email: z.string().email(),
+  }),
 });
 
-export type UserListParams = z.infer<typeof userListParamsSchema>;
-
-export const userListResponseSchema = z.object({
-  users: z.array(userSchema),
-  total: z.number(),
-  page: z.number(),
-  limit: z.number(),
-  totalPages: z.number(),
-});
-
-export type UserListResponse = z.infer<typeof userListResponseSchema>;
-
-export function userEntityToDTO(user: UserEntity): UserDTO {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    isActive: user.isActive,
-    createdAt: user.createdAt.toISOString(),
-    updatedAt: user.updatedAt.toISOString(),
-  };
-}
+export type TokenPayload = z.infer<typeof tokenPayloadSchema>;

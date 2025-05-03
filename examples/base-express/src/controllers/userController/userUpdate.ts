@@ -3,6 +3,7 @@ import { Request } from 'express-jwt';
 import createUserToken from '../../utils/auth/createUserToken';
 import { userUpdate } from 'ws-db';
 import userViewer from '../../view/userViewer';
+import { hashPassword } from '../../utils/hashPasswords';
 
 /**
  * User controller that updates the current user with info given on the body of the request.
@@ -19,8 +20,14 @@ export default async function userUpdateHandler(
   const username = req.auth?.user?.username;
   const info = req.body.user;
   try {
+    const hashedPassword = info.password
+      ? hashPassword(info.password)
+      : undefined;
     // Get current user
-    const user = await userUpdate(username, info);
+    const user = await userUpdate(username, {
+      ...info,
+      password: hashedPassword,
+    });
     if (!user) {
       res.sendStatus(404);
       return;
