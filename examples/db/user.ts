@@ -1,4 +1,3 @@
-import { User } from './generated';
 import prisma from './prisma';
 
 interface UpdateFields {
@@ -21,13 +20,13 @@ export async function userCreate(
 }
 
 export async function userFollowProfile(
-  currentUser: User,
+  currentUserId: number,
   followUsername: string,
 ) {
   const followed = await prisma.user.update({
     where: { username: followUsername },
-    data: { followedBy: { connect: { username: currentUser.username } } },
-    include: { followedBy: { where: { username: currentUser.username } } },
+    data: { followedBy: { connect: { id: currentUserId } } },
+    include: { followedBy: { where: { id: currentUserId } } },
   });
   return followed;
 }
@@ -61,13 +60,13 @@ export async function userGet(username: string) {
 }
 
 export async function userUnFollowProfile(
-  currentUser: User,
+  currentUserId: number,
   unFollowUsername: string,
 ) {
   const follows = await prisma.user.update({
     where: { username: unFollowUsername },
-    data: { followedBy: { disconnect: { username: currentUser.username } } },
-    include: { followedBy: { where: { username: currentUser.username } } },
+    data: { followedBy: { disconnect: { id: currentUserId } } },
+    include: { followedBy: { where: { id: currentUserId } } },
   });
   return follows;
 }

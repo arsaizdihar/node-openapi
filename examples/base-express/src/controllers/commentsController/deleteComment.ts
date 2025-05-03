@@ -28,7 +28,7 @@ export default async function deleteComment(
     }
 
     // Remove comment from database
-    const comment = await commentDelete(id, currentUser);
+    const comment = await commentDelete(id, currentUser.id);
     if (!comment) {
       res.sendStatus(500);
       return;

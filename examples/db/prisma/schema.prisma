@@ -7,13 +7,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL") /// Format in env file: postgresql://USER:PASSWORD@HOST:PORT/DATABASE
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
+  id         Int       @id @default(autoincrement())
   email      String    @unique /// User email for registering and login use.
-  username   String    @id /// User internal id.
+  username   String    @unique
   password   String /// User password stored in the database.
   bio        String? /// User biographical information.
   image      String? /// Link to the user avatar.
@@ -25,28 +26,28 @@ model User {
 }
 
 model Article {
-  title          String    @unique
-  slug           String    @id /// Slug is an uri safe string derived from the title.
-  description    String /// Description for SEO of this article.
-  body           String /// The main content of the article.
-  tagList        Tag[] /// List of tags associated with this article.
-  author         User      @relation("Author", fields: [authorUsername], references: [username], onDelete: Cascade) /// User that is the author of this article.
-  authorUsername String /// Username of the author of this article.
-  favoritedBy    User[]    @relation("Favorites") /// List of users that have favorited this article.
-  comments       Comment[] @relation("Comments") /// List of comments of this article.
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @default(now())
+  title       String    @unique
+  slug        String    @id /// Slug is an uri safe string derived from the title.
+  description String /// Description for SEO of this article.
+  body        String /// The main content of the article.
+  tagList     Tag[] /// List of tags associated with this article.
+  author      User      @relation("Author", fields: [authorId], references: [id], onDelete: Cascade) /// User that is the author of this article.
+  authorId    Int /// Id of the author of this article.
+  favoritedBy User[]    @relation("Favorites") /// List of users that have favorited this article.
+  comments    Comment[] @relation("Comments") /// List of comments of this article.
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
 }
 
 model Comment {
-  id             Int      @id @default(autoincrement())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now())
-  body           String /// The main content of the comment.
-  author         User     @relation("Author", fields: [authorUsername], references: [username], onDelete: Cascade) /// User that is the author of this comment.
-  authorUsername String /// Username of the author of this comment.
-  Article        Article  @relation("Comments", fields: [articleSlug], references: [slug], onDelete: Cascade) /// Article that this comment belongs to.
-  articleSlug    String /// Article slug that this comment belongs to.
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  body        String /// The main content of the comment.
+  author      User     @relation("Author", fields: [authorId], references: [id], onDelete: Cascade) /// User that is the author of this comment.
+  authorId    Int /// Id of the author of this comment.
+  Article     Article  @relation("Comments", fields: [articleSlug], references: [slug], onDelete: Cascade) /// Article that this comment belongs to.
+  articleSlug String /// Article slug that this comment belongs to.
 }
 
 model Tag {

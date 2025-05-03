@@ -30,7 +30,7 @@ export default async function articlesUpdate(
     }
 
     // Update the article
-    const article = await articleUpdate(slug, {
+    const article = await articleUpdate(currentUser.id, slug, {
       title,
       description,
       body,

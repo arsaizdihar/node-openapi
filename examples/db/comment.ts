@@ -1,34 +1,33 @@
-import { User } from './generated';
 import prisma from './prisma';
 
 export async function commentCreate(
   slug: string,
   content: string,
-  author: User,
+  authorId: number,
 ) {
   const comment = await prisma.comment.create({
-    data: { body: content, authorUsername: author.username, articleSlug: slug },
+    data: { body: content, authorId, articleSlug: slug },
     include: { author: { include: { followedBy: true } } },
   });
   return comment;
 }
 
-export async function commentsGet(slug: string, user?: User) {
+export async function commentsGet(slug: string, userId?: number) {
   const comments = prisma.comment.findMany({
     where: { articleSlug: slug },
     include: {
       author: {
-        include: { followedBy: { where: { username: user?.username } } },
+        include: { followedBy: { where: { id: userId } } },
       },
     },
   });
   return comments;
 }
 
-export async function commentDelete(id: number, user: User) {
+export async function commentDelete(id: number, userId: number) {
   // See if user is the author of the comment it wants to delete
   await prisma.comment.findFirstOrThrow({
-    where: { id, authorUsername: user.username },
+    where: { id, authorId: userId },
     include: { author: true },
   });
 
@@ -37,7 +36,7 @@ export async function commentDelete(id: number, user: User) {
     where: { id },
     include: {
       author: {
-        include: { followedBy: { where: { username: user.username } } },
+        include: { followedBy: { where: { id: userId } } },
       },
     },
   });

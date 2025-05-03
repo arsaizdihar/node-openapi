@@ -30,7 +30,7 @@ export default async function createComment(
     }
 
     // Add comment to database
-    const comment = await commentCreate(slug, commentContent, currentUser);
+    const comment = await commentCreate(slug, commentContent, currentUser.id);
 
     // Create comment view
     const commentView = commentViewer(comment, currentUser);

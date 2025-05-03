@@ -17,14 +17,14 @@ interface UpdateArticleFields {
 export async function articleCreate(
   info: CreateArticleFields,
   tagList: Tag[],
-  authorUsername: string,
+  authorId: number,
 ) {
   const slug = slugfy(info.title);
   const article = await prisma.article.create({
     data: {
       ...info,
       slug,
-      authorUsername,
+      authorId,
       tagList: { connect: tagList },
     },
     include: {
@@ -103,7 +103,7 @@ export async function articlesList(
 ) {
   const articles = await prisma.article.findMany({
     where: {
-      authorUsername,
+      author: authorUsername ? { username: authorUsername } : undefined,
       tagList: tag ? { some: { tagName: tag } } : undefined,
       favoritedBy: favorited ? { some: { username: favorited } } : undefined,
     },
@@ -134,13 +134,15 @@ export async function articleUnFavorite(currentUser: User, slug: string) {
   return article;
 }
 
-export async function articleUpdate(slug: string, info: UpdateArticleFields) {
-  const newSlug = slugfy(slug);
+export async function articleUpdate(
+  authorId: number,
+  slug: string,
+  info: UpdateArticleFields,
+) {
   const article = await prisma.article.update({
-    where: { slug },
+    where: { slug, authorId },
     data: {
       ...info,
-      slug: newSlug,
       updatedAt: new Date(),
     },
     include: {

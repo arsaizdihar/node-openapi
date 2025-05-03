@@ -27,13 +27,12 @@ export default async function followProfile(
     }
 
     // Get the user profile to follow
-    const profile = await userFollowProfile(currentUser, username);
+    const profile = await userFollowProfile(currentUser.id, username);
 
     // Create the profile view.
     const profileView = profileViewer(profile, currentUser);
 
-    res.json({ profile: profileView });
-    return;
+    return res.json({ profile: profileView });
   } catch (error) {
     return next(error);
   }

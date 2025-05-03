@@ -45,7 +45,7 @@ export default async function articlesCreate(
     const article = await articleCreate(
       { title, description, body },
       tags,
-      currentUser.username,
+      currentUser.id,
     );
 
     // Create article view

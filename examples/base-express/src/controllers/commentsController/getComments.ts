@@ -25,7 +25,7 @@ export default async function getComments(
 
     // Get comments from database
     const comments = currentUser
-      ? await commentsGet(slug, currentUser)
+      ? await commentsGet(slug, currentUser.id)
       : await commentsGet(slug);
 
     // Create comment view

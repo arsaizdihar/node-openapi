@@ -27,7 +27,7 @@ export default async function unFollowProfile(
     }
 
     // Get the desired profile
-    const profile = await userUnFollowProfile(currentUser, username);
+    const profile = await userUnFollowProfile(currentUser.id, username);
 
     // Create the profile view
     const profileView = profileViewer(profile, currentUser);
