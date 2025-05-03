@@ -1,0 +1,15 @@
+{
+  "name": "ws-db",
+  "version": "1.0.0",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.8.6",
+    "prisma": "^6.7.0",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.7.0"
+  }
+}
