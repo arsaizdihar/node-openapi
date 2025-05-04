@@ -1,4 +1,4 @@
-import { Tag, User } from './generated';
+import { Tag } from './generated';
 import prisma from './prisma';
 import { slugfy } from './slugfy';
 
@@ -48,14 +48,14 @@ export async function articleDelete(slug: string) {
   return article;
 }
 
-export async function articleFavorite(currentUser: User, slug: string) {
+export async function articleFavorite(currentUserId: number, slug: string) {
   const article = await prisma.article.update({
     where: { slug },
-    data: { favoritedBy: { connect: { username: currentUser.username } } },
+    data: { favoritedBy: { connect: { id: currentUserId } } },
     include: {
       tagList: true,
       author: {
-        include: { followedBy: { where: { username: currentUser.username } } },
+        include: { followedBy: { where: { id: currentUserId } } },
       },
       _count: { select: { favoritedBy: true } },
     },
@@ -64,7 +64,7 @@ export async function articleFavorite(currentUser: User, slug: string) {
 }
 
 export async function articleFeed(
-  currentUser: User & { follows: User[] },
+  currentUserId: number,
   limit = 20,
   offset = 0,
 ) {
@@ -72,7 +72,7 @@ export async function articleFeed(
     include: {
       tagList: true,
       author: {
-        include: { followedBy: { where: { id: currentUser.id } } },
+        include: { followedBy: { where: { id: currentUserId } } },
       },
       _count: { select: { favoritedBy: true } },
     },
@@ -83,7 +83,7 @@ export async function articleFeed(
   const count = await prisma.article.count({
     where: {
       author: {
-        followedBy: { some: { id: currentUser.id } },
+        followedBy: { some: { id: currentUserId } },
       },
     },
   });
@@ -143,14 +143,14 @@ export async function articlesList(
   };
 }
 
-export async function articleUnFavorite(currentUser: User, slug: string) {
+export async function articleUnFavorite(currentUserId: number, slug: string) {
   const article = await prisma.article.update({
     where: { slug },
-    data: { favoritedBy: { disconnect: { username: currentUser.username } } },
+    data: { favoritedBy: { disconnect: { id: currentUserId } } },
     include: {
       tagList: true,
       author: {
-        include: { followedBy: { where: { username: currentUser.username } } },
+        include: { followedBy: { where: { id: currentUserId } } },
       },
       _count: { select: { favoritedBy: true } },
     },

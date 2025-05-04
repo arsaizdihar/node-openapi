@@ -127,7 +127,7 @@ export const getArticleRoute = createRoute({
 export const updateArticleRoute = createRoute({
   tags: ['articles'],
   method: 'put',
-  path: '/articless/{slug}',
+  path: '/articles/{slug}',
   description: 'Update an article',
   summary: 'Update an article',
   security: defaultRouteSecurity,

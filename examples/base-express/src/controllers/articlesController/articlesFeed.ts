@@ -35,7 +35,7 @@ export default async function articlesFeed(
     }
 
     // Get articles feed
-    const result = await articleFeed(currentUser, limit, offset);
+    const result = await articleFeed(currentUser.id, limit, offset);
 
     // Create articles feed view
     const articlesFeedView = result.articles.map((article) =>

@@ -16,7 +16,7 @@ export default async function deleteComment(
   res: Response,
   next: NextFunction,
 ) {
-  const { slug, id } = res.locals.params;
+  const { slug, id } = req.params;
   const username = req.auth?.user?.username;
 
   try {

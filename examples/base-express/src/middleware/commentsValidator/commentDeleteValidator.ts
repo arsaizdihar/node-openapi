@@ -14,10 +14,18 @@ export default function commentDeleteValidator(
   next: NextFunction,
 ) {
   const id = req.params.id;
+  const slug = req.params.slug;
 
   if (!id || isNaN(parseInt(id))) {
     res.status(400).json({
       errors: { id: ['comment id must be a valid number'] },
+    });
+    return;
+  }
+
+  if (!slug) {
+    res.status(400).json({
+      errors: { slug: ['slug is required'] },
     });
     return;
   }

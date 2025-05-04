@@ -61,30 +61,28 @@ export async function deleteArticle(user: User, slug: string) {
 }
 
 export async function favoriteArticle(user: User, slug: string) {
+  const article = await articleFavorite(user.id, slug);
+  if (!article) {
+    throw new ArticleNotFoundError('Article not found');
+  }
+
   const fullUser = await userGet(user.username);
   if (!fullUser) {
     throw new Error('User not found');
-  }
-
-  const article = await articleFavorite(fullUser, slug);
-  if (!article) {
-    throw new ArticleNotFoundError('Article not found');
   }
 
   return toArticleView(article, fullUser);
 }
 
 export async function unfavoriteArticle(user: User, slug: string) {
+  const article = await articleUnFavorite(user.id, slug);
+  if (!article) {
+    throw new ArticleNotFoundError('Article not found');
+  }
   const fullUser = await userGet(user.username);
   if (!fullUser) {
     throw new Error('User not found');
   }
-
-  const article = await articleUnFavorite(fullUser, slug);
-  if (!article) {
-    throw new ArticleNotFoundError('Article not found');
-  }
-
   return toArticleView(article, fullUser);
 }
 
@@ -94,7 +92,7 @@ export async function getArticlesFeed(user: User, query: ArticleFeedQuery) {
     throw new Error('User not found');
   }
 
-  const result = await articleFeed(fullUser, query.limit, query.offset);
+  const result = await articleFeed(fullUser.id, query.limit, query.offset);
 
   return {
     articles: result.articles.map((article) =>

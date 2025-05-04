@@ -28,7 +28,7 @@ export default async function articlesUnFavorite(
     }
 
     // UnFavorite the article
-    const article = await articleUnFavorite(currentUser, slug);
+    const article = await articleUnFavorite(currentUser.id, slug);
     if (!article) {
       res.sendStatus(404);
       return;

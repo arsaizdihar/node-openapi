@@ -28,7 +28,7 @@ export default async function articlesFavorite(
     }
 
     // Favorite the article
-    const article = await articleFavorite(currentUser, slug);
+    const article = await articleFavorite(currentUser.id, slug);
     if (!article) {
       res.sendStatus(404);
       return;
