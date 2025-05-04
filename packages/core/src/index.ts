@@ -25,10 +25,13 @@ import {
 import { OpenAPIObjectConfig } from '@asteasolutions/zod-to-openapi/dist/v3.0/openapi-generator';
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+import type { OpenAPIDefinitions } from '@asteasolutions/zod-to-openapi/dist/openapi-registry';
 export * from './type';
 export * from './status';
 export * from './request';
 export * from './json';
+
+export { OpenAPIDefinitions };
 
 extendZodWithOpenApi(z);
 
@@ -170,8 +173,12 @@ export abstract class RouteFactory<
    */
   getOpenAPIDocument(
     config: OpenAPIObjectConfig,
+    additionalDefinitions: OpenAPIDefinitions[] = [],
   ): ReturnType<OpenApiGeneratorV31['generateDocument']> {
-    const generator = new OpenApiGeneratorV31(this.openAPIRegistry.definitions);
+    const generator = new OpenApiGeneratorV31([
+      ...this.openAPIRegistry.definitions,
+      ...additionalDefinitions,
+    ]);
     const document = generator.generateDocument(config);
     // TODO: add base path
     return document;

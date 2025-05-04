@@ -137,25 +137,27 @@ type ReturnJsonOrTextOrResponse<
  */
 export type RouteConfigToHandlerResponse<R extends RouteConfig> =
   | {
-      [Status in DefinedStatusCodes<R>]: undefined extends R['responses'][Status]['content']
-        ? HandlerResponse<{}, ExtractStatusCode<Status>, string>
-        : ReturnJsonOrTextOrResponse<
+      [Status in DefinedStatusCodes<R>]: R['responses'][Status] extends {
+        content: any;
+      }
+        ? ReturnJsonOrTextOrResponse<
             keyof R['responses'][Status]['content'],
             ExtractContent<R['responses'][Status]['content']>,
             Status
-          >;
+          >
+        : HandlerResponse<{}, ExtractStatusCode<Status>, string>;
     }[DefinedStatusCodes<R>]
   | ('default' extends keyof R['responses']
-      ? undefined extends R['responses']['default']['content']
-        ? HandlerResponse<
-            {},
-            Exclude<StatusCode, ExtractStatusCode<DefinedStatusCodes<R>>>,
-            string
-          >
-        : ReturnJsonOrTextOrResponse<
+      ? R['responses']['default'] extends { content: any }
+        ? ReturnJsonOrTextOrResponse<
             keyof R['responses']['default']['content'],
             ExtractContent<R['responses']['default']['content']>,
             Exclude<StatusCode, ExtractStatusCode<DefinedStatusCodes<R>>>
+          >
+        : HandlerResponse<
+            {},
+            Exclude<StatusCode, ExtractStatusCode<DefinedStatusCodes<R>>>,
+            string
           >
       : never);
 

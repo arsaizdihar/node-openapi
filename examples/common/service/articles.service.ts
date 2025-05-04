@@ -93,15 +93,20 @@ export async function getArticlesFeed(user: User, query: ArticleFeedQuery) {
     throw new Error('User not found');
   }
 
-  const articles = await articleFeed(fullUser, query.limit, query.offset);
+  const result = await articleFeed(fullUser, query.limit, query.offset);
 
-  return articles.map((article) => toArticleView(article, fullUser));
+  return {
+    articles: result.articles.map((article) =>
+      toArticleView(article, fullUser),
+    ),
+    articlesCount: result.articlesCount,
+  };
 }
 
 export async function getArticles(user?: User, query?: ArticleQuery) {
   const fullUser = user ? await userGet(user.username) : undefined;
 
-  const articles = await articlesList(
+  const result = await articlesList(
     query?.tag,
     query?.author,
     query?.favorited,
@@ -109,9 +114,12 @@ export async function getArticles(user?: User, query?: ArticleQuery) {
     query?.offset,
   );
 
-  return articles.map((article) =>
-    toArticleView(article, fullUser ?? undefined),
-  );
+  return {
+    articles: result.articles.map((article) =>
+      toArticleView(article, fullUser ?? undefined),
+    ),
+    articlesCount: result.articlesCount,
+  };
 }
 
 export async function getArticle(user: User, slug: string) {

@@ -4,6 +4,7 @@ import {
   registerUserSchema,
   userSchema,
 } from 'ws-common/domain/user.domain';
+import { defaultRouteSecurity } from './security';
 
 export const loginRoute = createRoute({
   tags: ['user'],
@@ -73,6 +74,7 @@ export const getCurrentUserRoute = createRoute({
   method: 'get',
   description: 'Get current user',
   path: '/user',
+  security: defaultRouteSecurity,
   responses: {
     200: {
       content: {
@@ -95,6 +97,7 @@ export const updateUserRoute = createRoute({
   method: 'put',
   description: 'Update current user',
   path: '/user',
+  security: defaultRouteSecurity,
   request: {
     body: {
       content: {

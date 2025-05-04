@@ -9,14 +9,17 @@ import {
   InputTypeJson,
   InputTypeParam,
   InputTypeQuery,
+  OpenAPIDefinitions,
   Prettify,
   RouteConfig,
   RouteConfigToHandlerResponse,
   RouteFactory,
 } from '@node-openapi/core';
-import { RequestHandler, Router, Response } from 'express';
+import { RequestHandler, Response, Router } from 'express';
 import { ExpressRequestAdapter } from './request';
 export { z } from '@node-openapi/core';
+
+export type { OpenAPIDefinitions, RouteConfig };
 
 export class ExpressRouteFactory<
   Locals extends Record<string, any> = Record<string, any>,
@@ -114,10 +117,17 @@ export class ExpressRouteFactory<
     this._registerRouter(pathForOpenAPI, routeFactory);
   }
 
-  doc<P extends string>(path: P, configure: OpenAPIObjectConfigV31) {
+  doc<P extends string>(
+    path: P,
+    configure: OpenAPIObjectConfigV31,
+    additionalDefinitions?: OpenAPIDefinitions[],
+  ) {
     this._router.get(path, (_, res, next) => {
       try {
-        const document = this.getOpenAPIDocument(configure);
+        const document = this.getOpenAPIDocument(
+          configure,
+          additionalDefinitions,
+        );
         res.json(document);
       } catch (error) {
         next(error);

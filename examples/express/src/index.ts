@@ -8,6 +8,8 @@ import cookieParser from 'cookie-parser';
 import { userController } from './controller/user.controller';
 import { profileController } from './controller/profile.controller';
 import { HttpError } from 'ws-common/service/error.service';
+import { articlesController } from './controller/articles.controller';
+import { bearerSecurity } from './routes/security';
 
 const app = express();
 app.use(express.json());
@@ -15,26 +17,35 @@ app.use(cookieParser());
 
 const mainFactory = new ExpressRouteFactory(app);
 
-mainFactory.router('', profileController);
-mainFactory.router('', userController);
+mainFactory.router('/api', articlesController);
+mainFactory.router('/api', profileController);
+mainFactory.router('/api', userController);
 
-mainFactory.doc('/docs', {
-  openapi: '3.1.0',
-  info: {
-    title: 'API',
-    version: '1.0.0',
+mainFactory.doc(
+  '/docs',
+  {
+    openapi: '3.1.0',
+    info: {
+      title: 'API',
+      version: '1.0.0',
+    },
+    tags: [
+      {
+        name: 'articles',
+        description: 'Articles',
+      },
+      {
+        name: 'profile',
+        description: 'Profile',
+      },
+      {
+        name: 'user',
+        description: 'User and Authentication',
+      },
+    ],
   },
-  tags: [
-    {
-      name: 'profile',
-      description: 'Profile',
-    },
-    {
-      name: 'user',
-      description: 'User and Authentication',
-    },
-  ],
-});
+  [bearerSecurity],
+);
 
 app.use(
   '/api-docs',

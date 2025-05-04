@@ -9,12 +9,17 @@ export function createCheckedAuthFactory() {
   factory.middleware(async (req, res, next) => {
     try {
       const token = req.headers.authorization;
-      if (!token || !token.startsWith('Bearer ')) {
+      if (!token) {
         res.locals.user = null;
         return next();
       }
 
-      const bearerToken = token.split(' ')[1];
+      const [tag, bearerToken] = token.split(' ');
+      if (tag !== 'Bearer' && tag !== 'Token') {
+        res.locals.user = null;
+        return next();
+      }
+
       const user = await getUserByToken(bearerToken);
       res.locals.user = user;
       next();

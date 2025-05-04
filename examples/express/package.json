@@ -2,7 +2,7 @@
   "name": "example-express",
   "version": "1.0.0",
   "scripts": {
-    "dev": "ts-node --project ./tsconfig.json --transpile-only ./src/index.ts",
+    "dev": "tsx watch ./src/index.ts",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate"
   },
@@ -31,7 +31,6 @@
     "@types/ms": "^2.1.0",
     "@types/node": "^22.8.6",
     "@types/swagger-ui-express": "^4.1.8",
-    "ts-node": "^10.9.2",
     "tsup": "catalog:",
     "tsx": "^4.19.3",
     "typescript": "catalog:"

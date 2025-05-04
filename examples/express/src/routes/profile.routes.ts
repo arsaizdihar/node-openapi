@@ -1,11 +1,13 @@
 import { createRoute, z } from '@node-openapi/express';
 import { profileSchema } from 'ws-common/domain/user.domain';
+import { defaultRouteSecurity } from './security';
 
 export const getProfileRoute = createRoute({
   tags: ['profile'],
   method: 'get',
   description: 'Get profile',
   path: '/profiles/{username}',
+  security: defaultRouteSecurity,
   request: {
     params: z.object({ username: z.string() }),
   },
@@ -27,6 +29,7 @@ export const followProfileRoute = createRoute({
   method: 'post',
   description: 'Follow profile',
   path: '/profiles/{username}/follow',
+  security: defaultRouteSecurity,
   request: {
     params: z.object({ username: z.string() }),
   },
@@ -48,6 +51,7 @@ export const unfollowProfileRoute = createRoute({
   method: 'delete',
   description: 'Unfollow profile',
   path: '/profiles/{username}/follow',
+  security: defaultRouteSecurity,
   request: {
     params: z.object({ username: z.string() }),
   },

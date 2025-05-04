@@ -72,14 +72,26 @@ export async function articleFeed(
     include: {
       tagList: true,
       author: {
-        include: { followedBy: { where: { username: currentUser.username } } },
+        include: { followedBy: { where: { id: currentUser.id } } },
       },
       _count: { select: { favoritedBy: true } },
     },
     take: limit,
     skip: offset,
   });
-  return articles;
+
+  const count = await prisma.article.count({
+    where: {
+      author: {
+        followedBy: { some: { id: currentUser.id } },
+      },
+    },
+  });
+
+  return {
+    articles,
+    articlesCount: count,
+  };
 }
 
 export async function articleGet(slug: string) {
@@ -116,7 +128,19 @@ export async function articlesList(
       _count: { select: { favoritedBy: true } },
     },
   });
-  return articles;
+
+  const count = await prisma.article.count({
+    where: {
+      author: authorUsername ? { username: authorUsername } : undefined,
+      tagList: tag ? { some: { tagName: tag } } : undefined,
+      favoritedBy: favorited ? { some: { username: favorited } } : undefined,
+    },
+  });
+
+  return {
+    articles,
+    articlesCount: count,
+  };
 }
 
 export async function articleUnFavorite(currentUser: User, slug: string) {

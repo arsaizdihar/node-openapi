@@ -35,10 +35,10 @@ export default async function articlesFeed(
     }
 
     // Get articles feed
-    const articles = await articleFeed(currentUser, limit, offset);
+    const result = await articleFeed(currentUser, limit, offset);
 
     // Create articles feed view
-    const articlesFeedView = articles.map((article) =>
+    const articlesFeedView = result.articles.map((article) =>
       currentUser
         ? articleViewer(article, currentUser)
         : articleViewer(article),
@@ -46,7 +46,7 @@ export default async function articlesFeed(
 
     res.json({
       articles: articlesFeedView,
-      articlesCount: articlesFeedView.length,
+      articlesCount: result.articlesCount,
     });
     return;
   } catch (error) {
