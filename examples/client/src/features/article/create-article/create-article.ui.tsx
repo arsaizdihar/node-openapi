@@ -1,0 +1,115 @@
+import { CatchBoundary, useNavigate } from '@tanstack/react-router'
+import { ErrorMessage } from '@hookform/error-message'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { CreateArticleSchema } from './create-article.contract'
+import { useCreateArticleMutation } from './create-article.mutation'
+import type { CreateArticle } from './create-article.types'
+import { ErrorHandler } from '@/shared/ui/error-handler/error-handler.ui'
+
+export function CreateArticleForm() {
+  return (
+    <CatchBoundary
+      getResetKey={() => 'reset-create-article-form'}
+      errorComponent={ErrorHandler}
+    >
+      <BaseCreateArticleForm />
+    </CatchBoundary>
+  )
+}
+
+export function BaseCreateArticleForm() {
+  const navigate = useNavigate()
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isDirty, isValid },
+  } = useForm<CreateArticle>({
+    mode: 'onTouched',
+    resolver: zodResolver(CreateArticleSchema),
+    defaultValues: { title: '', description: '', body: '', tagList: '' },
+  })
+
+  const { mutate, isPending, isError, error } = useCreateArticleMutation({
+    onSuccess: (article) => {
+      // navigate({})
+    },
+  })
+
+  const mutationErrors = [error?.message]
+  const canSubmit = [isDirty, isValid, !isPending].every(Boolean)
+
+  const onValid = (createArticle: CreateArticle) => {
+    mutate(createArticle)
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onValid)}>
+      {isError && (
+        <ul className="error-messages">
+          {mutationErrors.map((err) => (
+            <li key={err}>{err}</li>
+          ))}
+        </ul>
+      )}
+
+      <fieldset className="form-group">
+        <input
+          type="text"
+          className="form-control form-control-lg"
+          placeholder="Article Title"
+          disabled={isPending}
+          {...register('title')}
+        />
+        <ErrorMessage errors={errors} name="title" as="div" role="alert" />
+      </fieldset>
+
+      <fieldset className="form-group">
+        <input
+          type="text"
+          className="form-control"
+          placeholder="What's this article about?"
+          disabled={isPending}
+          {...register('description')}
+        />
+        <ErrorMessage
+          errors={errors}
+          name="description"
+          as="div"
+          role="alert"
+        />
+      </fieldset>
+
+      <fieldset className="form-group">
+        <textarea
+          className="form-control"
+          rows={8}
+          placeholder="Write your article (in markdown)"
+          disabled={isPending}
+          {...register('body')}
+        />
+        <ErrorMessage errors={errors} name="body" as="div" role="alert" />
+      </fieldset>
+
+      <fieldset className="form-group">
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Enter tags"
+          disabled={isPending}
+          {...register('tagList')}
+        />
+        <ErrorMessage errors={errors} name="tagList" as="div" role="alert" />
+      </fieldset>
+
+      <button
+        className="btn btn-lg pull-xs-right btn-primary"
+        type="submit"
+        disabled={!canSubmit}
+      >
+        Publish Article
+      </button>
+    </form>
+  )
+}
