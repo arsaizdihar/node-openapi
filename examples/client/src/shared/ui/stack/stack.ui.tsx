@@ -1,22 +1,21 @@
-import React from 'react'
-import cn from 'classnames'
-import styles from './stack.module.css'
-import type { CSSProperties } from 'react'
+import React, { CSSProperties } from 'react';
+import cn from 'classnames';
+import styles from './stack.module.css';
 
 export function Stack(props: {
-  direction?: 'column-reverse' | 'column' | 'row-reverse' | 'row'
-  spacing?: number
-  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch' | 'baseline'
+  direction?: 'column-reverse' | 'column' | 'row-reverse' | 'row';
+  spacing?: number;
+  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch' | 'baseline';
   justifyContent?:
     | 'flex-start'
     | 'center'
     | 'flex-end'
     | 'space-between'
     | 'space-around'
-    | 'space-evenly'
-  noWrap?: boolean
-  style?: CSSProperties
-  children: React.ReactNode
+    | 'space-evenly';
+  noWrap?: boolean;
+  style?: CSSProperties;
+  children: React.ReactNode;
 }) {
   const {
     direction = 'row',
@@ -26,7 +25,7 @@ export function Stack(props: {
     noWrap = false,
     style,
     children,
-  } = props
+  } = props;
 
   const classNames = cn(
     styles.stack,
@@ -34,11 +33,11 @@ export function Stack(props: {
     styles[`stack-align-items-${alignItems}`],
     styles[`stack-justify-content-${justifyContent}`],
     { [styles['stack-wrap']]: !noWrap },
-  )
+  );
 
   return (
     <div className={classNames} style={{ gap: `${spacing}px`, ...style }}>
       {children}
     </div>
-  )
+  );
 }

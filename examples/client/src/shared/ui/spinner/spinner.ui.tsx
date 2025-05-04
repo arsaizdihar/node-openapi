@@ -1,4 +1,4 @@
-import styles from './spinner.module.css'
+import styles from './spinner.module.css';
 
 export function Spinner() {
   return (
@@ -8,5 +8,5 @@ export function Spinner() {
       <div />
       <div />
     </div>
-  )
+  );
 }

@@ -1,12 +1,14 @@
-import { DefaultError, useMutation, UseMutationOptions } from '@tanstack/react-query';
-import { registerUser } from '~shared/api/api.service';
-import { queryClient } from '~shared/queryClient';
-import { store } from '~shared/store';
+import {
+  DefaultError,
+  useMutation,
+  UseMutationOptions,
+} from '@tanstack/react-query';
 import { sessionQueryOptions } from '~entities/session/session.api';
-import { transformUserDtoToUser } from '~entities/session/session.lib';
 import { setSession } from '~entities/session/session.model';
 import { User } from '~entities/session/session.types';
-import { transformRegisterUserToRegisterUserDto } from './register.lib';
+import { postApiUsers } from '~shared/api';
+import { queryClient } from '~shared/queryClient';
+import { store } from '~shared/store';
 import { RegisterUser } from './register.types';
 
 export function useRegisterMutation(
@@ -21,10 +23,8 @@ export function useRegisterMutation(
     mutationKey: ['session', 'register-user', ...mutationKey],
 
     mutationFn: async (registerUserData: RegisterUser) => {
-      const registerUserDto = transformRegisterUserToRegisterUserDto(registerUserData);
-      const { data } = await registerUser(registerUserDto);
-      const user = transformUserDtoToUser(data);
-      return user;
+      const { data } = await postApiUsers({ body: { user: registerUserData } });
+      return data.user;
     },
 
     onMutate,

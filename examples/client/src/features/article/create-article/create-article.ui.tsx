@@ -1,25 +1,25 @@
-import { CatchBoundary, useNavigate } from '@tanstack/react-router'
-import { ErrorMessage } from '@hookform/error-message'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { CreateArticleSchema } from './create-article.contract'
-import { useCreateArticleMutation } from './create-article.mutation'
-import type { CreateArticle } from './create-article.types'
-import { ErrorHandler } from '@/shared/ui/error-handler/error-handler.ui'
+import { ErrorMessage } from '@hookform/error-message';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ErrorBoundary } from 'react-error-boundary';
+import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { pathKeys } from '~shared/router';
+import { logError } from '~shared/ui/error-handler/error-handler.lib';
+import { ErrorHandler } from '~shared/ui/error-handler/error-handler.ui';
+import { CreateArticleSchema } from './create-article.contract';
+import { useCreateArticleMutation } from './create-article.mutation';
+import { CreateArticle } from './create-article.types';
 
 export function CreateArticleForm() {
   return (
-    <CatchBoundary
-      getResetKey={() => 'reset-create-article-form'}
-      errorComponent={ErrorHandler}
-    >
+    <ErrorBoundary FallbackComponent={ErrorHandler} onError={logError}>
       <BaseCreateArticleForm />
-    </CatchBoundary>
-  )
+    </ErrorBoundary>
+  );
 }
 
 export function BaseCreateArticleForm() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const {
     register,
@@ -29,20 +29,20 @@ export function BaseCreateArticleForm() {
     mode: 'onTouched',
     resolver: zodResolver(CreateArticleSchema),
     defaultValues: { title: '', description: '', body: '', tagList: '' },
-  })
+  });
 
   const { mutate, isPending, isError, error } = useCreateArticleMutation({
     onSuccess: (article) => {
-      // navigate({})
+      navigate(pathKeys.article.bySlug(article.slug), { replace: true });
     },
-  })
+  });
 
-  const mutationErrors = [error?.message]
-  const canSubmit = [isDirty, isValid, !isPending].every(Boolean)
+  const mutationErrors = error?.response?.data || [error?.message];
+  const canSubmit = [isDirty, isValid, !isPending].every(Boolean);
 
   const onValid = (createArticle: CreateArticle) => {
-    mutate(createArticle)
-  }
+    mutate(createArticle);
+  };
 
   return (
     <form onSubmit={handleSubmit(onValid)}>
@@ -73,12 +73,7 @@ export function BaseCreateArticleForm() {
           disabled={isPending}
           {...register('description')}
         />
-        <ErrorMessage
-          errors={errors}
-          name="description"
-          as="div"
-          role="alert"
-        />
+        <ErrorMessage errors={errors} name="description" as="div" role="alert" />
       </fieldset>
 
       <fieldset className="form-group">
@@ -103,13 +98,9 @@ export function BaseCreateArticleForm() {
         <ErrorMessage errors={errors} name="tagList" as="div" role="alert" />
       </fieldset>
 
-      <button
-        className="btn btn-lg pull-xs-right btn-primary"
-        type="submit"
-        disabled={!canSubmit}
-      >
+      <button className="btn btn-lg pull-xs-right btn-primary" type="submit" disabled={!canSubmit}>
         Publish Article
       </button>
     </form>
-  )
+  );
 }

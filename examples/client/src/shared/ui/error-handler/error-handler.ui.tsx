@@ -1,12 +1,12 @@
-import { Button } from '../button/button.ui'
+import { Button } from '../button/button.ui';
 
 type ErrorHandlerProps = {
-  error: Error
-  resetErrorBoundary?: (...args: Array<any>) => void
-}
+  error: Error;
+  resetErrorBoundary?: (...args: unknown[]) => void;
+};
 
 export function ErrorHandler(props: ErrorHandlerProps) {
-  const { error, resetErrorBoundary } = props
+  const { error, resetErrorBoundary } = props;
 
   return (
     <div>
@@ -23,5 +23,5 @@ export function ErrorHandler(props: ErrorHandlerProps) {
         Try again
       </Button>
     </div>
-  )
+  );
 }

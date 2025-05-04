@@ -1,16 +1,15 @@
-import { Suspense } from 'react';
 import { ErrorMessage } from '@hookform/error-message';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import { articleQueryOptions } from '~entities/article/article.api';
 import { pathKeys } from '~shared/router';
 import { logError } from '~shared/ui/error-handler/error-handler.lib';
 import { ErrorHandler } from '~shared/ui/error-handler/error-handler.ui';
-import { articleQueryOptions } from '~entities/article/article.api';
 import { UpdateArticleSchema } from './update-article.contract';
-import { transformArticleToUpdateArticle } from './update-article.lib';
 import { useUpdateArticleMutation } from './update-article.mutation';
 import { UpdateArticleSkeleton } from './update-article.skeleton';
 import { UpdateArticle } from './update-article.types';
@@ -52,7 +51,13 @@ function BaseUpdateArticleForm(props: UpdateArticleFormProps) {
   } = useForm<UpdateArticle>({
     mode: 'onTouched',
     resolver: zodResolver(UpdateArticleSchema),
-    defaultValues: transformArticleToUpdateArticle(article),
+    defaultValues: {
+      slug: article.slug,
+      title: article.title,
+      description: article.description,
+      body: article.body,
+      tagList: article.tagList.join(', '),
+    },
   });
 
   const canSubmit = [isDirty, isValid, !isPending].every(Boolean);
@@ -112,7 +117,11 @@ function BaseUpdateArticleForm(props: UpdateArticleFormProps) {
         <ErrorMessage errors={errors} name="tagList" />
       </fieldset>
 
-      <button className="btn btn-lg pull-xs-right btn-primary" type="submit" disabled={!canSubmit}>
+      <button
+        className="btn btn-lg pull-xs-right btn-primary"
+        type="submit"
+        disabled={!canSubmit}
+      >
         Update Article
       </button>
     </form>

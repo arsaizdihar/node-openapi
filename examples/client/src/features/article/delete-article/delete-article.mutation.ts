@@ -1,7 +1,11 @@
-import { DefaultError, useMutation, UseMutationOptions } from '@tanstack/react-query';
-import { deleteArticle } from '~shared/api/api.service';
+import {
+  DefaultError,
+  useMutation,
+  UseMutationOptions,
+} from '@tanstack/react-query';
 import { queryClient } from '~shared/queryClient';
 import { ARTICLES_ROOT_QUERY_KEY } from '~entities/article/article.api';
+import { deleteApiArticlesBySlug } from '~shared/api';
 
 export function useDeleteArticleMutation(
   options: Pick<
@@ -14,7 +18,7 @@ export function useDeleteArticleMutation(
   return useMutation({
     mutationKey: ['article', 'delete', ...mutationKey],
 
-    mutationFn: (slug: string) => deleteArticle(slug),
+    mutationFn: (slug: string) => deleteApiArticlesBySlug({ path: { slug } }),
 
     onMutate,
 

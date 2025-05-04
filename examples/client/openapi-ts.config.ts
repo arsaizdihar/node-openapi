@@ -1,4 +1,4 @@
-import { defineConfig } from '@hey-api/openapi-ts'
+import { defineConfig } from '@hey-api/openapi-ts';
 
 export default defineConfig({
   input: 'http://localhost:3000/docs',
@@ -9,7 +9,7 @@ export default defineConfig({
   },
   plugins: [
     {
-      name: '@hey-api/client-fetch',
+      name: '@hey-api/client-axios',
       runtimeConfigPath: './src/shared/api/config.ts',
       throwOnError: true,
     },
@@ -19,4 +19,4 @@ export default defineConfig({
       validator: true,
     },
   ],
-})
+});

@@ -1,16 +1,27 @@
-import { DefaultError, useMutation, UseMutationOptions } from '@tanstack/react-query';
-import { unfollowProfile } from '~shared/api/api.service';
+import {
+  DefaultError,
+  useMutation,
+  UseMutationOptions,
+} from '@tanstack/react-query';
 import { queryClient } from '~shared/queryClient';
 import { ARTICLES_ROOT_QUERY_KEY } from '~entities/article/article.api';
-import { ArticleSchema, ArticlesSchema } from '~entities/article/article.contracts';
+import {
+  ArticleSchema,
+  ArticlesSchema,
+} from '~entities/article/article.contracts';
 import { Article, Articles } from '~entities/article/article.types';
 import { Profile } from '~entities/profile/profie.types';
 import { profileQueryOptions } from '~entities/profile/profile.api';
-import { transformProfileDtoToProfile } from '~entities/profile/profile.lib';
+import { deleteApiProfilesByUsernameFollow } from '~shared/api';
 
 export function useUnfollowProfileMutation(
   options: Pick<
-    UseMutationOptions<Profile, DefaultError, string, { previousArticles: unknown; previousProfile: Profile }>,
+    UseMutationOptions<
+      Profile,
+      DefaultError,
+      string,
+      { previousArticles: unknown; previousProfile: Profile }
+    >,
     'mutationKey' | 'onMutate' | 'onSuccess' | 'onError' | 'onSettled'
   > = {},
 ) {
@@ -20,9 +31,10 @@ export function useUnfollowProfileMutation(
     mutationKey: ['profile', 'unfollow', ...mutationKey],
 
     mutationFn: async (username) => {
-      const { data } = await unfollowProfile(username);
-      const profile = transformProfileDtoToProfile(data);
-      return profile;
+      const { data } = await deleteApiProfilesByUsernameFollow({
+        path: { username },
+      });
+      return data.profile;
     },
 
     onMutate: async (username) => {
@@ -34,41 +46,55 @@ export function useUnfollowProfileMutation(
         queryClient.cancelQueries({ queryKey: profileQueryKey }),
       ]);
 
-      const previousArticles = queryClient.getQueriesData({ queryKey: articleQueryKey });
-      const previousProfile = queryClient.getQueryData(profileQueryKey);
+      const previousArticles = queryClient.getQueriesData({
+        queryKey: articleQueryKey,
+      });
+      const previousProfile = queryClient.getQueryData(profileQueryKey)!;
 
-      const updatedProfile = previousProfile && { ...previousProfile, following: true };
+      const updatedProfile = previousProfile && {
+        ...previousProfile,
+        following: true,
+      };
 
       queryClient.setQueryData(profileQueryKey, updatedProfile);
 
-      queryClient.setQueriesData({ queryKey: articleQueryKey }, (rawData) => {
-        if (!rawData) {
+      queryClient.setQueriesData(
+        { queryKey: articleQueryKey },
+        (rawData: unknown) => {
+          if (!rawData) {
+            return rawData;
+          }
+
+          const { data: articleData } = ArticleSchema.safeParse(rawData);
+          if (articleData && articleData.author.username === username) {
+            return {
+              ...articleData,
+              author: { ...articleData.author, following: false },
+            } as Article;
+          }
+
+          const { data: articlesData } = ArticlesSchema.safeParse(rawData);
+          if (articlesData) {
+            const { articles, articlesCount } = articlesData;
+
+            const updatedArticles = Object.fromEntries(
+              Object.entries(articles).map(([slug, article]) => [
+                slug,
+                article?.author.username === username
+                  ? {
+                      ...article,
+                      author: { ...article.author, following: false },
+                    }
+                  : article,
+              ]),
+            );
+
+            return { articles: updatedArticles, articlesCount } as Articles;
+          }
+
           return rawData;
-        }
-
-        const { data: articleData } = ArticleSchema.safeParse(rawData);
-        if (articleData && articleData.author.username === username) {
-          return { ...articleData, author: { ...articleData.author, following: false } } as Article;
-        }
-
-        const { data: articlesData } = ArticlesSchema.safeParse(rawData);
-        if (articlesData) {
-          const { articles, articlesCount } = articlesData;
-
-          const updatedArticles = Object.fromEntries(
-            Object.entries(articles).map(([slug, article]) => [
-              slug,
-              article?.author.username === username
-                ? { ...article, author: { ...article.author, following: false } }
-                : article,
-            ]),
-          );
-
-          return { articles: updatedArticles, articlesCount } as Articles;
-        }
-
-        return rawData;
-      });
+        },
+      );
 
       await onMutate?.(username);
 
@@ -81,8 +107,11 @@ export function useUnfollowProfileMutation(
       const articleQueryKey = ARTICLES_ROOT_QUERY_KEY;
       const profileQueryKey = profileQueryOptions(username).queryKey;
 
-      queryClient.setQueriesData({ queryKey: articleQueryKey }, context.previousArticles);
-      queryClient.setQueryData(profileQueryKey, context.previousProfile);
+      queryClient.setQueriesData(
+        { queryKey: articleQueryKey },
+        context?.previousArticles,
+      );
+      queryClient.setQueryData(profileQueryKey, context?.previousProfile);
       await onError?.(error, username, context);
     },
 

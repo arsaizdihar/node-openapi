@@ -1,14 +1,25 @@
-import { DefaultError, useMutation, UseMutationOptions } from '@tanstack/react-query';
-import { favoriteArticle } from '~shared/api/api.service';
+import {
+  DefaultError,
+  useMutation,
+  UseMutationOptions,
+} from '@tanstack/react-query';
 import { queryClient } from '~shared/queryClient';
 import { ARTICLES_ROOT_QUERY_KEY } from '~entities/article/article.api';
-import { ArticleSchema, ArticlesSchema } from '~entities/article/article.contracts';
-import { transformArticleDtoToArticle } from '~entities/article/article.lib';
+import {
+  ArticleSchema,
+  ArticlesSchema,
+} from '~entities/article/article.contracts';
 import { Article, Articles } from '~entities/article/article.types';
+import { postApiArticlesBySlugFavorite } from '~shared/api';
 
 export function useFavoriteArticleMutation(
   options: Pick<
-    UseMutationOptions<Article, DefaultError, string, { previousArticles: unknown }>,
+    UseMutationOptions<
+      Article,
+      DefaultError,
+      string,
+      { previousArticles: unknown }
+    >,
     'mutationKey' | 'onMutate' | 'onSuccess' | 'onError' | 'onSettled'
   > = {},
 ) {
@@ -18,9 +29,10 @@ export function useFavoriteArticleMutation(
     mutationKey: ['article', 'favorite', ...mutationKey],
 
     mutationFn: async (slug: string) => {
-      const { data } = await favoriteArticle(slug);
-      const article = transformArticleDtoToArticle(data);
-      return article;
+      const { data } = await postApiArticlesBySlugFavorite({
+        path: { slug },
+      });
+      return data.article;
     },
 
     onMutate: async (slug) => {
@@ -30,38 +42,41 @@ export function useFavoriteArticleMutation(
         queryKey: ARTICLES_ROOT_QUERY_KEY,
       });
 
-      queryClient.setQueriesData({ queryKey: ARTICLES_ROOT_QUERY_KEY }, (rawData) => {
-        if (!rawData) {
-          return rawData;
-        }
+      queryClient.setQueriesData(
+        { queryKey: ARTICLES_ROOT_QUERY_KEY },
+        (rawData) => {
+          if (!rawData) {
+            return rawData;
+          }
 
-        const { data: article } = ArticleSchema.safeParse(rawData);
-        if (article && article.slug === slug) {
-          return {
-            ...article,
-            favorited: true,
-            favoritesCount: article.favoritesCount + 1,
-          } as Article;
-        }
+          const { data: article } = ArticleSchema.safeParse(rawData);
+          if (article && article.slug === slug) {
+            return {
+              ...article,
+              favorited: true,
+              favoritesCount: article.favoritesCount + 1,
+            } as Article;
+          }
 
-        const { data: articlesData } = ArticlesSchema.safeParse(rawData);
-        if (articlesData && articlesData.articles[slug]) {
-          const { articles, articlesCount } = articlesData;
-          return {
-            articles: {
-              ...articles,
-              [slug]: {
-                ...articles[slug],
-                favorited: true,
-                favoritesCount: articles[slug].favoritesCount + 1,
+          const { data: articlesData } = ArticlesSchema.safeParse(rawData);
+          if (articlesData && articlesData.articles[slug]) {
+            const { articles, articlesCount } = articlesData;
+            return {
+              articles: {
+                ...articles,
+                [slug]: {
+                  ...articles[slug],
+                  favorited: true,
+                  favoritesCount: articles[slug].favoritesCount + 1,
+                },
               },
-            },
-            articlesCount,
-          } as Articles;
-        }
+              articlesCount,
+            } as Articles;
+          }
 
-        return rawData;
-      });
+          return rawData;
+        },
+      );
 
       await onMutate?.(slug);
 
@@ -71,7 +86,10 @@ export function useFavoriteArticleMutation(
     onSuccess,
 
     onError: async (error, slug, context) => {
-      queryClient.setQueriesData({ queryKey: ARTICLES_ROOT_QUERY_KEY }, context?.previousArticles);
+      queryClient.setQueriesData(
+        { queryKey: ARTICLES_ROOT_QUERY_KEY },
+        context?.previousArticles,
+      );
       await onError?.(error, slug, context);
     },
 

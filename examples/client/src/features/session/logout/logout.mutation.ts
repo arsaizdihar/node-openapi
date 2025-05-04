@@ -1,5 +1,8 @@
-import { DefaultError, useMutation, UseMutationOptions } from '@tanstack/react-query';
-import { logoutUser } from '~shared/api/api.service';
+import {
+  DefaultError,
+  useMutation,
+  UseMutationOptions,
+} from '@tanstack/react-query';
 import { queryClient } from '~shared/queryClient';
 import { store } from '~shared/store';
 import { sessionQueryOptions } from '~entities/session/session.api';
@@ -16,7 +19,7 @@ export function useLogoutMutation(
   return useMutation({
     mutationKey: ['session', 'logout-user', ...mutationKey],
 
-    mutationFn: logoutUser,
+    mutationFn: () => Promise.resolve(),
 
     onMutate,
 

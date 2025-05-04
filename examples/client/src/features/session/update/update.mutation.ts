@@ -1,13 +1,15 @@
-import { DefaultError, useMutation, UseMutationOptions } from '@tanstack/react-query';
-import { updateUser } from '~shared/api/api.service';
+import {
+  DefaultError,
+  useMutation,
+  UseMutationOptions,
+} from '@tanstack/react-query';
+import { putApiUser } from '~shared/api';
 import { queryClient } from '~shared/queryClient';
 import { store } from '~shared/store';
 import { profileQueryOptions } from '~entities/profile/profile.api';
 import { sessionQueryOptions } from '~entities/session/session.api';
-import { transformUserDtoToUser } from '~entities/session/session.lib';
 import { setSession } from '~entities/session/session.model';
 import { User } from '~entities/session/session.types';
-import { transformUpdateUserToUpdateUserDto } from './update.lib';
 import { UpdateUser } from './update.types';
 
 export function useUpdateSessionMutation(
@@ -22,10 +24,8 @@ export function useUpdateSessionMutation(
     mutationKey: ['session', 'update-session', ...mutationKey],
 
     mutationFn: async (updateUserData: UpdateUser) => {
-      const updateUserDto = transformUpdateUserToUpdateUserDto(updateUserData);
-      const { data } = await updateUser(updateUserDto);
-      const user = transformUserDtoToUser(data);
-      return user;
+      const { data } = await putApiUser({ body: { user: updateUserData } });
+      return data.user;
     },
 
     onMutate,
@@ -35,7 +35,7 @@ export function useUpdateSessionMutation(
       const profileQueryKey = profileQueryOptions(data.username).queryKey;
 
       queryClient.setQueryData(sessionQueryKey, data);
-      queryClient.setQueryData(profileQueryKey, data);
+      queryClient.setQueryData(profileQueryKey, { ...data, following: false });
       store.dispatch(setSession(data));
 
       await Promise.all([

@@ -1,10 +1,12 @@
-import { DefaultError, useMutation, UseMutationOptions } from '@tanstack/react-query';
-import { createComment } from '~shared/api/api.service';
-import { queryClient } from '~shared/queryClient';
+import {
+  DefaultError,
+  useMutation,
+  UseMutationOptions,
+} from '@tanstack/react-query';
 import { commentsQueryOptions } from '~entities/comment/comment.api';
-import { transformCommentDtoToComment } from '~entities/comment/comment.lib';
 import { Comment } from '~entities/comment/comment.types';
-import { transformCreateCommentToCreateCommentDto } from './create-comment.lib';
+import { postApiArticlesBySlugComments } from '~shared/api';
+import { queryClient } from '~shared/queryClient';
 import { CreateComment } from './create-comment.types';
 
 export function useCreateCommentMutation(
@@ -19,17 +21,20 @@ export function useCreateCommentMutation(
     mutationKey: ['comment', 'create', ...mutationKey],
 
     mutationFn: async (createCommentData: CreateComment) => {
-      const createCommentDto = transformCreateCommentToCreateCommentDto(createCommentData);
-      const { data } = await createComment(createCommentData.slug, createCommentDto);
-      const comment = transformCommentDtoToComment(data);
-      return comment;
+      const { data } = await postApiArticlesBySlugComments({
+        path: { slug: createCommentData.slug },
+        body: { comment: createCommentData },
+      });
+      return data.comment;
     },
 
     onMutate,
 
     onSuccess: async (comment, createCommentData, context) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: commentsQueryOptions(createCommentData.slug).queryKey }),
+        queryClient.invalidateQueries({
+          queryKey: commentsQueryOptions(createCommentData.slug).queryKey,
+        }),
         onSuccess?.(comment, createCommentData, context),
       ]);
     },
