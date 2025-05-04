@@ -12,13 +12,17 @@ export async function createComment(
   return toCommentView(comment);
 }
 
-export async function deleteComment(id: number, currentUser: User) {
-  const comment = await commentDelete(id, currentUser.id);
+export async function deleteComment(
+  slug: string,
+  id: number,
+  currentUser: User,
+) {
+  const comment = await commentDelete(slug, id, currentUser.id);
   return toCommentView(comment);
 }
 
-export async function getComments(slug: string, currentUser: User) {
-  const comments = await commentsGet(slug, currentUser.id);
+export async function getComments(slug: string, currentUser?: User) {
+  const comments = await commentsGet(slug, currentUser?.id);
   return comments.map((comment) => toCommentView(comment));
 }
 

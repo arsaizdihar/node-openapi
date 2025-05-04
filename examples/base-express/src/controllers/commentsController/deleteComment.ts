@@ -16,7 +16,7 @@ export default async function deleteComment(
   res: Response,
   next: NextFunction,
 ) {
-  const id = parseInt(req.params.id);
+  const { slug, id } = res.locals.params;
   const username = req.auth?.user?.username;
 
   try {
@@ -28,7 +28,7 @@ export default async function deleteComment(
     }
 
     // Remove comment from database
-    const comment = await commentDelete(id, currentUser.id);
+    const comment = await commentDelete(slug, parseInt(id), currentUser.id);
     if (!comment) {
       res.sendStatus(500);
       return;

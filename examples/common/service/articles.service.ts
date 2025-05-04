@@ -22,6 +22,7 @@ import {
 } from '../domain/article.domain';
 import { User } from '../domain/user.domain';
 import { toProfileView, UserWithFollow } from './user.service';
+import { HttpError } from './error.service';
 
 export async function createArticle(
   user: User,
@@ -183,9 +184,8 @@ export function toArticleView(
   };
 }
 
-export class ArticleNotFoundError extends Error {
+export class ArticleNotFoundError extends HttpError {
   constructor(message: string) {
-    super(message);
-    this.name = 'ArticleNotFoundError';
+    super(message, 404);
   }
 }

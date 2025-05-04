@@ -10,6 +10,8 @@ import { profileController } from './controller/profile.controller';
 import { HttpError } from 'ws-common/service/error.service';
 import { articlesController } from './controller/articles.controller';
 import { bearerSecurity } from './routes/security';
+import { commentsController } from './controller/comments.controller';
+import { tagsController } from './controller/tags.controller';
 
 const app = express();
 app.use(express.json());
@@ -20,6 +22,8 @@ const mainFactory = new ExpressRouteFactory(app);
 mainFactory.router('/api', articlesController);
 mainFactory.router('/api', profileController);
 mainFactory.router('/api', userController);
+mainFactory.router('/api', commentsController);
+mainFactory.router('/api', tagsController);
 
 mainFactory.doc(
   '/docs',
@@ -33,6 +37,18 @@ mainFactory.doc(
       {
         name: 'articles',
         description: 'Articles',
+      },
+      {
+        name: 'comments',
+        description: 'Comments',
+      },
+      {
+        name: 'favorites',
+        description: 'Favorites',
+      },
+      {
+        name: 'tags',
+        description: 'Tags',
       },
       {
         name: 'profile',

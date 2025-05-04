@@ -6,6 +6,7 @@ export const getProfileRoute = createRoute({
   tags: ['profile'],
   method: 'get',
   description: 'Get profile',
+  summary: 'Get profile',
   path: '/profiles/{username}',
   security: defaultRouteSecurity,
   request: {
@@ -28,6 +29,7 @@ export const followProfileRoute = createRoute({
   tags: ['profile'],
   method: 'post',
   description: 'Follow profile',
+  summary: 'Follow profile',
   path: '/profiles/{username}/follow',
   security: defaultRouteSecurity,
   request: {
@@ -50,6 +52,7 @@ export const unfollowProfileRoute = createRoute({
   tags: ['profile'],
   method: 'delete',
   description: 'Unfollow profile',
+  summary: 'Unfollow profile',
   path: '/profiles/{username}/follow',
   security: defaultRouteSecurity,
   request: {

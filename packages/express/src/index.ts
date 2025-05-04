@@ -45,7 +45,7 @@ export class ExpressRouteFactory<
   }
 
   route<
-    R extends RouteConfig,
+    R extends RouteConfig & { getRoutingPath: () => string },
     I extends Input = InputTypeParam<R> &
       InputTypeQuery<R> &
       InputTypeHeader<R> &
@@ -69,8 +69,9 @@ export class ExpressRouteFactory<
     >
   ) {
     const _route = this._route(route);
+
     this._router[route.method](
-      route.path,
+      route.getRoutingPath(),
       ...this._middlewares,
       async (req, res, next) => {
         const context: Context<ExpressRequestAdapter> = {

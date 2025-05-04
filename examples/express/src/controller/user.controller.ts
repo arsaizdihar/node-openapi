@@ -14,29 +14,37 @@ import { createAuthFactory } from '../factories';
 
 export const userController = new ExpressRouteFactory();
 
-userController.route(loginRoute, async (req, res) => {
+userController.route(loginRoute, async (req, res, next) => {
   const { user } = req.body;
-  const result = await loginUser(user);
-  res.status(200).json({ user: result });
+  try {
+    const result = await loginUser(user);
+    res.locals.helper.json({ status: 200, data: { user: result } });
+  } catch (error) {
+    next(error);
+  }
 });
 
-userController.route(registerRoute, async (req, res) => {
+userController.route(registerRoute, async (req, res, next) => {
   const { user } = req.body;
-  const result = await registerUser(user);
-  res.status(201).json({ user: result });
+  try {
+    const result = await registerUser(user);
+    res.locals.helper.json({ status: 201, data: { user: result } });
+  } catch (error) {
+    next(error);
+  }
 });
 
 const checkedAuthFactory = createAuthFactory();
 checkedAuthFactory.route(getCurrentUserRoute, async (_, res) => {
   const user = res.locals.user;
-  res.status(200).json({ user });
+  res.locals.helper.json({ status: 200, data: { user } });
 });
 
 checkedAuthFactory.route(updateUserRoute, async (_, res) => {
   const { user } = res.locals.json;
   const currentUser = res.locals.user;
   const result = await updateUser(currentUser.username, user);
-  res.status(200).json({ user: result });
+  res.locals.helper.json({ status: 200, data: { user: result } });
 });
 
 userController.router('', checkedAuthFactory);

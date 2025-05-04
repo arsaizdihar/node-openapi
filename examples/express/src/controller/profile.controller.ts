@@ -9,10 +9,13 @@ import {
   getProfileRoute,
   unfollowProfileRoute,
 } from '../routes/profile.routes';
+import { ExpressRouteFactory } from '@node-openapi/express';
 
-export const profileController = createCheckedAuthFactory();
+export const profileController = new ExpressRouteFactory();
 
-profileController.route(getProfileRoute, async (req, res, next) => {
+const checkedAuthFactory = createCheckedAuthFactory();
+
+checkedAuthFactory.route(getProfileRoute, async (req, res, next) => {
   const { username } = req.params;
   try {
     const profile = await getProfile(username, res.locals.user ?? undefined);
@@ -44,4 +47,5 @@ authProfileFactory.route(unfollowProfileRoute, async (req, res, next) => {
   }
 });
 
+profileController.router('', checkedAuthFactory);
 profileController.router('', authProfileFactory);

@@ -24,10 +24,10 @@ export async function commentsGet(slug: string, userId?: number) {
   return comments;
 }
 
-export async function commentDelete(id: number, userId: number) {
+export async function commentDelete(slug: string, id: number, userId: number) {
   // See if user is the author of the comment it wants to delete
   await prisma.comment.findFirstOrThrow({
-    where: { id, authorId: userId },
+    where: { id, articleSlug: slug, authorId: userId },
     include: { author: true },
   });
 

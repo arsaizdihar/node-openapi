@@ -13,6 +13,7 @@ export const getArticlesFeedRoute = createRoute({
   method: 'get',
   path: '/articles/feed',
   description: 'Get articles feed',
+  summary: 'Get articles feed',
   security: defaultRouteSecurity,
   request: {
     query: articleFeedQuerySchema,
@@ -37,6 +38,7 @@ export const getArticlesRoute = createRoute({
   method: 'get',
   path: '/articles',
   description: 'Get articles',
+  summary: 'Get articles',
   security: defaultRouteSecurity,
   request: {
     query: articleQuerySchema,
@@ -95,6 +97,7 @@ export const getArticleRoute = createRoute({
   method: 'get',
   path: '/articles/{slug}',
   description: 'Get an article',
+  summary: 'Get an article',
   security: defaultRouteSecurity,
   request: {
     params: z.object({
@@ -124,8 +127,9 @@ export const getArticleRoute = createRoute({
 export const updateArticleRoute = createRoute({
   tags: ['articles'],
   method: 'put',
-  path: '/articles/{slug}',
+  path: '/articless/{slug}',
   description: 'Update an article',
+  summary: 'Update an article',
   security: defaultRouteSecurity,
   request: {
     params: z.object({
@@ -166,6 +170,7 @@ export const deleteArticleRoute = createRoute({
   method: 'delete',
   path: '/articles/{slug}',
   description: 'Delete an article',
+  summary: 'Delete an article',
   security: defaultRouteSecurity,
   request: {
     params: z.object({
@@ -175,6 +180,70 @@ export const deleteArticleRoute = createRoute({
   responses: {
     200: {
       description: 'Article deleted',
+    },
+  },
+});
+
+export const favoriteArticleRoute = createRoute({
+  tags: ['favorites'],
+  method: 'post',
+  path: '/articles/{slug}/favorite',
+  description: 'Favorite an article',
+  summary: 'Favorite an article',
+  security: defaultRouteSecurity,
+  request: {
+    params: z.object({
+      slug: z.string(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Article favorited',
+      content: {
+        'application/json': {
+          schema: z.object({
+            article: articleSchema,
+          }),
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+    },
+    404: {
+      description: 'Article not found',
+    },
+  },
+});
+
+export const unfavoriteArticleRoute = createRoute({
+  tags: ['favorites'],
+  method: 'delete',
+  path: '/articles/{slug}/favorite',
+  description: 'Unfavorite an article',
+  summary: 'Unfavorite an article',
+  security: defaultRouteSecurity,
+  request: {
+    params: z.object({
+      slug: z.string(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'Article unfavorited',
+      content: {
+        'application/json': {
+          schema: z.object({
+            article: articleSchema,
+          }),
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+    },
+    404: {
+      description: 'Article not found',
     },
   },
 });

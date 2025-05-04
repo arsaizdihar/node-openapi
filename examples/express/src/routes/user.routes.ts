@@ -2,6 +2,7 @@ import { createRoute, z } from '@node-openapi/express';
 import {
   loginUserSchema,
   registerUserSchema,
+  updateUserSchema,
   userSchema,
 } from 'ws-common/domain/user.domain';
 import { defaultRouteSecurity } from './security';
@@ -10,6 +11,7 @@ export const loginRoute = createRoute({
   tags: ['user'],
   method: 'post',
   description: 'Existing user login',
+  summary: 'Login',
   path: '/users/login',
   request: {
     body: {
@@ -43,6 +45,7 @@ export const registerRoute = createRoute({
   tags: ['user'],
   method: 'post',
   description: 'Register a new user',
+  summary: 'Register',
   path: '/users',
   request: {
     body: {
@@ -73,6 +76,7 @@ export const getCurrentUserRoute = createRoute({
   tags: ['user'],
   method: 'get',
   description: 'Get current user',
+  summary: 'Get current user',
   path: '/user',
   security: defaultRouteSecurity,
   responses: {
@@ -96,12 +100,13 @@ export const updateUserRoute = createRoute({
   tags: ['user'],
   method: 'put',
   description: 'Update current user',
+  summary: 'Update current user',
   path: '/user',
   security: defaultRouteSecurity,
   request: {
     body: {
       content: {
-        'application/json': { schema: z.object({ user: userSchema }) },
+        'application/json': { schema: z.object({ user: updateUserSchema }) },
       },
     },
   },

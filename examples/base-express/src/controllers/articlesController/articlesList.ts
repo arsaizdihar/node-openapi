@@ -37,10 +37,10 @@ export default async function articlesListHandler(
     const currentUser = await userGet(username);
 
     // Get the articles
-    const articles = await articlesList(tag, author, favorited, limit, offset);
+    const result = await articlesList(tag, author, favorited, limit, offset);
 
     // Create articles view
-    const articlesListView = articles.map((article) =>
+    const articlesListView = result.articles.map((article) =>
       currentUser
         ? articleViewer(article, currentUser)
         : articleViewer(article),
@@ -48,7 +48,7 @@ export default async function articlesListHandler(
 
     res.json({
       articles: articlesListView,
-      articlesCount: articlesListView.length,
+      articlesCount: result.articlesCount,
     });
     return;
   } catch (error) {
