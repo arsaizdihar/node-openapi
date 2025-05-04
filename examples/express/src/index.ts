@@ -1,19 +1,21 @@
 import 'dotenv/config';
 
-import express, { NextFunction, Request, Response } from 'express';
-import { ZodError } from 'zod';
 import { ExpressRouteFactory } from '@node-openapi/express';
-import swaggerUi from 'swagger-ui-express';
 import cookieParser from 'cookie-parser';
-import { userController } from './controller/user.controller';
-import { profileController } from './controller/profile.controller';
+import cors from 'cors';
+import express, { NextFunction, Request, Response } from 'express';
+import swaggerUi from 'swagger-ui-express';
 import { HttpError } from 'ws-common/service/error.service';
+import { ZodError } from 'zod';
 import { articlesController } from './controller/articles.controller';
-import { bearerSecurity } from './routes/security';
 import { commentsController } from './controller/comments.controller';
+import { profileController } from './controller/profile.controller';
 import { tagsController } from './controller/tags.controller';
+import { userController } from './controller/user.controller';
+import { bearerSecurity } from './routes/security';
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 

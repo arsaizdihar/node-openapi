@@ -121,18 +121,15 @@ export async function getArticles(user?: User, query?: ArticleQuery) {
   };
 }
 
-export async function getArticle(user: User, slug: string) {
-  const fullUser = await userGet(user.username);
-  if (!fullUser) {
-    throw new Error('User not found');
-  }
+export async function getArticle(slug: string, user?: User) {
+  const fullUser = user ? await userGet(user.username) : undefined;
 
   const article = await articleGet(slug);
   if (!article) {
     throw new ArticleNotFoundError('Article not found');
   }
 
-  return toArticleView(article, fullUser);
+  return toArticleView(article, fullUser ?? undefined);
 }
 
 export async function updateArticle(

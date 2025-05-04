@@ -63,9 +63,12 @@ authFactory.route(createArticleRoute, async (_, res, next) => {
   }
 });
 
-authFactory.route(getArticleRoute, async (_, res, next) => {
+checkedAuthFactory.route(getArticleRoute, async (_, res, next) => {
   try {
-    const result = await getArticle(res.locals.user, res.locals.params.slug);
+    const result = await getArticle(
+      res.locals.params.slug,
+      res.locals.user ?? undefined,
+    );
 
     res.locals.helper.json({ status: 200, data: { article: result } });
   } catch (error) {
@@ -75,7 +78,6 @@ authFactory.route(getArticleRoute, async (_, res, next) => {
 
 authFactory.route(updateArticleRoute, async (_, res, next) => {
   try {
-    console.log('hello');
     const result = await updateArticle(
       res.locals.user,
       res.locals.params.slug,

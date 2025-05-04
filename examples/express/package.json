@@ -15,6 +15,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^11.9.1",
     "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "drizzle-kit": "^0.30.6",
     "drizzle-orm": "^0.41.0",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
     "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.0",
     "@types/ms": "^2.1.0",
