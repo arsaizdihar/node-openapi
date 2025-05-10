@@ -7,7 +7,7 @@
     "build": "dotenv -e .env -- npx tsc",
     "start": "node dist/server.js",
     "start:debug": "DEBUG=express:* node dist/server.js",
-    "develop": "DEBUG=express:* dotenv -e .env.development -- npx ts-node-dev --rs --clear --exit-child src/server.ts",
+    "dev": "DEBUG=express:* dotenv -e .env.development -- npx ts-node-dev --rs --clear --exit-child src/server.ts",
     "studio:develop": "dotenv -e .env.development -- npx prisma studio",
     "migrate:develop": "dotenv -e .env.development -- npx prisma db push",
     "lint": "npx eslint .",
@@ -34,6 +34,7 @@
   "homepage": "https://github.com/SeuRonao/realworld-express-prisma-backend#readme",
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.9",
@@ -54,6 +55,7 @@
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-jwt": "^8.5.1",

@@ -13,8 +13,11 @@ import YAML from 'yaml';
 import fs from 'fs';
 import swaggerUi from 'swagger-ui-express';
 import path from 'path';
+import cors from 'cors';
 
 const app = express();
+
+app.use(cors());
 
 const file = fs.readFileSync(path.join(__dirname, 'openapi.yml'), 'utf8');
 const swaggerDocument = YAML.parse(file);
