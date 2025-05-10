@@ -3,7 +3,10 @@ import {
   getProfile,
   unfollowProfile,
 } from 'ws-common/service/user.service';
-import { createAuthFactory, createCheckedAuthFactory } from '../factories';
+import {
+  createRequiredAuthFactory,
+  createOptionalAuthFactory,
+} from '../factories';
 import {
   followProfileRoute,
   getProfileRoute,
@@ -13,7 +16,7 @@ import { ExpressRouteFactory } from '@node-openapi/express';
 
 export const profileController = new ExpressRouteFactory();
 
-const checkedAuthFactory = createCheckedAuthFactory();
+const checkedAuthFactory = createOptionalAuthFactory();
 
 checkedAuthFactory.route(getProfileRoute, async (req, res, next) => {
   const { username } = req.params;
@@ -25,7 +28,7 @@ checkedAuthFactory.route(getProfileRoute, async (req, res, next) => {
   }
 });
 
-const authProfileFactory = createAuthFactory();
+const authProfileFactory = createRequiredAuthFactory();
 
 authProfileFactory.route(followProfileRoute, async (req, res, next) => {
   const { username } = req.params;

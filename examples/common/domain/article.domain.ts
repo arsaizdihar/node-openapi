@@ -55,3 +55,12 @@ export const articleFeedQuerySchema = z.object({
 });
 
 export type ArticleFeedQuery = z.infer<typeof articleFeedQuerySchema>;
+
+export const multipleArticlesSchema = z
+  .object({
+    articles: z.array(articleSchema),
+    articlesCount: z.number().int(),
+  })
+  .openapi('MultipleArticles');
+
+export type MultipleArticles = z.infer<typeof multipleArticlesSchema>;

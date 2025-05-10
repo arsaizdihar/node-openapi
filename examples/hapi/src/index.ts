@@ -1,6 +1,5 @@
-import { createRoute, HapiRouteFactory } from '@node-openapi/hapi';
+import { createRoute, HapiRouteFactory, z } from '@node-openapi/hapi';
 import { Server, Request, ResponseToolkit } from '@hapi/hapi';
-import { z } from 'zod';
 import Inert from '@hapi/inert';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 

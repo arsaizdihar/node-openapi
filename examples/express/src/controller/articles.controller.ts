@@ -1,5 +1,8 @@
 import { ExpressRouteFactory } from '@node-openapi/express';
-import { createAuthFactory, createCheckedAuthFactory } from '../factories';
+import {
+  createRequiredAuthFactory,
+  createOptionalAuthFactory,
+} from '../factories';
 import {
   createArticleRoute,
   deleteArticleRoute,
@@ -23,9 +26,9 @@ import {
 
 export const articlesController = new ExpressRouteFactory();
 
-const checkedAuthFactory = createCheckedAuthFactory();
+const checkedAuthFactory = createOptionalAuthFactory();
 
-const authFactory = createAuthFactory();
+const authFactory = createRequiredAuthFactory();
 
 authFactory.route(getArticlesFeedRoute, async (_, res, next) => {
   try {

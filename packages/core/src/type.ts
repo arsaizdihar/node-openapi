@@ -191,11 +191,11 @@ export type ValidationTargets<
   /** Query parameters */
   query: Record<string, string | string[]>;
   /** Route parameters */
-  params: Record<P, P extends `${infer _}?` ? string | undefined : string>;
+  param: Record<P, P extends `${infer _}?` ? string | undefined : string>;
   /** HTTP headers */
-  headers: Record<string, string>;
+  header: Record<string, string>;
   /** Cookies */
-  cookies: Record<string, string>; // Cookies
+  cookie: Record<string, string>; // Cookies
 };
 
 /**
@@ -351,7 +351,7 @@ export type InputTypeForm<R extends RouteConfig> =
 export type InputTypeParam<R extends RouteConfig> = InputTypeBase<
   R,
   'params',
-  'params'
+  'param'
 >;
 
 /**
@@ -369,7 +369,7 @@ export type InputTypeQuery<R extends RouteConfig> = InputTypeBase<
 export type InputTypeHeader<R extends RouteConfig> = InputTypeBase<
   R,
   'headers',
-  'headers'
+  'header'
 >;
 
 /**
@@ -378,7 +378,7 @@ export type InputTypeHeader<R extends RouteConfig> = InputTypeBase<
 export type InputTypeCookie<R extends RouteConfig> = InputTypeBase<
   R,
   'cookies',
-  'cookies'
+  'cookie'
 >;
 
 /**

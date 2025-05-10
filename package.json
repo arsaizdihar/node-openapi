@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build-all": "pnpm --filter=@node-openapi/* run build",
+    "build-all-lib": "pnpm --filter=@node-openapi/* run build",
     "lint": "eslint ."
   },
   "keywords": [],

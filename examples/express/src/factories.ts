@@ -3,7 +3,7 @@ import { User } from 'ws-common/domain/user.domain';
 import { HttpError } from 'ws-common/service/error.service';
 import { getUserByToken } from 'ws-common/service/user.service';
 
-export function createCheckedAuthFactory() {
+export function createOptionalAuthFactory() {
   const factory = new ExpressRouteFactory<{ user: User | null }>();
 
   factory.middleware(async (req, res, next) => {
@@ -31,8 +31,8 @@ export function createCheckedAuthFactory() {
   return factory;
 }
 
-export function createAuthFactory() {
-  const factory = createCheckedAuthFactory().extend<{ user: User }>();
+export function createRequiredAuthFactory() {
+  const factory = createOptionalAuthFactory().extend<{ user: User }>();
 
   factory.middleware(async (_req, res, next) => {
     if (!res.locals.user) {

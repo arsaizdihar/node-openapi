@@ -3,6 +3,7 @@ import { HapiRequestAdapter } from './request';
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import { Server, Request, ResponseToolkit, ServerRoute } from '@hapi/hapi';
 import { ZodError } from 'zod';
+export { z } from '@node-openapi/core';
 
 export class HapiRouteFactory extends RouteFactory<HapiRequestAdapter> {
   private readonly _middlewares: Array<

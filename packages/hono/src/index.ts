@@ -1,7 +1,6 @@
-import { ZodMediaTypeObject } from '@asteasolutions/zod-to-openapi/dist/openapi-registry';
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
-  Context,
+  Context as CoreContext,
   HandlerResponse,
   InputTypeCookie,
   InputTypeForm,
@@ -10,12 +9,24 @@ import {
   InputTypeParam,
   InputTypeQuery,
   MaybePromise,
+  OpenAPIDefinitions,
   RouteConfig,
   RouteConfigToHandlerResponse,
   RouteFactory,
+  z,
 } from '@node-openapi/core';
-import { Env, Handler, Hono, Input, ValidationTargets } from 'hono';
-import { BlankEnv, MiddlewareHandler, TypedResponse } from 'hono/types';
+import {
+  Context as HonoContext,
+  Env,
+  Handler,
+  Hono,
+  Input,
+  MiddlewareHandler,
+  Next,
+  ValidationTargets,
+} from 'hono';
+import { BlankEnv, TypedResponse } from 'hono/types';
+import { StatusCode } from 'hono/utils/http-status';
 import { HonoRequestAdapter } from './request';
 
 export class HonoRouteFactory<
@@ -27,82 +38,102 @@ export class HonoRouteFactory<
     super();
   }
 
-  middleware<R extends MiddlewareHandler<E>>(handler: R) {
+  middleware(handler: MiddlewareHandler<E>) {
     this._middlewares.push(handler);
   }
 
   route<
     R extends RouteConfig,
-    I extends Input = InputTypeParam<R> &
+    ValidationInput extends Input = InputTypeParam<R> &
       InputTypeQuery<R> &
       InputTypeHeader<R> &
       InputTypeCookie<R> &
       InputTypeForm<R> &
       InputTypeJson<R>,
   >(
-    route: R,
+    routeConfig: R,
     ...handlers: Handler<
-      any,
-      any,
-      I,
-      R extends {
-        responses: {
-          [statusCode: number]: {
-            content: {
-              [mediaType: string]: ZodMediaTypeObject;
-            };
-          };
-        };
-      }
-        ? MaybePromise<RouteConfigToTypedResponse<R>>
-        : MaybePromise<RouteConfigToTypedResponse<R>> | MaybePromise<Response>
+      E,
+      R['path'],
+      ValidationInput,
+      MaybePromise<TypedResponse<any, StatusCode, any> | Response>
     >[]
   ) {
-    const _route = this._route(route);
+    const _coreRouteProcessor = this._route(routeConfig);
+
     this._app.on(
-      [route.method],
-      route.path,
+      [routeConfig.method],
+      routeConfig.path,
       ...this._middlewares,
-      async (c, next) => {
-        const context: Context<HonoRequestAdapter> = {
+      async (c: HonoContext<E>, next: Next) => {
+        const coreProcessingContext: CoreContext<HonoRequestAdapter> = {
           req: new HonoRequestAdapter(c.req),
           input: {},
         };
-        const cResult = await _route(context);
-        const input = cResult.input as any;
 
-        for (const key in input) {
-          c.req.addValidatedData(key as keyof ValidationTargets, input[key]);
+        try {
+          const validationResult = await _coreRouteProcessor(
+            coreProcessingContext,
+          );
+          const validatedData = validationResult.input as any;
+
+          for (const key in validatedData) {
+            if (validatedData[key] !== undefined) {
+              c.req.addValidatedData(
+                key as keyof ValidationTargets,
+                validatedData[key],
+              );
+            }
+          }
+          await next();
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            return c.json({ name: 'ZodError', issues: error.issues }, 400);
+          }
+          console.error(
+            '[NodeAPI Hono Adapter] Internal validation error:',
+            error,
+          );
+          return c.json({ error: 'Internal Server Error' }, 500);
         }
-
-        await next();
       },
       ...handlers,
     );
   }
 
-  doc<P extends string>(path: P, configure: OpenAPIObjectConfigV31): void {
-    this._app.get(path, (c) => {
+  doc<P extends string>(
+    path: P,
+    openapiConfig: OpenAPIObjectConfigV31,
+    additionalDefinitions?: OpenAPIDefinitions[],
+  ): void {
+    this._app.get(path, (c: HonoContext<E>) => {
       try {
-        const document = this.getOpenAPIDocument(configure);
+        const document = this.getOpenAPIDocument(
+          openapiConfig,
+          additionalDefinitions,
+        );
         return c.json(document);
       } catch (error) {
-        return c.json(
-          {
-            error: error,
-          },
-          500,
+        console.error(
+          '[NodeAPI Hono Adapter] Error generating OpenAPI document:',
+          error,
         );
+        return c.json({ message: 'Failed to generate OpenAPI document' }, 500);
       }
     });
   }
 
-  router<E extends Env>(path: string, routeFactory: HonoRouteFactory<E>) {
-    this._app.use(path, ...this._middlewares);
-    this._app.route(path, routeFactory._app);
+  router<SubEnv extends Env>(
+    path: string,
+    subRouteFactory: HonoRouteFactory<SubEnv>,
+  ) {
+    if (this._middlewares.length > 0) {
+      this._app.use(path, ...this._middlewares);
+    }
+    this._app.route(path, subRouteFactory._app as Hono<any>);
 
     const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');
-    this._registerRouter(pathForOpenAPI, routeFactory);
+    this._registerRouter(pathForOpenAPI, subRouteFactory);
   }
 }
 
@@ -114,5 +145,12 @@ export type RouteConfigToTypedResponse<R extends RouteConfig> =
     infer Status,
     infer Format
   >
-    ? TypedResponse<Body, Status, Format>
-    : never;
+    ? TypedResponse<
+        Body,
+        Status extends StatusCode ? Status : StatusCode,
+        Format extends string ? Format : string
+      >
+    : TypedResponse<any, StatusCode, string>;
+
+export { z } from '@node-openapi/core';
+export type { OpenAPIDefinitions, RouteConfig };

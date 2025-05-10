@@ -1,5 +1,8 @@
 import { ExpressRouteFactory } from '@node-openapi/express';
-import { createAuthFactory, createCheckedAuthFactory } from '../factories';
+import {
+  createRequiredAuthFactory,
+  createOptionalAuthFactory,
+} from '../factories';
 import {
   createCommentRoute,
   deleteCommentRoute,
@@ -12,7 +15,7 @@ import {
 } from 'ws-common/service/comments.service';
 export const commentsController = new ExpressRouteFactory();
 
-const checkedAuthFactory = createCheckedAuthFactory();
+const checkedAuthFactory = createOptionalAuthFactory();
 
 checkedAuthFactory.route(getCommentsRoute, async (req, res, next) => {
   const slug = req.params.slug;
@@ -24,10 +27,10 @@ checkedAuthFactory.route(getCommentsRoute, async (req, res, next) => {
   }
 });
 
-const authFactory = createAuthFactory();
+const authFactory = createRequiredAuthFactory();
 
 authFactory.route(createCommentRoute, async (_, res, next) => {
-  const { slug } = res.locals.params;
+  const { slug } = res.locals.param;
   const { comment } = res.locals.json;
   try {
     const newComment = await createComment(slug, comment.body, res.locals.user);
@@ -38,7 +41,7 @@ authFactory.route(createCommentRoute, async (_, res, next) => {
 });
 
 authFactory.route(deleteCommentRoute, async (_, res, next) => {
-  const { slug, id } = res.locals.params;
+  const { slug, id } = res.locals.param;
   try {
     const deletedComment = await deleteComment(slug, id, res.locals.user);
     res.status(200).json({ comment: deletedComment });

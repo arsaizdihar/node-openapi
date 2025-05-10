@@ -10,12 +10,12 @@ import {
   registerUser,
   updateUser,
 } from 'ws-common/service/user.service';
-import { createAuthFactory } from '../factories';
+import { createRequiredAuthFactory } from '../factories';
 
 export const userController = new ExpressRouteFactory();
 
-userController.route(loginRoute, async (req, res, next) => {
-  const { user } = req.body;
+userController.route(loginRoute, async (_, res, next) => {
+  const { user } = res.locals.json;
   try {
     const result = await loginUser(user);
     res.locals.helper.json({ status: 200, data: { user: result } });
@@ -24,8 +24,8 @@ userController.route(loginRoute, async (req, res, next) => {
   }
 });
 
-userController.route(registerRoute, async (req, res, next) => {
-  const { user } = req.body;
+userController.route(registerRoute, async (_, res, next) => {
+  const { user } = res.locals.json;
   try {
     const result = await registerUser(user);
     res.locals.helper.json({ status: 201, data: { user: result } });
@@ -34,7 +34,7 @@ userController.route(registerRoute, async (req, res, next) => {
   }
 });
 
-const checkedAuthFactory = createAuthFactory();
+const checkedAuthFactory = createRequiredAuthFactory();
 checkedAuthFactory.route(getCurrentUserRoute, async (_, res) => {
   const user = res.locals.user;
   res.locals.helper.json({ status: 200, data: { user } });
