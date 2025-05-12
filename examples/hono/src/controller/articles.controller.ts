@@ -12,7 +12,7 @@ import {
   deleteArticleRoute,
   favoriteArticleRoute,
   unfavoriteArticleRoute,
-} from '../routes/article.routes';
+} from '../routes/articles.routes';
 import {
   getArticles,
   getArticlesFeed,
@@ -36,18 +36,19 @@ publicArticleController.route(listArticlesRoute, async (c) => {
   return c.json(result);
 });
 
-publicArticleController.route(getArticleRoute, async (c) => {
-  const { slug } = c.req.valid('param');
-  const currentUser = c.get('user');
-  const result = await getArticle(slug, currentUser);
-  return c.json({ article: result });
-});
-
 authArticleController.route(feedArticlesRoute, async (c) => {
   const query = c.req.valid('query');
   const currentUser = c.get('user');
   const result = await getArticlesFeed(currentUser, query);
   return c.json(result);
+});
+
+publicArticleController.route(getArticleRoute, async (c) => {
+  console.log('feed');
+  const { slug } = c.req.valid('param');
+  const currentUser = c.get('user');
+  const result = await getArticle(slug, currentUser);
+  return c.json({ article: result });
 });
 
 authArticleController.route(createArticleRoute, async (c) => {
@@ -87,5 +88,5 @@ authArticleController.route(unfavoriteArticleRoute, async (c) => {
 });
 
 export const articlesController = new HonoRouteFactory();
-articlesController.router('', publicArticleController);
 articlesController.router('', authArticleController);
+articlesController.router('', publicArticleController);

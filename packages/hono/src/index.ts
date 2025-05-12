@@ -28,13 +28,14 @@ import {
 import { BlankEnv, TypedResponse } from 'hono/types';
 import { StatusCode } from 'hono/utils/http-status';
 import { HonoRequestAdapter } from './request';
+import { ZodMediaTypeObject } from '@asteasolutions/zod-to-openapi';
 
 export class HonoRouteFactory<
   E extends Env = BlankEnv,
 > extends RouteFactory<HonoRequestAdapter> {
   private readonly _middlewares: Array<MiddlewareHandler<E>> = [];
 
-  constructor(private readonly _app = new Hono<E>()) {
+  constructor(public readonly app = new Hono<E>()) {
     super();
   }
 
@@ -43,7 +44,7 @@ export class HonoRouteFactory<
   }
 
   route<
-    R extends RouteConfig,
+    R extends RouteConfig & { getRoutingPath: () => string },
     ValidationInput extends Input = InputTypeParam<R> &
       InputTypeQuery<R> &
       InputTypeHeader<R> &
@@ -56,14 +57,25 @@ export class HonoRouteFactory<
       E,
       R['path'],
       ValidationInput,
-      MaybePromise<TypedResponse<any, StatusCode, any> | Response>
+      // If response type is defined, only TypedResponse is allowed.
+      R extends {
+        responses: {
+          [statusCode: number]: {
+            content: {
+              [mediaType: string]: ZodMediaTypeObject;
+            };
+          };
+        };
+      }
+        ? MaybePromise<RouteConfigToTypedResponse<R>>
+        : MaybePromise<RouteConfigToTypedResponse<R>> | MaybePromise<Response>
     >[]
   ) {
     const _coreRouteProcessor = this._route(routeConfig);
 
-    this._app.on(
+    this.app.on(
       [routeConfig.method],
-      routeConfig.path,
+      routeConfig.getRoutingPath(),
       ...this._middlewares,
       async (c: HonoContext<E>, next: Next) => {
         const coreProcessingContext: CoreContext<HonoRequestAdapter> = {
@@ -106,7 +118,7 @@ export class HonoRouteFactory<
     openapiConfig: OpenAPIObjectConfigV31,
     additionalDefinitions?: OpenAPIDefinitions[],
   ): void {
-    this._app.get(path, (c: HonoContext<E>) => {
+    this.app.get(path, (c: HonoContext<E>) => {
       try {
         const document = this.getOpenAPIDocument(
           openapiConfig,
@@ -127,10 +139,7 @@ export class HonoRouteFactory<
     path: string,
     subRouteFactory: HonoRouteFactory<SubEnv>,
   ) {
-    if (this._middlewares.length > 0) {
-      this._app.use(path, ...this._middlewares);
-    }
-    this._app.route(path, subRouteFactory._app as Hono<any>);
+    this.app.route(path, subRouteFactory.app as Hono<any>);
 
     const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');
     this._registerRouter(pathForOpenAPI, subRouteFactory);

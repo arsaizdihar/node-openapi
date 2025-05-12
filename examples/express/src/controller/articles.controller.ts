@@ -69,7 +69,7 @@ authFactory.route(createArticleRoute, async (_, res, next) => {
 checkedAuthFactory.route(getArticleRoute, async (_, res, next) => {
   try {
     const result = await getArticle(
-      res.locals.params.slug,
+      res.locals.param.slug,
       res.locals.user ?? undefined,
     );
 
@@ -83,7 +83,7 @@ authFactory.route(updateArticleRoute, async (_, res, next) => {
   try {
     const result = await updateArticle(
       res.locals.user,
-      res.locals.params.slug,
+      res.locals.param.slug,
       res.locals.json.article,
     );
 
@@ -95,7 +95,7 @@ authFactory.route(updateArticleRoute, async (_, res, next) => {
 
 authFactory.route(deleteArticleRoute, async (_, res, next) => {
   try {
-    await deleteArticle(res.locals.user, res.locals.params.slug);
+    await deleteArticle(res.locals.user, res.locals.param.slug);
     res.status(200).send();
   } catch (error) {
     next(error);
@@ -106,7 +106,7 @@ authFactory.route(favoriteArticleRoute, async (_, res, next) => {
   try {
     const result = await favoriteArticle(
       res.locals.user,
-      res.locals.params.slug,
+      res.locals.param.slug,
     );
 
     res.locals.helper.json({ status: 200, data: { article: result } });
@@ -119,7 +119,7 @@ authFactory.route(unfavoriteArticleRoute, async (_, res, next) => {
   try {
     const result = await unfavoriteArticle(
       res.locals.user,
-      res.locals.params.slug,
+      res.locals.param.slug,
     );
 
     res.locals.helper.json({ status: 200, data: { article: result } });

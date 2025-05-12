@@ -10,22 +10,30 @@ import { HonoRouteFactory, z } from '@node-openapi/hono';
 
 import { userController } from './controller/user.controller';
 import { profileController } from './controller/profile.controller';
-import { articlesController } from './controller/article.controller';
+import { articlesController } from './controller/articles.controller';
 import { bearerSecurity } from './routes/security';
-
+import { commentsController } from './controller/comments.controller';
+import { tagsController } from './controller/tags.controller';
+import { logger } from 'hono/logger';
 const app = new Hono();
+app.use(logger());
+
+app.use(async (c, next) => {
+  console.log('request', await c.req.text());
+  await next();
+  console.log('response', await c.res.text());
+});
 
 app.use('*', cors());
 app.use('*', prettyJSON());
 
 const mainFactory = new HonoRouteFactory(app);
-const apiFactory = new HonoRouteFactory();
 
-apiFactory.router('', userController);
-apiFactory.router('', profileController);
-apiFactory.router('', articlesController);
-
-mainFactory.router('/api', apiFactory);
+mainFactory.router('/api', userController);
+mainFactory.router('/api', profileController);
+mainFactory.router('/api', articlesController);
+mainFactory.router('/api', commentsController);
+mainFactory.router('/api', tagsController);
 
 const openAPIDocPath = '/openapi.json';
 mainFactory.doc(

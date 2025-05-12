@@ -4,6 +4,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "scripts": {
+    "reset-db": "prisma migrate reset --force"
+  },
   "devDependencies": {
     "@types/node": "^22.8.6",
     "prisma": "^6.7.0",

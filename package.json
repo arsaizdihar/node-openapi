@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "build-all-lib": "pnpm --filter=@node-openapi/* run build",
+    "reset-db": "pnpm --filter=ws-db run reset-db",
+    "run-api-test": "./examples/base-express/src/test/postman/run-api-test.sh",
     "lint": "eslint ."
   },
   "keywords": [],
