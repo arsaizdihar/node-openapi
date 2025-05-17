@@ -1,67 +1,62 @@
-import { createRoute, FastifyRouteFactory } from '@node-openapi/fastify';
-import Fastify from 'fastify';
-import { z } from 'zod';
-import { getAbsoluteFSPath } from 'swagger-ui-dist';
+import 'dotenv/config';
+
 import fastifyStatic from '@fastify/static';
+import { FastifyRouteFactory } from '@node-openapi/fastify';
+import Fastify from 'fastify';
+import { getAbsoluteFSPath } from 'swagger-ui-dist';
+import { articlesController } from './controller/articles.controller';
+import { userController } from './controller/user.controller';
+import { profileController } from './controller/profile.controller';
+import { commentsController } from './controller/comments.controller';
+import { tagsController } from './controller/tags.controller';
+import cors from '@fastify/cors';
+const app = Fastify({ logger: true });
 
-const app = Fastify();
+app.removeContentTypeParser('application/json');
 
-// Register static file serving plugin
+app.addContentTypeParser(
+  'application/json',
+  { parseAs: 'string' },
+  function (_req, body, done) {
+    if (!body || body.toString().trim() === '') {
+      // Treat empty body as empty object
+      done(null, {});
+      return;
+    }
+    try {
+      const json = JSON.parse(body.toString());
+      done(null, json);
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  },
+);
+
 const swaggerUIPath = getAbsoluteFSPath();
+app.register(cors, { methods: ['GET', 'POST', 'PUT', 'DELETE'] });
 app.register(fastifyStatic, {
   root: swaggerUIPath,
   prefix: '/api-docs/',
   decorateReply: false,
 });
 
-const factory = new FastifyRouteFactory(app);
+const mainFactory = new FastifyRouteFactory();
 
-const route = createRoute({
-  method: 'post',
-  path: '/',
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            message: z.string().openapi({
-              example: 'Hello, world!',
-            }),
-          }),
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            message: z.string(),
-          }),
-        },
-      },
-      description: 'OK',
-    },
-  },
-});
+mainFactory.router('/api', articlesController);
+mainFactory.router('/api', profileController);
+mainFactory.router('/api', userController);
+mainFactory.router('/api', commentsController);
+mainFactory.router('/api', tagsController);
 
-factory.route(route, async (_req, _reply, input) => {
-  return {
-    data: {
-      message: input.json.message,
-    },
-    status: 200,
-  };
-});
-
-factory.doc('/docs', {
+mainFactory.doc('/docs', {
   openapi: '3.1.0',
   info: {
     title: 'API',
     version: '1.0.0',
   },
 });
+
+mainFactory.registerApp(app);
 
 // Redirect /api-docs to /api-docs/
 app.get('/api-docs', (_req, reply) => {
