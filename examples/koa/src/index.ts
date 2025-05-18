@@ -1,69 +1,79 @@
+import 'dotenv/config';
+
+import bodyParser from '@koa/bodyparser';
+import cors from '@koa/cors';
 import { KoaRouteFactory } from '@node-openapi/koa';
 import Koa from 'koa';
-import bodyParser from '@koa/bodyparser';
 import { koaSwagger } from 'koa2-swagger-ui';
-import { z } from 'zod';
+import { HttpError } from 'ws-common/service/error.service';
+import { ZodError } from 'zod';
+import { articlesController } from './controller/articles.controller';
+import { commentsController } from './controller/comments.controller';
+import { profileController } from './controller/profile.controller';
+import { tagsController } from './controller/tags.controller';
+import { userController } from './controller/user.controller';
 
 const app = new Koa();
+
+app.use(cors());
+
+app.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (err) {
+    console.log(err);
+    if (err instanceof ZodError) {
+      ctx.status = 400;
+      ctx.body = {
+        status: 400,
+        errors: {
+          body: err.flatten().fieldErrors,
+        },
+      };
+      return;
+    }
+
+    if (err instanceof HttpError) {
+      ctx.status = err.statusCode;
+      ctx.body = {
+        status: err.statusCode,
+        errors: {
+          body: [err.message],
+        },
+      };
+      return;
+    }
+
+    ctx.status = 500;
+    ctx.body = {
+      status: 500,
+      errors: {
+        body: ['Internal Server Error'],
+      },
+    };
+
+    ctx.app.emit('error', err, ctx);
+  }
+});
+
 app.use(bodyParser());
-const factory = new KoaRouteFactory<{
-  user: {
-    id: string;
-    name: string;
-  };
-}>();
+const mainFactory = new KoaRouteFactory();
 
-factory.middleware(async (ctx, next) => {
-  ctx.state.user = {
-    id: '1',
-    name: 'John Doe',
-  };
-  await next();
-});
+mainFactory.router('/api', articlesController);
+mainFactory.router('/api', profileController);
+mainFactory.router('/api', userController);
+mainFactory.router('/api', commentsController);
+mainFactory.router('/api', tagsController);
 
-factory.registerApp(app);
-
-const route = KoaRouteFactory.createRoute({
-  method: 'post',
-  path: '/',
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            message: z.string(),
-          }),
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            message: z.string(),
-          }),
-        },
-      },
-      description: 'OK',
-    },
-  },
-});
-
-factory.route(route, async (ctx) => {
-  ctx.body = {
-    message: ctx.state.input.json.message,
-  };
-});
-
-factory.doc('/docs', {
+mainFactory.doc('/docs', {
   openapi: '3.1.0',
   info: {
     title: 'API',
     version: '1.0.0',
   },
 });
+
+mainFactory.registerApp(app);
 
 app.use(
   koaSwagger({

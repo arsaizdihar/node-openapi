@@ -1,6 +1,7 @@
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
   Context,
+  Helper,
   Input,
   InputTypeCookie,
   InputTypeForm,
@@ -16,6 +17,7 @@ import {
 import Koa from 'koa';
 import Router from 'koa-router';
 import { KoaRequestAdapter } from './request';
+export { z, OpenAPIDefinitions, RouteConfig } from '@node-openapi/core';
 
 export class KoaRouteFactory<
   StateT = unknown,
@@ -26,8 +28,17 @@ export class KoaRouteFactory<
     super();
   }
 
+  extend<NewStateT>(): KoaRouteFactory<NewStateT> {
+    const factory = new KoaRouteFactory<NewStateT>();
+    factory._middlewares.push(
+      ...(this._middlewares as unknown as Koa.Middleware<NewStateT>[]),
+    );
+    return factory;
+  }
+
   registerApp(app: Koa) {
-    app.use(this._router.routes()).use(this._router.allowedMethods());
+    app.use(this._router.routes());
+    app.use(this._router.allowedMethods());
   }
 
   middleware<R extends Koa.Middleware<StateT>>(handler: R) {
@@ -35,7 +46,7 @@ export class KoaRouteFactory<
   }
 
   route<
-    R extends RouteConfig,
+    R extends RouteConfig & { getRoutingPath: () => string },
     I extends Input = InputTypeParam<R> &
       InputTypeQuery<R> &
       InputTypeHeader<R> &
@@ -46,9 +57,7 @@ export class KoaRouteFactory<
     route: R,
     ...handlers: Array<
       Koa.Middleware<
-        'json' extends keyof I['out']
-          ? Prettify<{ input: I['out'] } & StateT>
-          : StateT,
+        Prettify<{ input: I['out'] } & StateT & { helper: Helper<R> }>,
         Koa.DefaultContext,
         'data' extends keyof RouteConfigToHandlerResponse<R>
           ? RouteConfigToHandlerResponse<R>['data']
@@ -61,7 +70,7 @@ export class KoaRouteFactory<
     }
     const _router = this._route(route);
     this._router[route.method](
-      route.path,
+      route.getRoutingPath(),
       ...this._middlewares,
       async (ctx, next) => {
         const context: Context<KoaRequestAdapter, I> = {
@@ -84,10 +93,25 @@ export class KoaRouteFactory<
         };
         const c = await _router(context);
         ctx.state.input = c.input;
-        next();
+        ctx.state.helper = this.createHelper(ctx);
+        await next();
       },
       ...handlers,
     );
+  }
+
+  private createHelper<R extends RouteConfig>(ctx: Koa.Context): Helper<R> {
+    const helper = {
+      json: (response: { data: any; status: number }) => {
+        ctx.status = response.status;
+        ctx.body = response.data;
+      },
+      text: (response: { data: string; status: number }) => {
+        ctx.status = response.status;
+        ctx.body = response.data;
+      },
+    };
+    return helper as Helper<R>;
   }
 
   doc<P extends string>(path: P, configure: OpenAPIObjectConfigV31) {
@@ -103,8 +127,14 @@ export class KoaRouteFactory<
   }
 
   router(path: string, routeFactory: KoaRouteFactory) {
-    this._router.use(path, ...this._middlewares);
-    this._router.use(path, routeFactory._router.routes());
+    if (this._middlewares.length > 0) {
+      this._router.use(path, ...this._middlewares);
+    }
+    this._router.use(
+      path,
+      routeFactory._router.routes(),
+      routeFactory._router.allowedMethods(),
+    );
 
     const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');
     this._registerRouter(pathForOpenAPI, routeFactory);

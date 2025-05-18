@@ -9,15 +9,19 @@
   "license": "ISC",
   "dependencies": {
     "@koa/bodyparser": "^5.1.1",
+    "@koa/cors": "^5.0.0",
     "@node-openapi/koa": "workspace:*",
+    "dotenv": "^16.5.0",
     "koa": "^2.16.0",
     "koa-router": "^13.0.1",
     "koa2-swagger-ui": "^5.11.0",
+    "ws-common": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/koa": "^2.15.0",
     "@types/koa-router": "^7.4.8",
+    "@types/koa__cors": "^5.0.0",
     "@types/node": "^22.8.6",
     "tsup": "catalog:",
     "tsx": "^4.19.3",

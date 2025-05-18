@@ -1,5 +1,4 @@
-import { createRoute } from '@node-openapi/express';
-import { z } from 'zod';
+import { createRoute, z } from '@node-openapi/koa';
 import {
   articleFeedQuerySchema,
   articleQuerySchema,
