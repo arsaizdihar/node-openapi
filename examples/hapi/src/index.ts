@@ -1,79 +1,114 @@
-import { createRoute, HapiRouteFactory, z } from '@node-openapi/hapi';
-import { Server, Request, ResponseToolkit } from '@hapi/hapi';
+import 'dotenv/config';
+
+import { Server } from '@hapi/hapi';
 import Inert from '@hapi/inert';
+import { HapiRouteFactory } from '@node-openapi/hapi';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
+import { HttpError } from 'ws-common/service/error.service';
+import { ZodError } from 'zod';
+import { commentsController } from './controller/comments.controller';
+import { profileController } from './controller/profile.controller';
+import { tagsController } from './controller/tags.controller';
+import { userController } from './controller/user.controller';
+import { articlesController } from './controller/articles.controller';
 
 const server = new Server({
   port: 3000,
   host: 'localhost',
+  routes: {
+    cors: {
+      origin: ['*'],
+    },
+  },
 });
 
-const factory = new HapiRouteFactory(server);
+server.ext('onPreResponse', (request, h) => {
+  const response = request.response;
+  if (!(response instanceof Error)) {
+    return h.continue;
+  }
 
-// Add middleware
-factory.middleware(async (request: Request, h: ResponseToolkit) => {
-  (request as any).user = {
-    id: '1',
-    name: 'John Doe',
-  };
+  const err = response;
+  if (err instanceof ZodError) {
+    response.output.statusCode = 400;
+    response.output.payload = {
+      statusCode: 400,
+      code: 'BAD_REQUEST',
+      message: 'Invalid request',
+      errors: {
+        body: err.flatten().fieldErrors,
+      },
+      error: 'ValidationError',
+    };
+    return h.continue;
+  }
+
+  if (err instanceof HttpError) {
+    response.output.statusCode = err.statusCode;
+    response.output.payload = {
+      statusCode: err.statusCode,
+      message: err.message,
+      error: err.name,
+      errors: {
+        body: [err.message],
+      },
+    };
+    console.log(err);
+
+    return h.continue;
+  }
+
   return h.continue;
 });
 
-// Define a route
-const route = createRoute({
-  method: 'post',
-  path: '/',
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            message: z.string().openapi({
-              example: 'Hello, world!',
-            }),
-          }),
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: z.object({
-            message: z.string(),
-          }),
-        },
-      },
-      description: 'OK',
-    },
-  },
-});
+const mainFactory = new HapiRouteFactory();
 
-// Register the route
-factory.route(route, async (request: Request, h: ResponseToolkit) => {
-  return h.response({
-    message: (request as any).input.json.message,
-  });
-});
+mainFactory.router('/api', articlesController);
+mainFactory.router('/api', profileController);
+mainFactory.router('/api', userController);
+mainFactory.router('/api', commentsController);
+mainFactory.router('/api', tagsController);
 
-// Serve OpenAPI documentation
-factory.doc('/docs', {
+mainFactory.doc('/docs', {
   openapi: '3.1.0',
   info: {
     title: 'API',
     version: '1.0.0',
   },
+  tags: [
+    {
+      name: 'articles',
+      description: 'Articles',
+    },
+    {
+      name: 'comments',
+      description: 'Comments',
+    },
+    {
+      name: 'favorites',
+      description: 'Favorites',
+    },
+    {
+      name: 'tags',
+      description: 'Tags',
+    },
+    {
+      name: 'profile',
+      description: 'Profile',
+    },
+    {
+      name: 'user',
+      description: 'User and Authentication',
+    },
+  ],
 });
 
-// Register Swagger UI
 const init = async () => {
   await server.register([Inert]);
 
-  // Serve Swagger UI static files
   const swaggerUIPath = getAbsoluteFSPath();
 
-  console.log({ swaggerUIPath });
+  await mainFactory.registerServer(server);
 
   server.route({
     method: 'GET',
@@ -95,7 +130,6 @@ const init = async () => {
     },
   });
 
-  // Serve custom swagger-initializer.js
   server.route({
     method: 'GET',
     path: '/api-docs/swagger-initializer.js',

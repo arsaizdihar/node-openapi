@@ -37,7 +37,10 @@ function BaseLoginForm() {
     },
   });
 
-  const mutationErrors = error?.response?.data || [error?.message];
+  const mutationErrors = error?.response?.data?.errors?.body || [
+    error?.message,
+  ];
+  // console.log(error);
   const canSubmit = [isDirty, isValid, !isPending].every(Boolean);
 
   const onValid = (loginUser: LoginUser) => {
@@ -56,7 +59,12 @@ function BaseLoginForm() {
 
       <form onSubmit={handleSubmit(onValid)}>
         <fieldset className="form-group" disabled={isPending}>
-          <input className="form-control form-control-lg" type="text" placeholder="Email" {...register('email')} />
+          <input
+            className="form-control form-control-lg"
+            type="text"
+            placeholder="Email"
+            {...register('email')}
+          />
           <ErrorMessage errors={errors} name="email" as="div" role="alert" />
         </fieldset>
 
@@ -70,7 +78,11 @@ function BaseLoginForm() {
           <ErrorMessage errors={errors} name="password" as="div" role="alert" />
         </fieldset>
 
-        <button className="btn btn-lg btn-primary pull-xs-right" type="submit" disabled={!canSubmit}>
+        <button
+          className="btn btn-lg btn-primary pull-xs-right"
+          type="submit"
+          disabled={!canSubmit}
+        >
           Sign in
         </button>
       </form>

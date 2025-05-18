@@ -1,4 +1,15 @@
-import { RouteFactory, RouteConfig } from '@node-openapi/core';
+import {
+  RouteFactory,
+  RouteConfig,
+  InputTypeQuery,
+  InputTypeParam,
+  InputTypeHeader,
+  InputTypeCookie,
+  InputTypeJson,
+  InputTypeForm,
+  Input,
+  Helper,
+} from '@node-openapi/core';
 import { HapiRequestAdapter } from './request';
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
@@ -11,8 +22,9 @@ import {
   ReqRef,
   RouteOptionsPreAllOptions,
   ReqRefDefaults,
+  ResponseObject,
 } from '@hapi/hapi';
-export { z } from '@node-openapi/core';
+export { z, OpenAPIDefinitions, RouteConfig } from '@node-openapi/core';
 
 type InternalPluginOptions<TRefs extends ReqRef> = {
   middlewares?: RouteOptionsPreArray<TRefs>;
@@ -36,7 +48,7 @@ export class HapiRouteFactory<
     this.plugin = {
       name:
         name || 'node-openapi-' + Math.random().toString(36).substring(2, 15),
-      register: (server, options) => {
+      register: async (server, options) => {
         for (const route of this.routes) {
           let routeOptions = route.options;
           if (typeof routeOptions === 'function') {
@@ -58,7 +70,7 @@ export class HapiRouteFactory<
         }
 
         for (const child of this.children) {
-          server.register(
+          await server.register(
             {
               plugin: child.factory.plugin as any,
               options: {
@@ -93,12 +105,21 @@ export class HapiRouteFactory<
     this._middlewares.push(handler);
   }
 
-  route<R extends RouteConfig & { getRoutingPath: () => string }>(
+  route<
+    R extends RouteConfig & { getRoutingPath: () => string },
+    I extends Input = InputTypeParam<R> &
+      InputTypeQuery<R> &
+      InputTypeHeader<R> &
+      InputTypeCookie<R> &
+      InputTypeForm<R> &
+      InputTypeJson<R>,
+  >(
     route: R,
     handler: (
       request: Request<TRefs>,
       h: ResponseToolkit<TRefs>,
-    ) => Promise<any>,
+      args: { input: I['out']; helper: Helper<R, ResponseObject> },
+    ) => Promise<ResponseObject>,
   ) {
     if (route.method === 'head') {
       throw new Error('Hapi does not support the head method');
@@ -119,9 +140,10 @@ export class HapiRouteFactory<
         };
 
         const c = await _route(context);
-        const input = c.input as any;
-        (request as any).input = input;
-        return handler(request, h);
+        return handler(request, h, {
+          input: c.input as I['out'],
+          helper: this.createHelper(h),
+        });
       },
     };
 
@@ -152,8 +174,34 @@ export class HapiRouteFactory<
     });
   }
 
-  registerServer(server: Server) {
-    server.register(this.plugin);
+  async registerServer(server: Server) {
+    return server.register(this.plugin);
+  }
+
+  private createHelper<R extends RouteConfig>(
+    h: ResponseToolkit<TRefs>,
+  ): Helper<R, ResponseObject> {
+    const helper = {
+      json: (response: { data: any; status: number }) => {
+        return h.response(response.data).code(response.status);
+      },
+      text: (response: { data: string; status: number }) => {
+        return h
+          .response(response.data)
+          .type('text/plain')
+          .code(response.status);
+      },
+    };
+    return helper as Helper<R, ResponseObject>;
+  }
+
+  static createRoute<R extends RouteConfig>(
+    routeConfig: R,
+  ): R & { getRoutingPath: () => string } {
+    return {
+      ...routeConfig,
+      getRoutingPath: () => routeConfig.path,
+    };
   }
 }
 

@@ -1,4 +1,3 @@
-/* eslint-disable react/no-array-index-key */
 import { Skeleton } from '~shared/ui/skeleton/skeleton.ui';
 import { Stack } from '~shared/ui/stack/stack.ui';
 
@@ -45,7 +44,11 @@ function DescriptionSkeleton() {
   return (
     <Stack direction="column" spacing={2}>
       {new Array(4).fill(0).map((_, idx, array) => (
-        <Skeleton key={idx} variant="text" width={array.length - 1 === idx ? '60%' : '100%'} />
+        <Skeleton
+          key={idx}
+          variant="text"
+          width={array.length - 1 === idx ? '60%' : '100%'}
+        />
       ))}
     </Stack>
   );

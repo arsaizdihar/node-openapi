@@ -13,10 +13,5 @@ export default defineConfig({
       runtimeConfigPath: './src/shared/api/config.ts',
       throwOnError: true,
     },
-    'zod',
-    {
-      name: '@hey-api/sdk',
-      validator: true,
-    },
   ],
 });

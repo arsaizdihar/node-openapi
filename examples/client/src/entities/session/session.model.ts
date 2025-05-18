@@ -1,4 +1,4 @@
-import type { PayloadAction, WithSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 import { rootReducer } from '~shared/store';
 import { User } from './session.types';
@@ -20,7 +20,9 @@ const sessionSlice = createSlice({
 export const { setSession, resetSession } = sessionSlice.actions;
 
 declare module '~shared/store' {
-  export interface LazyLoadedSlices extends WithSlice<typeof sessionSlice> {}
+  export interface LazyLoadedSlices {
+    session: ReturnType<typeof sessionSlice.reducer>;
+  }
 }
 
 const injectedSessionSlice = sessionSlice.injectInto(rootReducer);

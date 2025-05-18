@@ -96,7 +96,7 @@ export class ExpressRouteFactory<
     );
   }
 
-  createHelper<R extends RouteConfig>(res: Response): Helper<R> {
+  private createHelper<R extends RouteConfig>(res: Response): Helper<R> {
     const helper = {
       json: (response: { data: any; status: number }) => {
         res.status(response.status).json(response.data);

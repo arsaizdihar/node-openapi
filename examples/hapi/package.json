@@ -11,7 +11,9 @@
     "@hapi/inert": "^7.0.0",
     "@node-openapi/core": "workspace:*",
     "@node-openapi/hapi": "workspace:*",
+    "dotenv": "^16.5.0",
     "swagger-ui-dist": "^5.20.8",
+    "ws-common": "workspace:*",
     "zod": "^3.22.4"
   },
   "devDependencies": {

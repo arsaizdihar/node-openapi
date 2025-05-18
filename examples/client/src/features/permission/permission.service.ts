@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useSelector } from 'react-redux';
 import { store } from '~shared/store';
 import { selectSession } from '~entities/session/session.model';
@@ -76,7 +77,11 @@ const sessionPermission: SessionPermission = {
 };
 
 type NestedKeysWithField<T, F extends keyof any> = {
-  [K in keyof T]: T[K] extends { [key in F]: any } ? K : T[K] extends object ? NestedKeysWithField<T[K], F> : never;
+  [K in keyof T]: T[K] extends { [key in F]: any }
+    ? K
+    : T[K] extends object
+      ? NestedKeysWithField<T[K], F>
+      : never;
 }[keyof T];
 
 export function useCanPerformAction<
@@ -87,7 +92,7 @@ export function useCanPerformAction<
   const session = useSelector(selectSession);
   const role = getRole({ context, session });
 
-  // @ts-expect-error
+  // @ts-expect-error it's fine
   return !!sessionPermission[role][resource][action];
 }
 
@@ -98,11 +103,14 @@ export function canPerformAction<
 >(action: T, resource: Resource, context?: ConditionalContext): boolean {
   const role = getRole({ context });
 
-  // @ts-expect-error
+  // @ts-expect-error it's fine
   return !!sessionPermission[role][resource][action];
 }
 
-function getRole(config?: { context?: Context; session?: User | null }): keyof SessionPermission {
+function getRole(config?: {
+  context?: Context;
+  session?: User | null;
+}): keyof SessionPermission {
   const { context, session = store.getState().session } = config || {};
 
   if (!session) return 'guest';

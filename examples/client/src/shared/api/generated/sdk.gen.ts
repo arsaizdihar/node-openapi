@@ -43,25 +43,6 @@ import type {
   GetApiTagsData,
   GetApiTagsResponse,
 } from './types.gen';
-import {
-  zGetApiArticlesFeedResponse,
-  zGetApiArticlesResponse,
-  zPostApiArticlesResponse,
-  zGetApiArticlesBySlugResponse,
-  zPutApiArticlesBySlugResponse,
-  zDeleteApiArticlesBySlugFavoriteResponse,
-  zPostApiArticlesBySlugFavoriteResponse,
-  zGetApiProfilesByUsernameResponse,
-  zDeleteApiProfilesByUsernameFollowResponse,
-  zPostApiProfilesByUsernameFollowResponse,
-  zPostApiUsersLoginResponse,
-  zPostApiUsersResponse,
-  zGetApiUserResponse,
-  zPutApiUserResponse,
-  zGetApiArticlesBySlugCommentsResponse,
-  zPostApiArticlesBySlugCommentsResponse,
-  zGetApiTagsResponse,
-} from './zod.gen';
 import { client as _heyApiClient } from './client.gen';
 
 export type Options<
@@ -93,15 +74,6 @@ export const getApiArticlesFeed = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zGetApiArticlesFeedResponse.parseAsync(data);
-    },
     url: '/api/articles/feed',
     ...options,
   });
@@ -119,15 +91,6 @@ export const getApiArticles = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zGetApiArticlesResponse.parseAsync(data);
-    },
     url: '/api/articles',
     ...options,
   });
@@ -144,15 +107,6 @@ export const postApiArticles = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zPostApiArticlesResponse.parseAsync(data);
-    },
     url: '/api/articles',
     ...options,
     headers: {
@@ -174,12 +128,6 @@ export const deleteApiArticlesBySlug = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
     url: '/api/articles/{slug}',
     ...options,
   });
@@ -197,15 +145,6 @@ export const getApiArticlesBySlug = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zGetApiArticlesBySlugResponse.parseAsync(data);
-    },
     url: '/api/articles/{slug}',
     ...options,
   });
@@ -223,15 +162,6 @@ export const putApiArticlesBySlug = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zPutApiArticlesBySlugResponse.parseAsync(data);
-    },
     url: '/api/articles/{slug}',
     ...options,
     headers: {
@@ -255,15 +185,6 @@ export const deleteApiArticlesBySlugFavorite = <
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zDeleteApiArticlesBySlugFavoriteResponse.parseAsync(data);
-    },
     url: '/api/articles/{slug}/favorite',
     ...options,
   });
@@ -283,15 +204,6 @@ export const postApiArticlesBySlugFavorite = <
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zPostApiArticlesBySlugFavoriteResponse.parseAsync(data);
-    },
     url: '/api/articles/{slug}/favorite',
     ...options,
   });
@@ -309,15 +221,6 @@ export const getApiProfilesByUsername = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zGetApiProfilesByUsernameResponse.parseAsync(data);
-    },
     url: '/api/profiles/{username}',
     ...options,
   });
@@ -337,15 +240,6 @@ export const deleteApiProfilesByUsernameFollow = <
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zDeleteApiProfilesByUsernameFollowResponse.parseAsync(data);
-    },
     url: '/api/profiles/{username}/follow',
     ...options,
   });
@@ -365,15 +259,6 @@ export const postApiProfilesByUsernameFollow = <
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zPostApiProfilesByUsernameFollowResponse.parseAsync(data);
-    },
     url: '/api/profiles/{username}/follow',
     ...options,
   });
@@ -391,9 +276,6 @@ export const postApiUsersLogin = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    responseValidator: async (data) => {
-      return await zPostApiUsersLoginResponse.parseAsync(data);
-    },
     url: '/api/users/login',
     ...options,
     headers: {
@@ -415,9 +297,6 @@ export const postApiUsers = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    responseValidator: async (data) => {
-      return await zPostApiUsersResponse.parseAsync(data);
-    },
     url: '/api/users',
     ...options,
     headers: {
@@ -439,15 +318,6 @@ export const getApiUser = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zGetApiUserResponse.parseAsync(data);
-    },
     url: '/api/user',
     ...options,
   });
@@ -465,15 +335,6 @@ export const putApiUser = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zPutApiUserResponse.parseAsync(data);
-    },
     url: '/api/user',
     ...options,
     headers: {
@@ -497,15 +358,6 @@ export const getApiArticlesBySlugComments = <
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zGetApiArticlesBySlugCommentsResponse.parseAsync(data);
-    },
     url: '/api/articles/{slug}/comments',
     ...options,
   });
@@ -525,15 +377,6 @@ export const postApiArticlesBySlugComments = <
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
-    responseValidator: async (data) => {
-      return await zPostApiArticlesBySlugCommentsResponse.parseAsync(data);
-    },
     url: '/api/articles/{slug}/comments',
     ...options,
     headers: {
@@ -557,12 +400,6 @@ export const deleteApiArticlesBySlugCommentsById = <
     unknown,
     ThrowOnError
   >({
-    security: [
-      {
-        name: 'Authorization',
-        type: 'apiKey',
-      },
-    ],
     url: '/api/articles/{slug}/comments/{id}',
     ...options,
   });
@@ -580,9 +417,6 @@ export const getApiTags = <ThrowOnError extends boolean = true>(
     unknown,
     ThrowOnError
   >({
-    responseValidator: async (data) => {
-      return await zGetApiTagsResponse.parseAsync(data);
-    },
     url: '/api/tags',
     ...options,
   });

@@ -1,4 +1,3 @@
-/* eslint-disable react/no-array-index-key */
 import { Skeleton } from '~shared/ui/skeleton/skeleton.ui';
 import { Stack } from '~shared/ui/stack/stack.ui';
 

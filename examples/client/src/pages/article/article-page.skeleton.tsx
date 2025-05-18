@@ -1,4 +1,3 @@
-/* eslint-disable react/no-array-index-key */
 import { Skeleton } from '~shared/ui/skeleton/skeleton.ui';
 import { Stack } from '~shared/ui/stack/stack.ui';
 
@@ -29,7 +28,12 @@ export function ArticlePageSkeleton() {
           <div className="col-md-12">
             <div>
               {new Array(25).fill(0).map((_, idx, array) => (
-                <Skeleton key={idx} variant="text" height="24px" width={array.length - 1 === idx ? '60%' : '100%'} />
+                <Skeleton
+                  key={idx}
+                  variant="text"
+                  height="24px"
+                  width={array.length - 1 === idx ? '60%' : '100%'}
+                />
               ))}
             </div>
             <Stack spacing={4} style={{ margin: '32px 0 16px' }}>
