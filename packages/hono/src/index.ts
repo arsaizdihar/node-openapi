@@ -39,6 +39,14 @@ export class HonoRouteFactory<
     super();
   }
 
+  extend<NewEnv extends Env>(): HonoRouteFactory<NewEnv> {
+    const factory = new HonoRouteFactory<NewEnv>();
+    factory._middlewares.push(
+      ...(this._middlewares as unknown as MiddlewareHandler<NewEnv>[]),
+    );
+    return factory;
+  }
+
   middleware(handler: MiddlewareHandler<E>) {
     this._middlewares.push(handler);
   }

@@ -10,6 +10,8 @@ import { profileController } from './controller/profile.controller';
 import { commentsController } from './controller/comments.controller';
 import { tagsController } from './controller/tags.controller';
 import cors from '@fastify/cors';
+import { ZodError } from 'zod';
+import { HttpError } from 'ws-common/service/error.service';
 const app = Fastify({ logger: true });
 
 app.removeContentTypeParser('application/json');
@@ -19,8 +21,7 @@ app.addContentTypeParser(
   { parseAs: 'string' },
   function (_req, body, done) {
     if (!body || body.toString().trim() === '') {
-      // Treat empty body as empty object
-      done(null, {});
+      done(null, undefined);
       return;
     }
     try {
@@ -40,8 +41,32 @@ app.register(fastifyStatic, {
   decorateReply: false,
 });
 
-const mainFactory = new FastifyRouteFactory();
+app.setErrorHandler((err, _req, reply) => {
+  if (err instanceof ZodError) {
+    return reply.status(400).send({
+      status: 400,
+      errors: {
+        body: err.flatten().fieldErrors,
+      },
+    });
+  }
+  if (err instanceof HttpError) {
+    return reply.status(err.statusCode).send({
+      status: err.statusCode,
+      errors: {
+        body: [err.message],
+      },
+    });
+  }
+  return reply.status(500).send({
+    status: 500,
+    errors: {
+      body: ['Internal Server Error'],
+    },
+  });
+});
 
+const mainFactory = new FastifyRouteFactory();
 mainFactory.router('/api', articlesController);
 mainFactory.router('/api', profileController);
 mainFactory.router('/api', userController);

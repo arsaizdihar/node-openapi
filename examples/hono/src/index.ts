@@ -18,12 +18,6 @@ import { logger } from 'hono/logger';
 const app = new Hono();
 app.use(logger());
 
-app.use(async (c, next) => {
-  console.log('request', await c.req.text());
-  await next();
-  console.log('response', await c.res.text());
-});
-
 app.use('*', cors());
 app.use('*', prettyJSON());
 
@@ -53,30 +47,36 @@ mainFactory.doc(
 app.get('/doc', swaggerUI({ url: openAPIDocPath }));
 
 app.onError((err, c) => {
-  console.error(
-    `[Hono Error Handler] Path: ${c.req.path}, Method: ${c.req.method}`,
-    err,
-  );
-  if (err instanceof HttpError) {
-    return c.json({ errors: { body: [err.message] } }, err.statusCode as any);
-  }
   if (err instanceof z.ZodError) {
     return c.json(
       {
+        status: 400,
         errors: {
-          body: err.issues.map(
-            (e: { path: (string | number)[]; message: string }) =>
-              `${e.path.join('.')}: ${e.message}`,
-          ),
+          body: err.flatten().fieldErrors,
         },
       },
-      422,
+      400,
+    );
+  }
+  if (err instanceof HttpError) {
+    return c.json(
+      {
+        status: err.statusCode,
+        errors: { body: [err.message] },
+      },
+      err.statusCode as any,
     );
   }
   if (err instanceof HTTPException) {
     return err.getResponse();
   }
-  return c.json({ errors: { body: ['Internal Server Error'] } }, 500);
+  return c.json(
+    {
+      status: 500,
+      errors: { body: ['Internal Server Error'] },
+    },
+    500,
+  );
 });
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;

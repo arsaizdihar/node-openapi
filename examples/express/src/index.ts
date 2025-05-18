@@ -84,9 +84,9 @@ function errorHandler(
   if (err instanceof ZodError) {
     res.status(400).json({
       status: 400,
-      code: 'BAD_REQUEST',
-      message: 'Invalid request',
-      details: err.flatten().fieldErrors,
+      errors: {
+        body: err.flatten().fieldErrors,
+      },
     });
     next(err);
     return;
@@ -95,7 +95,9 @@ function errorHandler(
   if (err instanceof HttpError) {
     res.status(err.statusCode).json({
       status: err.statusCode,
-      message: err.message,
+      errors: {
+        body: [err.message],
+      },
     });
     next(err);
     return;
@@ -103,8 +105,9 @@ function errorHandler(
 
   res.status(500).json({
     status: 500,
-    code: 'INTERNAL_SERVER_ERROR',
-    message: 'Internal Server Error',
+    errors: {
+      body: ['Internal Server Error'],
+    },
   });
   next(err);
 }
