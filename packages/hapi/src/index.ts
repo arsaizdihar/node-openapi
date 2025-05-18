@@ -7,21 +7,28 @@ import {
   ServerRoute,
   Plugin,
   Server,
+  RouteOptionsPreArray,
+  ReqRef,
+  RouteOptionsPreAllOptions,
+  ReqRefDefaults,
 } from '@hapi/hapi';
 export { z } from '@node-openapi/core';
 
-type InternalPluginOptions = {
-  middlewares?: Array<(request: Request, h: ResponseToolkit) => Promise<any>>;
+type InternalPluginOptions<TRefs extends ReqRef> = {
+  middlewares?: RouteOptionsPreArray<TRefs>;
 };
 
-export class HapiRouteFactory extends RouteFactory<HapiRequestAdapter> {
-  private readonly _middlewares: Array<
-    (request: Request, h: ResponseToolkit) => Promise<any>
-  > = [];
+export class HapiRouteFactory<
+  TContext extends Record<string, any>,
+  TRefs extends ReqRefDefaults & { RequestApp: TContext } = ReqRefDefaults & {
+    RequestApp: TContext;
+  },
+> extends RouteFactory<HapiRequestAdapter> {
+  private _middlewares: RouteOptionsPreArray<TRefs> = [];
 
-  private plugin: Plugin<InternalPluginOptions, unknown>;
-  private children: { path: string; factory: HapiRouteFactory }[] = [];
-  private routes: ServerRoute[] = [];
+  private plugin: Plugin<InternalPluginOptions<TRefs>, unknown>;
+  private children: { path: string; factory: HapiRouteFactory<TRefs> }[] = [];
+  private routes: ServerRoute<TRefs>[] = [];
 
   constructor(name?: string) {
     super();
@@ -53,7 +60,7 @@ export class HapiRouteFactory extends RouteFactory<HapiRequestAdapter> {
         for (const child of this.children) {
           server.register(
             {
-              plugin: child.factory.plugin,
+              plugin: child.factory.plugin as any,
               options: {
                 middlewares: [
                   // middlewares from parent plugin
@@ -74,13 +81,24 @@ export class HapiRouteFactory extends RouteFactory<HapiRequestAdapter> {
     };
   }
 
-  middleware(handler: (request: Request, h: ResponseToolkit) => Promise<any>) {
+  extend<NewContext extends TContext>(): HapiRouteFactory<NewContext> {
+    const factory = new HapiRouteFactory<NewContext>();
+    factory._middlewares = [
+      ...this._middlewares,
+    ] as unknown as typeof factory._middlewares;
+    return factory;
+  }
+
+  middleware(handler: RouteOptionsPreAllOptions<TRefs>) {
     this._middlewares.push(handler);
   }
 
   route<R extends RouteConfig & { getRoutingPath: () => string }>(
     route: R,
-    handler: (request: Request, h: ResponseToolkit) => Promise<any>,
+    handler: (
+      request: Request<TRefs>,
+      h: ResponseToolkit<TRefs>,
+    ) => Promise<any>,
   ) {
     if (route.method === 'head') {
       throw new Error('Hapi does not support the head method');
@@ -88,7 +106,7 @@ export class HapiRouteFactory extends RouteFactory<HapiRequestAdapter> {
 
     const _route = this._route(route);
 
-    const serverRoute: ServerRoute = {
+    const serverRoute: ServerRoute<TRefs> = {
       method: route.method,
       path: route.getRoutingPath(),
       options: {
@@ -110,8 +128,11 @@ export class HapiRouteFactory extends RouteFactory<HapiRequestAdapter> {
     this.routes.push(serverRoute);
   }
 
-  router(path: string, routeFactory: HapiRouteFactory) {
-    this.children.push({ path, factory: routeFactory });
+  router<NewContext extends TContext>(
+    path: string,
+    routeFactory: HapiRouteFactory<NewContext>,
+  ) {
+    this.children.push({ path, factory: routeFactory as any });
     const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');
     this._registerRouter(pathForOpenAPI, routeFactory);
   }

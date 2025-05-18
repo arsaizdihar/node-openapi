@@ -2,7 +2,7 @@ import { RequestLike } from '@node-openapi/core';
 import { Request } from '@hapi/hapi';
 
 export class HapiRequestAdapter extends RequestLike {
-  constructor(private readonly request: Request) {
+  constructor(private readonly request: Request<any>) {
     super();
   }
 
