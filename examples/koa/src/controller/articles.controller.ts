@@ -26,17 +26,17 @@ import {
 
 export const articlesController = new KoaRouteFactory();
 
-const checkedAuthFactory = createOptionalAuthFactory();
+const optionalAuthFactory = createOptionalAuthFactory();
 
-const authFactory = createRequiredAuthFactory();
+const requiredAuthFactory = createRequiredAuthFactory();
 
-authFactory.route(getArticlesFeedRoute, async (ctx) => {
+requiredAuthFactory.route(getArticlesFeedRoute, async (ctx) => {
   const result = await getArticlesFeed(ctx.state.user, ctx.state.input.query);
 
   ctx.state.helper.json({ status: 200, data: result });
 });
 
-checkedAuthFactory.route(getArticlesRoute, async (ctx) => {
+optionalAuthFactory.route(getArticlesRoute, async (ctx) => {
   const result = await getArticles(
     ctx.state.user ?? undefined,
     ctx.state.input.query,
@@ -45,7 +45,7 @@ checkedAuthFactory.route(getArticlesRoute, async (ctx) => {
   ctx.state.helper.json({ status: 200, data: result });
 });
 
-authFactory.route(createArticleRoute, async (ctx) => {
+requiredAuthFactory.route(createArticleRoute, async (ctx) => {
   const result = await createArticle(
     ctx.state.user,
     ctx.state.input.json.article,
@@ -54,7 +54,7 @@ authFactory.route(createArticleRoute, async (ctx) => {
   ctx.state.helper.json({ status: 201, data: { article: result } });
 });
 
-checkedAuthFactory.route(getArticleRoute, async (ctx) => {
+optionalAuthFactory.route(getArticleRoute, async (ctx) => {
   const result = await getArticle(
     ctx.state.input.param.slug,
     ctx.state.user ?? undefined,
@@ -63,7 +63,7 @@ checkedAuthFactory.route(getArticleRoute, async (ctx) => {
   ctx.state.helper.json({ status: 200, data: { article: result } });
 });
 
-authFactory.route(updateArticleRoute, async (ctx) => {
+requiredAuthFactory.route(updateArticleRoute, async (ctx) => {
   const result = await updateArticle(
     ctx.state.user,
     ctx.state.input.param.slug,
@@ -73,12 +73,12 @@ authFactory.route(updateArticleRoute, async (ctx) => {
   ctx.state.helper.json({ status: 200, data: { article: result } });
 });
 
-authFactory.route(deleteArticleRoute, async (ctx) => {
+requiredAuthFactory.route(deleteArticleRoute, async (ctx) => {
   await deleteArticle(ctx.state.user, ctx.state.input.param.slug);
   ctx.status = 200;
 });
 
-authFactory.route(favoriteArticleRoute, async (ctx) => {
+requiredAuthFactory.route(favoriteArticleRoute, async (ctx) => {
   const result = await favoriteArticle(
     ctx.state.user,
     ctx.state.input.param.slug,
@@ -87,7 +87,7 @@ authFactory.route(favoriteArticleRoute, async (ctx) => {
   ctx.state.helper.json({ status: 200, data: { article: result } });
 });
 
-authFactory.route(unfavoriteArticleRoute, async (ctx) => {
+requiredAuthFactory.route(unfavoriteArticleRoute, async (ctx) => {
   const result = await unfavoriteArticle(
     ctx.state.user,
     ctx.state.input.param.slug,
@@ -96,5 +96,5 @@ authFactory.route(unfavoriteArticleRoute, async (ctx) => {
   ctx.state.helper.json({ status: 200, data: { article: result } });
 });
 
-articlesController.router('', authFactory);
-articlesController.router('', checkedAuthFactory);
+articlesController.router('', requiredAuthFactory);
+articlesController.router('', optionalAuthFactory);

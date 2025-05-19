@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { NextRouteFactory } from '@node-openapi/next';
 import {
   createRequiredAuthFactory,
@@ -23,7 +24,6 @@ import {
   unfavoriteArticle,
   updateArticle,
 } from 'ws-common/service/articles.service';
-import { NextResponse } from 'next/server';
 
 export const articlesController = new NextRouteFactory();
 

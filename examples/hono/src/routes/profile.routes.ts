@@ -1,81 +1,72 @@
 import { createRoute, z } from '@node-openapi/hono';
 import { profileSchema } from 'ws-common/domain/user.domain';
 import { defaultRouteSecurity } from './security';
-import { errorsSchema } from './user.routes';
-
-const usernameParam = z.object({ username: z.string() });
-
-const notFoundResponse = {
-  404: {
-    description: 'Profile not found',
-    content: { 'application/json': { schema: errorsSchema } },
-  },
-};
-
-const unauthorizedResponse = {
-  401: {
-    description: 'Unauthorized',
-    content: { 'application/json': { schema: errorsSchema } },
-  },
-};
 
 export const getProfileRoute = createRoute({
-  tags: ['Profile'],
+  tags: ['profile'],
   method: 'get',
+  description: 'Get profile',
+  summary: 'Get profile',
   path: '/profiles/{username}',
-  description: "Get a user's profile",
+  security: defaultRouteSecurity,
   request: {
-    params: usernameParam,
+    params: z.object({ username: z.string() }),
   },
   responses: {
     200: {
-      description: 'Profile retrieved successfully',
+      description: 'Profile',
       content: {
         'application/json': { schema: z.object({ profile: profileSchema }) },
       },
     },
-    ...notFoundResponse,
+    401: {
+      description: 'Unauthorized',
+    },
   },
 });
 
 export const followProfileRoute = createRoute({
-  tags: ['Profile'],
+  tags: ['profile'],
   method: 'post',
+  description: 'Follow profile',
+  summary: 'Follow profile',
   path: '/profiles/{username}/follow',
-  description: 'Follow a user',
   security: defaultRouteSecurity,
   request: {
-    params: usernameParam,
+    params: z.object({ username: z.string() }),
   },
   responses: {
     200: {
-      description: 'Successfully followed user',
+      description: 'Profile followed',
       content: {
         'application/json': { schema: z.object({ profile: profileSchema }) },
       },
     },
-    ...unauthorizedResponse,
-    ...notFoundResponse,
+    401: {
+      description: 'Unauthorized',
+    },
   },
 });
 
 export const unfollowProfileRoute = createRoute({
-  tags: ['Profile'],
+  tags: ['profile'],
   method: 'delete',
+  description: 'Unfollow profile',
+  summary: 'Unfollow profile',
   path: '/profiles/{username}/follow',
-  description: 'Unfollow a user',
   security: defaultRouteSecurity,
   request: {
-    params: usernameParam,
+    params: z.object({ username: z.string() }),
   },
   responses: {
     200: {
-      description: 'Successfully unfollowed user',
+      description: 'Profile unfollowed',
       content: {
         'application/json': { schema: z.object({ profile: profileSchema }) },
       },
     },
-    ...unauthorizedResponse,
-    ...notFoundResponse,
+    401: {
+      description: 'Unauthorized',
+    },
   },
 });

@@ -4,14 +4,14 @@ import {
   createRequiredAuthFactory,
 } from '../factories';
 import {
-  listArticlesRoute,
-  feedArticlesRoute,
-  getArticleRoute,
   createArticleRoute,
-  updateArticleRoute,
   deleteArticleRoute,
   favoriteArticleRoute,
+  getArticleRoute,
+  getArticlesFeedRoute,
+  getArticlesRoute,
   unfavoriteArticleRoute,
+  updateArticleRoute,
 } from '../routes/articles.routes';
 import {
   getArticles,
@@ -24,69 +24,70 @@ import {
   unfavoriteArticle,
 } from 'ws-common/service/articles.service';
 
-const publicArticleController = createOptionalAuthFactory();
+export const articlesController = new HonoRouteFactory();
 
-// For routes requiring authentication
-const authArticleController = createRequiredAuthFactory();
+const optionalAuthFactory = createOptionalAuthFactory();
 
-publicArticleController.route(listArticlesRoute, async (c) => {
-  const query = c.req.valid('query');
-  const currentUser = c.get('user');
-  const result = await getArticles(currentUser ?? undefined, query);
+const requiredAuthFactory = createRequiredAuthFactory();
+
+requiredAuthFactory.route(getArticlesFeedRoute, async (c) => {
+  const result = await getArticlesFeed(c.get('user'), c.req.valid('query'));
   return c.json(result);
 });
 
-authArticleController.route(feedArticlesRoute, async (c) => {
-  const query = c.req.valid('query');
-  const currentUser = c.get('user');
-  const result = await getArticlesFeed(currentUser, query);
+optionalAuthFactory.route(getArticlesRoute, async (c) => {
+  const result = await getArticles(
+    c.get('user') ?? undefined,
+    c.req.valid('query'),
+  );
   return c.json(result);
 });
 
-publicArticleController.route(getArticleRoute, async (c) => {
-  console.log('feed');
-  const { slug } = c.req.valid('param');
-  const currentUser = c.get('user');
-  const result = await getArticle(slug, currentUser ?? undefined);
-  return c.json({ article: result });
-});
-
-authArticleController.route(createArticleRoute, async (c) => {
-  const { article: newArticleData } = c.req.valid('json');
-  const currentUser = c.get('user');
-  const result = await createArticle(currentUser, newArticleData);
+requiredAuthFactory.route(createArticleRoute, async (c) => {
+  const result = await createArticle(
+    c.get('user'),
+    c.req.valid('json').article,
+  );
   return c.json({ article: result }, 201);
 });
 
-authArticleController.route(updateArticleRoute, async (c) => {
-  const { slug } = c.req.valid('param');
-  const { article: articleUpdateData } = c.req.valid('json');
-  const currentUser = c.get('user');
-  const result = await updateArticle(currentUser, slug, articleUpdateData);
+optionalAuthFactory.route(getArticleRoute, async (c) => {
+  const result = await getArticle(
+    c.req.valid('param').slug,
+    c.get('user') ?? undefined,
+  );
   return c.json({ article: result });
 });
 
-authArticleController.route(deleteArticleRoute, async (c) => {
-  const { slug } = c.req.valid('param');
-  const currentUser = c.get('user');
-  await deleteArticle(currentUser, slug);
+requiredAuthFactory.route(updateArticleRoute, async (c) => {
+  const result = await updateArticle(
+    c.get('user'),
+    c.req.valid('param').slug,
+    c.req.valid('json').article,
+  );
+  return c.json({ article: result });
+});
+
+requiredAuthFactory.route(deleteArticleRoute, async (c) => {
+  await deleteArticle(c.get('user'), c.req.valid('param').slug);
   return c.body(null, 204);
 });
 
-authArticleController.route(favoriteArticleRoute, async (c) => {
-  const { slug } = c.req.valid('param');
-  const currentUser = c.get('user');
-  const result = await favoriteArticle(currentUser, slug);
+requiredAuthFactory.route(favoriteArticleRoute, async (c) => {
+  const result = await favoriteArticle(
+    c.get('user'),
+    c.req.valid('param').slug,
+  );
   return c.json({ article: result });
 });
 
-authArticleController.route(unfavoriteArticleRoute, async (c) => {
-  const { slug } = c.req.valid('param');
-  const currentUser = c.get('user');
-  const result = await unfavoriteArticle(currentUser, slug);
+requiredAuthFactory.route(unfavoriteArticleRoute, async (c) => {
+  const result = await unfavoriteArticle(
+    c.get('user'),
+    c.req.valid('param').slug,
+  );
   return c.json({ article: result });
 });
 
-export const articlesController = new HonoRouteFactory();
-articlesController.router('', authArticleController);
-articlesController.router('', publicArticleController);
+articlesController.router('', requiredAuthFactory);
+articlesController.router('', optionalAuthFactory);

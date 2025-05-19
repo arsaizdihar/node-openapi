@@ -15,29 +15,29 @@ import { createRequiredAuthFactory } from '../factories';
 export const userController = new HonoRouteFactory();
 
 userController.route(loginRoute, async (c) => {
-  const { user: loginData } = c.req.valid('json');
-  const result = await loginUser(loginData);
-  return c.json({ user: result }, 200);
+  const { user } = c.req.valid('json');
+  const result = await loginUser(user);
+  return c.json({ user: result });
 });
 
 userController.route(registerRoute, async (c) => {
-  const { user: registerData } = c.req.valid('json');
-  const result = await registerUser(registerData);
+  const { user } = c.req.valid('json');
+  const result = await registerUser(user);
   return c.json({ user: result }, 201);
 });
 
-const authUserController = createRequiredAuthFactory();
+const checkedAuthFactory = createRequiredAuthFactory();
 
-authUserController.route(getCurrentUserRoute, async (c) => {
+checkedAuthFactory.route(getCurrentUserRoute, async (c) => {
   const user = c.get('user');
-  return c.json({ user: user }, 200);
+  return c.json({ user });
 });
 
-authUserController.route(updateUserRoute, async (c) => {
-  const { user: userToUpdate } = c.req.valid('json');
+checkedAuthFactory.route(updateUserRoute, async (c) => {
+  const { user } = c.req.valid('json');
   const currentUser = c.get('user');
-  const updatedUser = await updateUser(currentUser.username, userToUpdate);
-  return c.json({ user: updatedUser }, 200);
+  const result = await updateUser(currentUser.username, user);
+  return c.json({ user: result });
 });
 
-userController.router('/', authUserController);
+userController.router('', checkedAuthFactory);

@@ -14,31 +14,29 @@ import {
   unfollowProfileRoute,
 } from '../routes/profile.routes';
 
-const optionalAuthProfileController = createOptionalAuthFactory();
-
-const requiredAuthProfileController = createRequiredAuthFactory();
-
-optionalAuthProfileController.route(getProfileRoute, async (c) => {
-  const { username } = c.req.valid('param');
-  const currentUser = c.get('user');
-  const profile = await getProfile(username, currentUser);
-  return c.json({ profile });
-});
-
-requiredAuthProfileController.route(followProfileRoute, async (c) => {
-  const { username } = c.req.valid('param');
-  const currentUser = c.get('user');
-  const profile = await followProfile(currentUser, username);
-  return c.json({ profile });
-});
-
-requiredAuthProfileController.route(unfollowProfileRoute, async (c) => {
-  const { username } = c.req.valid('param');
-  const currentUser = c.get('user');
-  const profile = await unfollowProfile(currentUser, username);
-  return c.json({ profile });
-});
-
 export const profileController = new HonoRouteFactory();
-profileController.router('', optionalAuthProfileController);
-profileController.router('', requiredAuthProfileController);
+
+const checkedAuthFactory = createOptionalAuthFactory();
+
+checkedAuthFactory.route(getProfileRoute, async (c) => {
+  const { username } = c.req.valid('param');
+  const profile = await getProfile(username, c.get('user') ?? undefined);
+  return c.json({ profile });
+});
+
+const authProfileFactory = createRequiredAuthFactory();
+
+authProfileFactory.route(followProfileRoute, async (c) => {
+  const { username } = c.req.valid('param');
+  const profile = await followProfile(c.get('user'), username);
+  return c.json({ profile });
+});
+
+authProfileFactory.route(unfollowProfileRoute, async (c) => {
+  const { username } = c.req.valid('param');
+  const profile = await unfollowProfile(c.get('user'), username);
+  return c.json({ profile });
+});
+
+profileController.router('', checkedAuthFactory);
+profileController.router('', authProfileFactory);

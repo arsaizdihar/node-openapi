@@ -4,9 +4,9 @@ import {
   createRequiredAuthFactory,
 } from '../factories';
 import {
-  getCommentsRoute,
   createCommentRoute,
   deleteCommentRoute,
+  getCommentsRoute,
 } from '../routes/comments.routes';
 import {
   getComments,
@@ -14,30 +14,30 @@ import {
   deleteComment,
 } from 'ws-common/service/comments.service';
 
-const publicCommentController = createOptionalAuthFactory();
-const authCommentController = createRequiredAuthFactory();
+export const commentsController = new HonoRouteFactory();
 
-publicCommentController.route(getCommentsRoute, async (c) => {
+const checkedAuthFactory = createOptionalAuthFactory();
+
+checkedAuthFactory.route(getCommentsRoute, async (c) => {
   const { slug } = c.req.valid('param');
-  const result = await getComments(slug);
-  return c.json({ comments: result }, 200);
+  const result = await getComments(slug, c.get('user') ?? undefined);
+  return c.json({ comments: result });
 });
 
-authCommentController.route(createCommentRoute, async (c) => {
+const authFactory = createRequiredAuthFactory();
+
+authFactory.route(createCommentRoute, async (c) => {
   const { slug } = c.req.valid('param');
-  const { comment: newCommentData } = c.req.valid('json');
-  const currentUser = c.get('user');
-  const result = await createComment(slug, newCommentData.body, currentUser);
+  const { comment } = c.req.valid('json');
+  const result = await createComment(slug, comment.body, c.get('user'));
   return c.json({ comment: result }, 201);
 });
 
-authCommentController.route(deleteCommentRoute, async (c) => {
-  const { slug, id: commentId } = c.req.valid('param');
-  const currentUser = c.get('user');
-  await deleteComment(slug, commentId, currentUser);
-  return c.body(null, 204);
+authFactory.route(deleteCommentRoute, async (c) => {
+  const { slug, id } = c.req.valid('param');
+  const result = await deleteComment(slug, id, c.get('user'));
+  return c.json({ comment: result });
 });
 
-export const commentsController = new HonoRouteFactory();
-commentsController.router('', publicCommentController);
-commentsController.router('', authCommentController);
+commentsController.router('', checkedAuthFactory);
+commentsController.router('', authFactory);
