@@ -8,7 +8,7 @@ export class NextRequestAdapter extends RequestLike {
 
   constructor(
     private readonly req: NextRequest,
-    readonly params: Promise<Record<string, string | string[] | undefined>>,
+    readonly params: Record<string, string | string[] | undefined>,
   ) {
     super();
 

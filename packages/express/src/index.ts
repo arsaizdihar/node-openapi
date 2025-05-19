@@ -92,7 +92,7 @@ export class ExpressRouteFactory<
           return;
         }
       },
-      ...handlers,
+      ...(handlers as any),
     );
   }
 

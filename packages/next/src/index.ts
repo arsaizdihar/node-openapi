@@ -1,4 +1,3 @@
-import { OpenApiGeneratorV31 } from '@asteasolutions/zod-to-openapi';
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
   Context,
@@ -10,16 +9,17 @@ import {
   InputTypeParam,
   InputTypeQuery,
   MaybePromise,
+  OpenAPIDefinitions,
   Prettify,
   RouteConfig,
   RouteConfigToHandlerResponse,
   RouteFactory,
   z,
-  OpenAPIDefinitions,
 } from '@node-openapi/core';
 import { NextRequest, NextResponse } from 'next/server';
-import { NextHandler, NextRouteContext } from './helper';
+import { NextHandler } from './helper';
 import { NextRequestAdapter } from './request';
+import { RouteContext, Router, RouterMiddleware } from './router';
 export { z };
 export type { OpenAPIDefinitions, RouteConfig };
 
@@ -31,34 +31,17 @@ type NextMethod =
   | 'PATCH'
   | 'OPTIONS'
   | 'HEAD';
-
-const nextMethods: NextMethod[] = [
-  'GET',
-  'POST',
-  'PUT',
-  'DELETE',
-  'PATCH',
-  'OPTIONS',
-  'HEAD',
-];
-
 export class NextRouteFactory<
   TContext extends Record<string, unknown> = Record<string, unknown>,
 > extends RouteFactory<NextRequestAdapter> {
-  private _handlers: Record<NextMethod, NextHandler<any, any> | undefined> = {
-    GET: undefined,
-    POST: undefined,
-    PUT: undefined,
-    DELETE: undefined,
-    PATCH: undefined,
-    OPTIONS: undefined,
-    HEAD: undefined,
+  private _router = new Router();
+  private _hooks = {
+    afterResponse: [] as ((
+      req: NextRequest,
+      ctx: RouteContext<TContext>,
+      response: NextResponse,
+    ) => MaybePromise<void>)[],
   };
-
-  private _middlewares: ((
-    req: NextRequest,
-    ctx: NextRouteContext & TContext,
-  ) => MaybePromise<void>)[] = [];
 
   constructor() {
     super();
@@ -68,52 +51,35 @@ export class NextRouteFactory<
     TContext & NewContext
   > {
     const factory = new NextRouteFactory<TContext & NewContext>();
-    factory._handlers = { ...this._handlers };
-    factory._middlewares = [...this._middlewares];
+    factory._router = this._router.copy();
     return factory;
   }
 
-  doc<P extends string>(
-    _path: P,
-    configure: OpenAPIObjectConfigV31,
-  ): NextHandler<ReturnType<OpenApiGeneratorV31['generateDocument']>> {
-    return async () => {
+  doc(path: string, configure: OpenAPIObjectConfigV31) {
+    this._router.add('get', path, async () => {
       const document = this.getOpenAPIDocument(configure);
       return NextResponse.json(document);
-    };
+    });
   }
 
   middleware(
     middleware: (
       req: NextRequest,
-      ctx: NextRouteContext & TContext,
+      ctx: RouteContext<TContext>,
     ) => MaybePromise<void>,
   ) {
-    this._middlewares.push(middleware);
+    this._router.middleware(middleware as RouterMiddleware);
     return this;
   }
 
-  merge(...routeFactories: NextRouteFactory[]) {
-    for (const routeFactory of routeFactories) {
-      for (const [method, handler] of Object.entries(routeFactory._handlers)) {
-        if (handler) {
-          this._handlers[method as NextMethod] = handler;
-        }
-      }
-      routeFactory._middlewares.push(...(this._middlewares as any));
-    }
-    return this.router(...routeFactories);
-  }
-
-  router(...routeFactories: NextRouteFactory[]) {
-    for (const routeFactory of routeFactories) {
-      this._registerRouter('/', routeFactory);
-    }
+  router(path: string, routeFactory: NextRouteFactory) {
+    this._router.use(path, routeFactory._router);
+    this._registerRouter(path, routeFactory);
     return this;
   }
 
-  handler<
-    R extends RouteConfig,
+  route<
+    R extends RouteConfig & { getRoutingPath: () => string },
     I extends Input = InputTypeParam<R> &
       InputTypeQuery<R> &
       InputTypeHeader<R> &
@@ -126,22 +92,15 @@ export class NextRouteFactory<
       'data' extends keyof RouteConfigToHandlerResponse<R>
         ? RouteConfigToHandlerResponse<R>['data']
         : any,
-      NextRouteContext<
-        'params' extends keyof I['out'] ? I['out']['params'] : any
-      > & {
-        input: Prettify<I['out']>;
-      } & TContext
+      RouteContext<TContext, Prettify<I['out']>>
     >,
   ) {
     const _route = this._route(route);
 
     const finalHandler = async (
       req: NextRequest,
-      ctx: NextRouteContext & TContext,
+      ctx: RouteContext<TContext, Prettify<I['out']>>,
     ) => {
-      for (const middleware of this._middlewares) {
-        await middleware(req, ctx);
-      }
       const context: Context<NextRequestAdapter> = {
         req: new NextRequestAdapter(req, ctx.params),
         input: {},
@@ -149,26 +108,86 @@ export class NextRouteFactory<
       const c = await _route(context);
       const input = c.input as any;
 
-      const nextCtx = {
-        ...ctx,
-        input,
-      };
+      ctx.input = input;
 
-      return handler(req, nextCtx as any);
+      const response = await handler(req, ctx);
+
+      return response;
     };
 
-    const method = route.method.toUpperCase() as NextMethod;
-    if (!nextMethods.includes(method)) {
-      throw new Error(`Invalid method: ${method}`);
-    }
-
-    this._handlers[method] = finalHandler;
+    this._router.add(route.method, route.getRoutingPath(), finalHandler);
 
     return this;
   }
 
-  get handlers(): Readonly<Record<NextMethod, NextHandler | undefined>> {
-    return this._handlers;
+  get<T = any>(path: string, handler: NextHandler<T, RouteContext<TContext>>) {
+    this._router.add('get', path, handler);
+    return this;
+  }
+
+  post<T = any>(path: string, handler: NextHandler<T, RouteContext<TContext>>) {
+    this._router.add('post', path, handler);
+    return this;
+  }
+
+  put<T = any>(path: string, handler: NextHandler<T, RouteContext<TContext>>) {
+    this._router.add('put', path, handler);
+    return this;
+  }
+
+  delete<T = any>(
+    path: string,
+    handler: NextHandler<T, RouteContext<TContext>>,
+  ) {
+    this._router.add('delete', path, handler);
+    return this;
+  }
+
+  patch<T = any>(
+    path: string,
+    handler: NextHandler<T, RouteContext<TContext>>,
+  ) {
+    this._router.add('patch', path, handler);
+    return this;
+  }
+
+  options<T = any>(
+    path: string,
+    handler: NextHandler<T, RouteContext<TContext>>,
+  ) {
+    this._router.add('options', path, handler);
+    return this;
+  }
+
+  afterResponse(
+    middleware: (
+      req: NextRequest,
+      ctx: RouteContext<TContext>,
+      response: NextResponse,
+    ) => MaybePromise<void>,
+  ) {
+    this._hooks.afterResponse.push(middleware);
+    return this;
+  }
+
+  get handlers(): Record<NextMethod, NextHandler | undefined> {
+    const handler: NextHandler = async (req) => {
+      const { response, context } = await this._router.dispatch(req);
+      for (const hook of this._hooks.afterResponse) {
+        await hook(req, context, response);
+      }
+      return response;
+    };
+
+    return {
+      GET: handler,
+      POST: handler,
+      PUT: handler,
+      DELETE: handler,
+      PATCH: handler,
+      OPTIONS: handler,
+      HEAD: handler,
+    };
   }
 }
 

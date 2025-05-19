@@ -1,13 +1,31 @@
-import { createRequiredAuthFactory } from '@/app/api/factories';
-import { defaultRouteSecurity } from '@/app/api/security';
 import { createRoute, z } from '@node-openapi/next';
-import { NextResponse } from 'next/server';
 import { profileSchema } from 'ws-common/domain/user.domain';
-import { followProfile, unfollowProfile } from 'ws-common/service/user.service';
+import { defaultRouteSecurity } from './security';
 
-export const profileFollowController = createRequiredAuthFactory();
+export const getProfileRoute = createRoute({
+  tags: ['profile'],
+  method: 'get',
+  description: 'Get profile',
+  summary: 'Get profile',
+  path: '/profiles/{username}',
+  security: defaultRouteSecurity,
+  request: {
+    params: z.object({ username: z.string() }),
+  },
+  responses: {
+    200: {
+      description: 'Profile',
+      content: {
+        'application/json': { schema: z.object({ profile: profileSchema }) },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+    },
+  },
+});
 
-const followProfileRoute = createRoute({
+export const followProfileRoute = createRoute({
   tags: ['profile'],
   method: 'post',
   description: 'Follow profile',
@@ -30,7 +48,7 @@ const followProfileRoute = createRoute({
   },
 });
 
-const unfollowProfileRoute = createRoute({
+export const unfollowProfileRoute = createRoute({
   tags: ['profile'],
   method: 'delete',
   description: 'Unfollow profile',
@@ -52,17 +70,3 @@ const unfollowProfileRoute = createRoute({
     },
   },
 });
-
-profileFollowController.handler(followProfileRoute, async (req, ctx) => {
-  const { username } = ctx.input.param;
-  const profile = await followProfile(ctx.user, username);
-  return NextResponse.json({ profile });
-});
-
-profileFollowController.handler(unfollowProfileRoute, async (req, ctx) => {
-  const { username } = ctx.input.param;
-  const profile = await unfollowProfile(ctx.user, username);
-  return NextResponse.json({ profile });
-});
-
-export const { POST, DELETE } = profileFollowController.handlers;
