@@ -26,11 +26,11 @@ import {
 
 export const articlesController = new ExpressRouteFactory();
 
-const checkedAuthFactory = createOptionalAuthFactory();
+const optionalAuthFactory = createOptionalAuthFactory();
 
-const authFactory = createRequiredAuthFactory();
+const requiredAuthFactory = createRequiredAuthFactory();
 
-authFactory.route(getArticlesFeedRoute, async (_, res, next) => {
+requiredAuthFactory.route(getArticlesFeedRoute, async (_, res, next) => {
   try {
     const result = await getArticlesFeed(res.locals.user, res.locals.query);
 
@@ -40,7 +40,7 @@ authFactory.route(getArticlesFeedRoute, async (_, res, next) => {
   }
 });
 
-checkedAuthFactory.route(getArticlesRoute, async (_, res, next) => {
+optionalAuthFactory.route(getArticlesRoute, async (_, res, next) => {
   try {
     const result = await getArticles(
       res.locals.user ?? undefined,
@@ -53,7 +53,7 @@ checkedAuthFactory.route(getArticlesRoute, async (_, res, next) => {
   }
 });
 
-authFactory.route(createArticleRoute, async (_, res, next) => {
+requiredAuthFactory.route(createArticleRoute, async (_, res, next) => {
   try {
     const result = await createArticle(
       res.locals.user,
@@ -66,7 +66,7 @@ authFactory.route(createArticleRoute, async (_, res, next) => {
   }
 });
 
-checkedAuthFactory.route(getArticleRoute, async (_, res, next) => {
+optionalAuthFactory.route(getArticleRoute, async (_, res, next) => {
   try {
     const result = await getArticle(
       res.locals.param.slug,
@@ -79,7 +79,7 @@ checkedAuthFactory.route(getArticleRoute, async (_, res, next) => {
   }
 });
 
-authFactory.route(updateArticleRoute, async (_, res, next) => {
+requiredAuthFactory.route(updateArticleRoute, async (_, res, next) => {
   try {
     const result = await updateArticle(
       res.locals.user,
@@ -93,7 +93,7 @@ authFactory.route(updateArticleRoute, async (_, res, next) => {
   }
 });
 
-authFactory.route(deleteArticleRoute, async (_, res, next) => {
+requiredAuthFactory.route(deleteArticleRoute, async (_, res, next) => {
   try {
     await deleteArticle(res.locals.user, res.locals.param.slug);
     res.status(200).send();
@@ -102,7 +102,7 @@ authFactory.route(deleteArticleRoute, async (_, res, next) => {
   }
 });
 
-authFactory.route(favoriteArticleRoute, async (_, res, next) => {
+requiredAuthFactory.route(favoriteArticleRoute, async (_, res, next) => {
   try {
     const result = await favoriteArticle(
       res.locals.user,
@@ -115,7 +115,7 @@ authFactory.route(favoriteArticleRoute, async (_, res, next) => {
   }
 });
 
-authFactory.route(unfavoriteArticleRoute, async (_, res, next) => {
+requiredAuthFactory.route(unfavoriteArticleRoute, async (_, res, next) => {
   try {
     const result = await unfavoriteArticle(
       res.locals.user,
@@ -128,5 +128,5 @@ authFactory.route(unfavoriteArticleRoute, async (_, res, next) => {
   }
 });
 
-articlesController.router('', authFactory);
-articlesController.router('', checkedAuthFactory);
+articlesController.router('', requiredAuthFactory);
+articlesController.router('', optionalAuthFactory);

@@ -17,8 +17,8 @@ export const commentsController = new ExpressRouteFactory();
 
 const checkedAuthFactory = createOptionalAuthFactory();
 
-checkedAuthFactory.route(getCommentsRoute, async (req, res, next) => {
-  const slug = req.params.slug;
+checkedAuthFactory.route(getCommentsRoute, async (_req, res, next) => {
+  const slug = res.locals.param.slug;
   try {
     const comments = await getComments(slug, res.locals.user ?? undefined);
     res.status(200).json({ comments });

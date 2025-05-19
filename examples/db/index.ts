@@ -2,7 +2,7 @@ export * from './article';
 export * from './comment';
 export * from './tag';
 export * from './user';
-export {
+export type {
   User as UserDB,
   Article as ArticleDB,
   Comment as CommentDB,

@@ -17,7 +17,7 @@ import {
   User,
 } from '../domain/user.domain';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { HttpError } from './error.service';
 
 const JWT_SECRET = process.env.JWT_SECRET!;

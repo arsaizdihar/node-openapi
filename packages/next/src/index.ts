@@ -1,3 +1,5 @@
+import { OpenApiGeneratorV31 } from '@asteasolutions/zod-to-openapi';
+import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
   Context,
   Input,
@@ -7,21 +9,19 @@ import {
   InputTypeJson,
   InputTypeParam,
   InputTypeQuery,
+  MaybePromise,
   Prettify,
   RouteConfig,
+  RouteConfigToHandlerResponse,
   RouteFactory,
+  z,
+  OpenAPIDefinitions,
 } from '@node-openapi/core';
-import { NextRequestAdapter } from './request';
-import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
-import { NextHandler, NextRouteContext } from './helper';
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  extendZodWithOpenApi,
-  OpenApiGeneratorV31,
-} from '@asteasolutions/zod-to-openapi';
-import { z } from 'zod';
-
-extendZodWithOpenApi(z);
+import { NextHandler, NextRouteContext } from './helper';
+import { NextRequestAdapter } from './request';
+export { z };
+export type { OpenAPIDefinitions, RouteConfig };
 
 type NextMethod =
   | 'GET'
@@ -42,8 +42,10 @@ const nextMethods: NextMethod[] = [
   'HEAD',
 ];
 
-export class NextRouteFactory extends RouteFactory<NextRequestAdapter> {
-  private _handlers: Record<NextMethod, NextHandler | undefined> = {
+export class NextRouteFactory<
+  TContext extends Record<string, unknown> = Record<string, unknown>,
+> extends RouteFactory<NextRequestAdapter> {
+  private _handlers: Record<NextMethod, NextHandler<any, any> | undefined> = {
     GET: undefined,
     POST: undefined,
     PUT: undefined,
@@ -53,8 +55,22 @@ export class NextRouteFactory extends RouteFactory<NextRequestAdapter> {
     HEAD: undefined,
   };
 
+  private _middlewares: ((
+    req: NextRequest,
+    ctx: NextRouteContext & TContext,
+  ) => MaybePromise<void>)[] = [];
+
   constructor() {
     super();
+  }
+
+  extend<NewContext extends Record<string, unknown>>(): NextRouteFactory<
+    TContext & NewContext
+  > {
+    const factory = new NextRouteFactory<TContext & NewContext>();
+    factory._handlers = { ...this._handlers };
+    factory._middlewares = [...this._middlewares];
+    return factory;
   }
 
   doc<P extends string>(
@@ -67,8 +83,33 @@ export class NextRouteFactory extends RouteFactory<NextRequestAdapter> {
     };
   }
 
-  router(routeFactory: NextRouteFactory) {
-    this._registerRouter('/', routeFactory);
+  middleware(
+    middleware: (
+      req: NextRequest,
+      ctx: NextRouteContext & TContext,
+    ) => MaybePromise<void>,
+  ) {
+    this._middlewares.push(middleware);
+    return this;
+  }
+
+  merge(...routeFactories: NextRouteFactory[]) {
+    for (const routeFactory of routeFactories) {
+      for (const [method, handler] of Object.entries(routeFactory._handlers)) {
+        if (handler) {
+          this._handlers[method as NextMethod] = handler;
+        }
+      }
+      routeFactory._middlewares.push(...(this._middlewares as any));
+    }
+    return this.router(...routeFactories);
+  }
+
+  router(...routeFactories: NextRouteFactory[]) {
+    for (const routeFactory of routeFactories) {
+      this._registerRouter('/', routeFactory);
+    }
+    return this;
   }
 
   handler<
@@ -82,17 +123,25 @@ export class NextRouteFactory extends RouteFactory<NextRequestAdapter> {
   >(
     route: R,
     handler: NextHandler<
-      'json' extends keyof I['out'] ? I['out']['json'] : any,
+      'data' extends keyof RouteConfigToHandlerResponse<R>
+        ? RouteConfigToHandlerResponse<R>['data']
+        : any,
       NextRouteContext<
         'params' extends keyof I['out'] ? I['out']['params'] : any
       > & {
         input: Prettify<I['out']>;
-      }
+      } & TContext
     >,
   ) {
     const _route = this._route(route);
 
-    const finalHandler = async (req: NextRequest, ctx: NextRouteContext) => {
+    const finalHandler = async (
+      req: NextRequest,
+      ctx: NextRouteContext & TContext,
+    ) => {
+      for (const middleware of this._middlewares) {
+        await middleware(req, ctx);
+      }
       const context: Context<NextRequestAdapter> = {
         req: new NextRequestAdapter(req, ctx.params),
         input: {},
@@ -123,4 +172,4 @@ export class NextRouteFactory extends RouteFactory<NextRequestAdapter> {
   }
 }
 
-export { z };
+export const { createRoute } = NextRouteFactory;

@@ -6,24 +6,9 @@ settings:
 
 catalogs:
   default:
-    '@asteasolutions/zod-to-openapi':
-      specifier: ^7.2.0
-      version: 7.3.0
-    '@vitest/coverage-v8':
-      specifier: ^3.0.9
-      version: 3.0.9
-    tsup:
-      specifier: ^8.3.5
-      version: 8.3.5
     typescript:
       specifier: ^5.6.3
       version: 5.6.3
-    vitest:
-      specifier: ^3.0.9
-      version: 3.0.9
-    zod:
-      specifier: ^3.23.8
-      version: 3.24.3
 
 importers:
 
@@ -289,9 +274,9 @@ importers:
       '@paralleldrive/cuid2':
         specifier: ^2.2.2
         version: 2.2.2
-      bcrypt:
-        specifier: ^5.1.1
-        version: 5.1.1
+      bcryptjs:
+        specifier: ^3.0.2
+        version: 3.0.2
       inversify:
         specifier: 7.0.0-alpha.5
         version: 7.0.0-alpha.5(reflect-metadata@0.2.2)
@@ -308,9 +293,6 @@ importers:
         specifier: ^3.24.3
         version: 3.24.3
     devDependencies:
-      '@types/bcrypt':
-        specifier: ^5.0.2
-        version: 5.0.2
       '@types/jsonwebtoken':
         specifier: ^9.0.9
         version: 9.0.9
@@ -602,6 +584,9 @@ importers:
       swagger-ui-react:
         specifier: ^5.21.0
         version: 5.21.0(@types/react@19.1.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      ws-common:
+        specifier: workspace:*
+        version: link:../common
       zod:
         specifier: 'catalog:'
         version: 3.24.3
@@ -3189,6 +3174,10 @@ packages:
   bcrypt@5.1.1:
     resolution: {integrity: sha512-AGBHOG5hPYZ5Xl9KXzU5iKq9516yEmvCKDg3ecP5kX2aB6UqTeXZxk2ELnDgDm6BQSMlLt9rDB4LoSMx0rYwww==}
     engines: {node: '>= 10.0.0'}
+
+  bcryptjs@3.0.2:
+    resolution: {integrity: sha512-k38b3XOZKv60C4E2hVsXTolJWfkGRMbILBIe2IBITXciy5bOsTKot5kDrf3ZfufQtQOUN5mXceUEpU1rTl9Uog==}
+    hasBin: true
 
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
@@ -9958,6 +9947,8 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
+
+  bcryptjs@3.0.2: {}
 
   binary-extensions@2.3.0: {}
 

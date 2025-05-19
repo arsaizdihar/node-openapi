@@ -1,4 +1,4 @@
-import { mainFactory } from '../main';
+import { mainFactory } from '../api/main';
 
 export const GET = mainFactory.doc('/api/doc', {
   openapi: '3.1.0',
