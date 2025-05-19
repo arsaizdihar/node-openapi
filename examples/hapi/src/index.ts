@@ -13,7 +13,7 @@ import { userController } from './controller/user.controller';
 import { articlesController } from './controller/articles.controller';
 
 const server = new Server({
-  port: 3000,
+  port: process.env.PORT ?? 3000,
   host: 'localhost',
   routes: {
     cors: {

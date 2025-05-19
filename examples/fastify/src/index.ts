@@ -103,8 +103,11 @@ app.get('/api-docs/swagger-initializer.js', (_req, reply) => {
   }`;
   reply.type('application/javascript').send(js);
 });
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-app.listen({ port: 3000 }, () => {
-  console.log('Server is running on port 3000');
-  console.log('API documentation available at http://localhost:3000/api-docs');
+app.listen({ port }, () => {
+  console.log(`Server is running on port ${port}`);
+  console.log(
+    `API documentation available at http://localhost:${port}/api-docs`,
+  );
 });
