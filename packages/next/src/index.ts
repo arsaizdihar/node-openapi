@@ -16,7 +16,6 @@ import {
   RouteFactory,
   z,
   OpenAPIDefinitions,
-  CoreRoute,
 } from '@node-openapi/core';
 import { NextRequest, NextResponse } from 'next/server';
 import { NextHandler, NextRouteContext } from './helper';
@@ -45,14 +44,7 @@ const nextMethods: NextMethod[] = [
 
 export class NextRouteFactory<
   TContext extends Record<string, unknown> = Record<string, unknown>,
-  TRoutes extends Record<string, RouteConfig | undefined> = {},
 > extends RouteFactory<NextRequestAdapter> {
-  private _routes: TRoutes = {} as TRoutes;
-  private _coreRoutes: Record<NextMethod, CoreRoute | undefined> = {} as Record<
-    NextMethod,
-    CoreRoute | undefined
-  >;
-
   private _handlers: Record<NextMethod, NextHandler<any, any> | undefined> = {
     GET: undefined,
     POST: undefined,
@@ -120,37 +112,8 @@ export class NextRouteFactory<
     return this;
   }
 
-  route<R extends RouteConfig>(
-    route: R,
-  ): NextRouteFactory<
-    TContext,
-    {
-      [K in keyof TRoutes | Uppercase<R['method']>]: K extends Uppercase<
-        R['method']
-      >
-        ? R
-        : TRoutes[K];
-    }
-  > {
-    const method = route.method.toUpperCase();
-
-    if (!nextMethods.includes(method as NextMethod)) {
-      throw new Error(`Invalid method: ${method}`);
-    }
-
-    // @ts-expect-error we will augment the type with the return
-    this._routes[method as NextMethod] = route;
-    this._coreRoutes[method as NextMethod] = this._route(
-      route,
-    ) as unknown as CoreRoute;
-    return this as any;
-  }
-
   handler<
-    Method extends keyof TRoutes,
-    R extends RouteConfig = TRoutes[Method] extends RouteConfig
-      ? TRoutes[Method]
-      : never,
+    R extends RouteConfig,
     I extends Input = InputTypeParam<R> &
       InputTypeQuery<R> &
       InputTypeHeader<R> &
@@ -158,7 +121,7 @@ export class NextRouteFactory<
       InputTypeForm<R> &
       InputTypeJson<R>,
   >(
-    method: Method,
+    route: R,
     handler: NextHandler<
       'data' extends keyof RouteConfigToHandlerResponse<R>
         ? RouteConfigToHandlerResponse<R>['data']
@@ -170,11 +133,7 @@ export class NextRouteFactory<
       } & TContext
     >,
   ) {
-    const _route = this._coreRoutes[method as NextMethod];
-
-    if (!_route) {
-      throw new Error(`Route for method ${method.toString()} not found`);
-    }
+    const _route = this._route(route);
 
     const finalHandler = async (
       req: NextRequest,
@@ -198,7 +157,12 @@ export class NextRouteFactory<
       return handler(req, nextCtx as any);
     };
 
-    this._handlers[method as NextMethod] = finalHandler;
+    const method = route.method.toUpperCase() as NextMethod;
+    if (!nextMethods.includes(method)) {
+      throw new Error(`Invalid method: ${method}`);
+    }
+
+    this._handlers[method] = finalHandler;
 
     return this;
   }

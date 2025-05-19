@@ -18,7 +18,6 @@ import {
   InputTypeJson,
   InputTypeParam,
   InputTypeQuery,
-  MaybePromise,
   MiddlewareHandler,
   RouteConfig,
   ValidationTargets,
@@ -33,11 +32,6 @@ export * from './request';
 export * from './json';
 
 export { OpenAPIDefinitions };
-
-export type CoreRoute<
-  Req extends RequestLike = RequestLike,
-  I extends Input = any,
-> = (c: Context<Req, I>) => MaybePromise<Context<Req, I>>;
 
 extendZodWithOpenApi(z);
 
@@ -91,7 +85,7 @@ export abstract class RouteFactory<
       InputTypeCookie<R> &
       InputTypeForm<R> &
       InputTypeJson<R>,
-  >(route: R): CoreRoute<Req, I> {
+  >(route: R): (c: Context<Req>) => Promise<Context<Req, I>> {
     this.openAPIRegistry.registerPath(route);
 
     const validators: MiddlewareHandler<Req>[] = [];
