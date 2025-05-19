@@ -32,7 +32,7 @@ const authArticleController = createRequiredAuthFactory();
 publicArticleController.route(listArticlesRoute, async (c) => {
   const query = c.req.valid('query');
   const currentUser = c.get('user');
-  const result = await getArticles(currentUser, query);
+  const result = await getArticles(currentUser ?? undefined, query);
   return c.json(result);
 });
 
@@ -47,7 +47,7 @@ publicArticleController.route(getArticleRoute, async (c) => {
   console.log('feed');
   const { slug } = c.req.valid('param');
   const currentUser = c.get('user');
-  const result = await getArticle(slug, currentUser);
+  const result = await getArticle(slug, currentUser ?? undefined);
   return c.json({ article: result });
 });
 
