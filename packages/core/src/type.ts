@@ -145,7 +145,7 @@ export type RouteConfigToHandlerResponse<R extends RouteConfig> =
             ExtractContent<R['responses'][Status]['content']>,
             Status
           >
-        : HandlerResponse<{}, ExtractStatusCode<Status>, string>;
+        : HandlerResponse<any, ExtractStatusCode<Status>, string>;
     }[DefinedStatusCodes<R>]
   | ('default' extends keyof R['responses']
       ? R['responses']['default'] extends { content: any }
@@ -155,7 +155,7 @@ export type RouteConfigToHandlerResponse<R extends RouteConfig> =
             Exclude<StatusCode, ExtractStatusCode<DefinedStatusCodes<R>>>
           >
         : HandlerResponse<
-            {},
+            any,
             Exclude<StatusCode, ExtractStatusCode<DefinedStatusCodes<R>>>,
             string
           >
@@ -411,7 +411,15 @@ type OptionalIf200<
   },
 > = T extends { status: 200 } ? { data: T['data']; status?: 200 } : T;
 
-export type StatusCodeOr200<T extends StatusCode | undefined> = T;
+export type StatusCodeOr200<
+  T extends {
+    status?: StatusCode;
+  },
+> = 'status' extends keyof T
+  ? T['status'] extends StatusCode
+    ? T['status']
+    : 200
+  : 200;
 
 type HelperResponseArgKey<
   Format extends ResponseFormat,
@@ -420,7 +428,7 @@ type HelperResponseArgKey<
 > =
   Extract<
     Resp,
-    { format: Format; data: any; status: StatusCode }
+    { format: Format; data: any; status: StatusCode | undefined }
   > extends infer R
     ? OptionalIf200<
         Prettify<

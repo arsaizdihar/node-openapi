@@ -34,6 +34,6 @@ function toCommentView(
     createdAt: comment.createdAt.toISOString(),
     updatedAt: comment.updatedAt.toISOString(),
     body: comment.body,
-    author: toProfileView(comment.author),
+    author: toProfileView(comment.author, null),
   };
 }

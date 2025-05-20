@@ -37,8 +37,8 @@ export { OpenAPIDefinitions };
 extendZodWithOpenApi(z);
 
 export interface ResponseSender<ReturnType> {
-  json(data: any, status: number): ReturnType;
-  text(data: string, status: number): ReturnType;
+  json(data: any, status?: number): ReturnType;
+  text(data: string, status?: number): ReturnType;
 }
 
 export class ResponseValidationError extends Error {
@@ -387,29 +387,29 @@ export abstract class RouteFactory<
     config?: R,
   ): Helper<R> {
     const helper = {
-      json: ({ data, status }: { data: any; status: number }) => {
+      json: ({ data, status }: { data: any; status?: number }) => {
         if (!config) {
-          return send.json(data, status);
+          return send.json(data, status ?? 200);
         }
         const validated = this._validateResponse(
           config,
           data,
           'application/json',
-          status,
+          status ?? 200,
         );
-        return send.json(validated, status);
+        return send.json(validated, status ?? 200);
       },
       text: ({ data, status }: { data: string; status: number }) => {
         if (!config) {
-          return send.text(data, status);
+          return send.text(data, status ?? 200);
         }
         const validated = this._validateResponse(
           config,
           data,
           'text/plain',
-          status,
+          status ?? 200,
         );
-        return send.text(validated as string, status);
+        return send.text(validated as string, status ?? 200);
       },
     };
     return helper as Helper<R, SendReturn>;

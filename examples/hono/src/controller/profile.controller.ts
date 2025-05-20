@@ -21,7 +21,7 @@ const checkedAuthFactory = createOptionalAuthFactory();
 checkedAuthFactory.route(getProfileRoute, async (c) => {
   const { username } = c.req.valid('param');
   const profile = await getProfile(username, c.var.user);
-  return c.typedJson({ data: { profile }, status: 200 });
+  return c.typedJson({ data: { profile } });
 });
 
 const authProfileFactory = createRequiredAuthFactory();
@@ -29,7 +29,7 @@ const authProfileFactory = createRequiredAuthFactory();
 authProfileFactory.route(followProfileRoute, async (c) => {
   const { username } = c.req.valid('param');
   const profile = await followProfile(c.var.user, username);
-  return c.typedJson({ data: { profile }, status: 200 });
+  return c.typedJson({ data: { profile } });
 });
 
 authProfileFactory.route(unfollowProfileRoute, async (c) => {

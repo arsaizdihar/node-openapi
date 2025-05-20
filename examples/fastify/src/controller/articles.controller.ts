@@ -37,7 +37,7 @@ requiredAuthFactory.route(getArticlesFeedRoute, async ({ context, input }) => {
 });
 
 optionalAuthFactory.route(getArticlesRoute, async ({ context, input }) => {
-  const result = await getArticles(context.user ?? undefined, input.query);
+  const result = await getArticles(context.user, input.query);
 
   return { status: 200, data: result };
 });
@@ -49,7 +49,7 @@ requiredAuthFactory.route(createArticleRoute, async ({ context, input }) => {
 });
 
 optionalAuthFactory.route(getArticleRoute, async ({ context, input }) => {
-  const result = await getArticle(input.param.slug, context.user ?? undefined);
+  const result = await getArticle(input.param.slug, context.user);
 
   return { status: 200 as const, data: { article: result } };
 });

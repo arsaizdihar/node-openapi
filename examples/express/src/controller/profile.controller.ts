@@ -23,8 +23,8 @@ checkedAuthFactory.route(
   async ({ input, context, h }, next) => {
     const username = input.param.username;
     try {
-      const profile = await getProfile(username, context.user ?? undefined);
-      h.json({ status: 200, data: { profile } });
+      const profile = await getProfile(username, context.user);
+      h.json({ data: { profile } });
     } catch (error) {
       next(error);
     }
@@ -52,7 +52,7 @@ authProfileFactory.route(
     const username = input.param.username;
     try {
       const profile = await unfollowProfile(context.user, username);
-      h.json({ status: 200, data: { profile } });
+      h.json({ data: { profile } });
     } catch (error) {
       next(error);
     }

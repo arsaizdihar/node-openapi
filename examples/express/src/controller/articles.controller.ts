@@ -36,7 +36,7 @@ requiredAuthFactory.route(
     try {
       const result = await getArticlesFeed(context.user, input.query);
 
-      h.json({ status: 200, data: result });
+      h.json({ data: result });
     } catch (error) {
       next(error);
     }
@@ -49,7 +49,7 @@ optionalAuthFactory.route(
     try {
       const result = await getArticles(context.user, input.query);
 
-      h.json({ status: 200, data: result });
+      h.json({ data: result });
     } catch (error) {
       next(error);
     }
@@ -75,7 +75,7 @@ optionalAuthFactory.route(
     try {
       const result = await getArticle(input.param.slug, context.user);
 
-      h.json({ status: 200, data: { article: result } });
+      h.json({ data: { article: result } });
     } catch (error) {
       next(error);
     }
@@ -92,7 +92,7 @@ requiredAuthFactory.route(
         input.json.article,
       );
 
-      h.json({ status: 200, data: { article: result } });
+      h.json({ data: { article: result } });
     } catch (error) {
       next(error);
     }
@@ -117,7 +117,7 @@ requiredAuthFactory.route(
     try {
       const result = await favoriteArticle(context.user, input.param.slug);
 
-      h.json({ status: 200, data: { article: result } });
+      h.json({ data: { article: result } });
     } catch (error) {
       next(error);
     }
@@ -130,7 +130,7 @@ requiredAuthFactory.route(
     try {
       const result = await unfavoriteArticle(context.user, input.param.slug);
 
-      h.json({ status: 200, data: { article: result } });
+      h.json({ data: { article: result } });
     } catch (error) {
       next(error);
     }

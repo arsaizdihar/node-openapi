@@ -23,7 +23,7 @@ checkedAuthFactory.route(
     const slug = input.param.slug;
     try {
       const comments = await getComments(slug, context.user);
-      h.json({ status: 200, data: { comments } });
+      h.json({ data: { comments } });
     } catch (error) {
       next(error);
     }
@@ -37,7 +37,7 @@ authFactory.route(createCommentRoute, async ({ input, context, h }, next) => {
   const comment = input.json.comment;
   try {
     const newComment = await createComment(slug, comment.body, context.user);
-    h.json({ status: 201, data: { comment: newComment } });
+    h.json({ data: { comment: newComment }, status: 201 });
   } catch (error) {
     next(error);
   }

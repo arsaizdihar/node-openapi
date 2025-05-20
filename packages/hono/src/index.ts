@@ -1,20 +1,15 @@
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
   Context as CoreContext,
-  HandlerResponse,
-  HelperResponseArg,
   InputTypeCookie,
   InputTypeForm,
   InputTypeHeader,
   InputTypeJson,
   InputTypeParam,
   InputTypeQuery,
-  MaybePromise,
   OpenAPIDefinitions,
   RouteConfig,
-  RouteConfigToHandlerResponse,
   RouteFactory,
-  StatusCodeOr200,
   z,
 } from '@node-openapi/core';
 import {
@@ -27,39 +22,10 @@ import {
   Next,
   ValidationTargets,
 } from 'hono';
-import { BlankEnv, BlankInput, TypedResponse } from 'hono/types';
+import { BlankEnv } from 'hono/types';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { HonoRequestAdapter } from './request';
-
-type WithTypedResponse<
-  R extends RouteConfig,
-  E extends Env = BlankEnv,
-  P extends string = any,
-  I extends Input = BlankInput,
-> = HonoContext<E, P, I> & {
-  typedJson: <Response extends HelperResponseArg<R, 'json'>>(
-    response: Response,
-  ) => TypedResponse<
-    Response['data'],
-    StatusCodeOr200<Response['status']>,
-    'json'
-  >;
-  typedText: <Response extends HelperResponseArg<R, 'text', string>>(
-    response: Response,
-  ) => TypedResponse<
-    Response['data'],
-    StatusCodeOr200<Response['status']>,
-    'text'
-  >;
-};
-
-type HandlerWithTypedResponse<
-  R extends RouteConfig,
-  E extends Env = any,
-  P extends string = any,
-  I extends Input = BlankInput,
-  Resp = any,
-> = (c: WithTypedResponse<R, E, P, I>, next: Next) => MaybePromise<Resp>;
+import { HandlerWithTypedResponse, RouteConfigToTypedResponse } from './type';
 
 export class HonoRouteFactory<
   E extends Env = BlankEnv,
@@ -101,7 +67,13 @@ export class HonoRouteFactory<
       InputTypeJson<R>,
   >(
     routeConfig: R,
-    ...handlers: HandlerWithTypedResponse<R, E, R['path'], ValidationInput>[]
+    ...handlers: HandlerWithTypedResponse<
+      R,
+      E,
+      R['path'],
+      ValidationInput,
+      RouteConfigToTypedResponse<R>
+    >[]
   ) {
     const _coreRouteProcessor = this._route(routeConfig);
 
@@ -195,17 +167,6 @@ export class HonoRouteFactory<
 }
 
 export const { createRoute } = HonoRouteFactory;
-
-type PrefixKeys<T extends object> = {
-  [K in keyof T as `_${string & K}`]: T[K];
-};
-
-type HandlerResponseToTypedResponse<R extends HandlerResponse> = PrefixKeys<R>;
-
-export type RouteConfigToTypedResponse<R extends RouteConfig> =
-  RouteConfigToHandlerResponse<R> extends HandlerResponse
-    ? HandlerResponseToTypedResponse<RouteConfigToHandlerResponse<R>>
-    : never;
 
 export { z } from '@node-openapi/core';
 export type { OpenAPIDefinitions, RouteConfig };

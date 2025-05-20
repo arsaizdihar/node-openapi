@@ -17,7 +17,7 @@ export const userController = new HonoRouteFactory();
 userController.route(loginRoute, async (c) => {
   const { user } = c.req.valid('json');
   const result = await loginUser(user);
-  return c.typedJson({ data: { user: result }, status: 200 });
+  return c.typedJson({ data: { user: result } });
 });
 
 userController.route(registerRoute, async (c) => {
@@ -30,14 +30,14 @@ const checkedAuthFactory = createRequiredAuthFactory();
 
 checkedAuthFactory.route(getCurrentUserRoute, async (c) => {
   const user = c.get('user');
-  return c.typedJson({ data: { user }, status: 200 });
+  return c.typedJson({ data: { user } });
 });
 
 checkedAuthFactory.route(updateUserRoute, async (c) => {
   const { user } = c.req.valid('json');
   const currentUser = c.get('user');
   const result = await updateUser(currentUser.username, user);
-  return c.typedJson({ data: { user: result }, status: 200 });
+  return c.typedJson({ data: { user: result } });
 });
 
 userController.router('', checkedAuthFactory);

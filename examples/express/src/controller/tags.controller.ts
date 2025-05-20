@@ -7,7 +7,7 @@ export const tagsController = new ExpressRouteFactory();
 tagsController.route(getTagsRoute, async ({ h }, next) => {
   try {
     const tags = await getTags();
-    h.json({ status: 200, data: { tags } });
+    h.json({ data: { tags } });
   } catch (error) {
     next(error);
   }

@@ -6,5 +6,5 @@ export const tagsController = new HonoRouteFactory();
 
 tagsController.route(getTagsRoute, async (c) => {
   const tags = await getTags();
-  return c.typedJson({ data: { tags }, status: 200 });
+  return c.typedJson({ data: { tags } });
 });

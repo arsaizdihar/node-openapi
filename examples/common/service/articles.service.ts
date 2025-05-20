@@ -103,7 +103,7 @@ export async function getArticlesFeed(user: User, query: ArticleFeedQuery) {
 }
 
 export async function getArticles(user: User | null, query?: ArticleQuery) {
-  const fullUser = user ? await userGet(user.username) : undefined;
+  const fullUser = user ? await userGet(user.username) : null;
 
   const result = await articlesList(
     query?.tag,
@@ -115,21 +115,21 @@ export async function getArticles(user: User | null, query?: ArticleQuery) {
 
   return {
     articles: result.articles.map((article) =>
-      toArticleView(article, fullUser ?? undefined),
+      toArticleView(article, fullUser),
     ),
     articlesCount: result.articlesCount,
   };
 }
 
 export async function getArticle(slug: string, user: User | null) {
-  const fullUser = user ? await userGet(user.username) : undefined;
+  const fullUser = user ? await userGet(user.username) : null;
 
   const article = await articleGet(slug);
   if (!article) {
     throw new ArticleNotFoundError('Article not found');
   }
 
-  return toArticleView(article, fullUser ?? undefined);
+  return toArticleView(article, fullUser);
 }
 
 export async function updateArticle(
@@ -158,7 +158,7 @@ type FullArticle = ArticleDB & {
 
 export function toArticleView(
   article: FullArticle,
-  currentUser?: UserDB & { favorites: ArticleDB[] },
+  currentUser: (UserDB & { favorites: ArticleDB[] }) | null,
 ): Article {
   const favorited = currentUser
     ? currentUser.favorites.some((value) => value.slug === article.slug)

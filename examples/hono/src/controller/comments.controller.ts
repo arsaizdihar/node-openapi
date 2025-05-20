@@ -21,7 +21,7 @@ const checkedAuthFactory = createOptionalAuthFactory();
 checkedAuthFactory.route(getCommentsRoute, async (c) => {
   const { slug } = c.req.valid('param');
   const result = await getComments(slug, c.var.user);
-  return c.typedJson({ data: { comments: result }, status: 200 });
+  return c.typedJson({ data: { comments: result } });
 });
 
 const authFactory = createRequiredAuthFactory();
