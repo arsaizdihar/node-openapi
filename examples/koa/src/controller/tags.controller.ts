@@ -4,7 +4,7 @@ import { getTags } from 'ws-common/service/tags.service';
 
 export const tagsController = new KoaRouteFactory();
 
-tagsController.route(getTagsRoute, async (ctx) => {
+tagsController.route(getTagsRoute, async ({ h }) => {
   const tags = await getTags();
-  ctx.state.helper.json({ status: 200, data: { tags } });
+  h.json({ data: { tags } });
 });

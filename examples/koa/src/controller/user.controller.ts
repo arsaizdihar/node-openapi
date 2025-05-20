@@ -14,29 +14,29 @@ import { createRequiredAuthFactory } from '../factories';
 
 export const userController = new KoaRouteFactory();
 
-userController.route(loginRoute, async (ctx) => {
-  const { user } = ctx.state.input.json;
+userController.route(loginRoute, async ({ input, h }) => {
+  const { user } = input.json;
   const result = await loginUser(user);
-  ctx.state.helper.json({ status: 200, data: { user: result } });
+  h.json({ data: { user: result } });
 });
 
-userController.route(registerRoute, async (ctx) => {
-  const { user } = ctx.state.input.json;
+userController.route(registerRoute, async ({ input, h }) => {
+  const { user } = input.json;
   const result = await registerUser(user);
-  ctx.state.helper.json({ status: 201, data: { user: result } });
+  h.json({ status: 201, data: { user: result } });
 });
 
 const checkedAuthFactory = createRequiredAuthFactory();
-checkedAuthFactory.route(getCurrentUserRoute, async (ctx) => {
-  const user = ctx.state.user;
-  ctx.state.helper.json({ status: 200, data: { user } });
+checkedAuthFactory.route(getCurrentUserRoute, async ({ state, h }) => {
+  const user = state.user;
+  h.json({ data: { user } });
 });
 
-checkedAuthFactory.route(updateUserRoute, async (ctx) => {
-  const { user } = ctx.state.input.json;
-  const currentUser = ctx.state.user;
+checkedAuthFactory.route(updateUserRoute, async ({ input, state, h }) => {
+  const { user } = input.json;
+  const currentUser = state.user;
   const result = await updateUser(currentUser.username, user);
-  ctx.state.helper.json({ status: 200, data: { user: result } });
+  h.json({ data: { user: result } });
 });
 
 userController.router('', checkedAuthFactory);

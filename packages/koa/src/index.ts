@@ -9,7 +9,6 @@ import {
   InputTypeJson,
   InputTypeParam,
   InputTypeQuery,
-  Prettify,
   PrettifyRec,
   RouteConfig,
   RouteConfigToHandlerResponse,
@@ -24,9 +23,13 @@ export class KoaRouteFactory<
   StateT = unknown,
 > extends RouteFactory<KoaRequestAdapter> {
   private readonly _middlewares: Array<Koa.Middleware<StateT>> = [];
+  private readonly _router: Router = new Router();
+  private _validateResponse: boolean;
 
-  constructor(private readonly _router: Router = new Router()) {
+  constructor(options: { router?: Router; validateResponse?: boolean } = {}) {
     super();
+    this._validateResponse = options.validateResponse ?? true;
+    this._router = options.router ?? new Router();
   }
 
   extend<NewStateT>(): KoaRouteFactory<NewStateT> {
@@ -58,8 +61,8 @@ export class KoaRouteFactory<
     route: R,
     ...handlers: Array<
       Koa.Middleware<
-        PrettifyRec<{ input: I['out'] } & StateT & { helper: Helper<R> }>,
-        Koa.DefaultContext,
+        PrettifyRec<StateT>,
+        Koa.DefaultContext & { input: I['out']; h: Helper<R> },
         'data' extends keyof RouteConfigToHandlerResponse<R>
           ? RouteConfigToHandlerResponse<R>['data']
           : any
@@ -93,26 +96,24 @@ export class KoaRouteFactory<
           input: {},
         };
         const c = await _router(context);
-        ctx.state.input = c.input;
-        ctx.state.helper = this.createHelper(ctx);
+        (ctx as any).input = c.input;
+        (ctx as any).h = KoaRouteFactory._createHelper(
+          {
+            json: (data, status) => {
+              ctx.status = status;
+              ctx.body = data;
+            },
+            text: (data, status) => {
+              ctx.status = status;
+              ctx.body = data;
+            },
+          },
+          this._validateResponse ? route : undefined,
+        );
         await next();
       },
-      ...handlers,
+      ...(handlers as Koa.Middleware[]),
     );
-  }
-
-  private createHelper<R extends RouteConfig>(ctx: Koa.Context): Helper<R> {
-    const helper = {
-      json: (response: { data: any; status: number }) => {
-        ctx.status = response.status;
-        ctx.body = response.data;
-      },
-      text: (response: { data: string; status: number }) => {
-        ctx.status = response.status;
-        ctx.body = response.data;
-      },
-    };
-    return helper as Helper<R>;
   }
 
   doc<P extends string>(path: P, configure: OpenAPIObjectConfigV31) {
