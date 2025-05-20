@@ -21,7 +21,7 @@ app.use(logger());
 app.use('*', cors());
 app.use('*', prettyJSON());
 
-const mainFactory = new HonoRouteFactory(app);
+const mainFactory = new HonoRouteFactory({ app });
 
 mainFactory.router('/api', userController);
 mainFactory.router('/api', profileController);

@@ -20,8 +20,8 @@ const checkedAuthFactory = createOptionalAuthFactory();
 
 checkedAuthFactory.route(getCommentsRoute, async (c) => {
   const { slug } = c.req.valid('param');
-  const result = await getComments(slug, c.get('user') ?? undefined);
-  return c.json({ comments: result });
+  const result = await getComments(slug, c.var.user);
+  return c.typedJson({ data: { comments: result }, status: 200 });
 });
 
 const authFactory = createRequiredAuthFactory();
@@ -29,14 +29,14 @@ const authFactory = createRequiredAuthFactory();
 authFactory.route(createCommentRoute, async (c) => {
   const { slug } = c.req.valid('param');
   const { comment } = c.req.valid('json');
-  const result = await createComment(slug, comment.body, c.get('user'));
-  return c.json({ comment: result }, 201);
+  const result = await createComment(slug, comment.body, c.var.user);
+  return c.typedJson({ data: { comment: result }, status: 201 });
 });
 
 authFactory.route(deleteCommentRoute, async (c) => {
   const { slug, id } = c.req.valid('param');
-  const result = await deleteComment(slug, id, c.get('user'));
-  return c.json({ comment: result });
+  await deleteComment(slug, id, c.var.user);
+  return c.body(null);
 });
 
 commentsController.router('', checkedAuthFactory);

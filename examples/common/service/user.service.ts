@@ -93,7 +93,7 @@ function createUserToken(user: { username: string; email: string }) {
   return token;
 }
 
-export async function getProfile(username: string, currentUser?: User) {
+export async function getProfile(username: string, currentUser: User | null) {
   const user = await userGet(username);
   if (!user) {
     throw new UserNotFoundError('User not found');
@@ -137,7 +137,7 @@ export type UserWithFollow = UserWithoutPassword & {
 
 export function toProfileView(
   user: UserWithFollow,
-  currentUser?: UserWithoutPassword,
+  currentUser: UserWithoutPassword | null,
 ): Profile {
   const follows = currentUser
     ? Boolean(

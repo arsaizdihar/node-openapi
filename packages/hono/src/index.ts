@@ -2,6 +2,7 @@ import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1
 import {
   Context as CoreContext,
   HandlerResponse,
+  Helper,
   InputTypeCookie,
   InputTypeForm,
   InputTypeHeader,
@@ -25,18 +26,64 @@ import {
   Next,
   ValidationTargets,
 } from 'hono';
-import { BlankEnv, TypedResponse } from 'hono/types';
-import { StatusCode } from 'hono/utils/http-status';
+import { BlankEnv, BlankInput, TypedResponse } from 'hono/types';
+import { ContentfulStatusCode, StatusCode } from 'hono/utils/http-status';
 import { HonoRequestAdapter } from './request';
-import { ZodMediaTypeObject } from '@asteasolutions/zod-to-openapi';
+
+type WithTypedResponse<
+  R extends RouteConfig,
+  E extends Env = BlankEnv,
+  P extends string = any,
+  I extends Input = BlankInput,
+> = HonoContext<E, P, I> & {
+  typedJson: <Response extends Parameters<Helper<R>['json']>[0]>(
+    response: Response,
+  ) => TypedResponse<
+    'data' extends keyof Response ? Response['data'] : any,
+    'status' extends keyof Response
+      ? Response['status'] extends StatusCode
+        ? Response['status']
+        : StatusCode
+      : StatusCode,
+    'json'
+  >;
+  typedText: <Response extends Parameters<Helper<R>['text']>[0]>(
+    response: Response,
+  ) => TypedResponse<
+    'data' extends keyof Response ? Response['data'] : any,
+    'status' extends keyof Response
+      ? Response['status'] extends StatusCode
+        ? Response['status']
+        : StatusCode
+      : StatusCode,
+    'text'
+  >;
+};
+
+type HandlerWithTypedResponse<
+  R extends RouteConfig,
+  E extends Env = any,
+  P extends string = any,
+  I extends Input = BlankInput,
+  Resp = any,
+> = (c: WithTypedResponse<R, E, P, I>, next: Next) => MaybePromise<Resp>;
 
 export class HonoRouteFactory<
   E extends Env = BlankEnv,
 > extends RouteFactory<HonoRequestAdapter> {
   private readonly _middlewares: Array<MiddlewareHandler<E>> = [];
+  public readonly app: Hono<E>;
+  private readonly _validateResponse: boolean;
 
-  constructor(public readonly app = new Hono<E>()) {
+  constructor(
+    options: {
+      app?: Hono<E>;
+      validateResponse?: boolean;
+    } = {},
+  ) {
     super();
+    this.app = options.app ?? new Hono<E>();
+    this._validateResponse = options.validateResponse ?? true;
   }
 
   extend<NewEnv extends Env>(): HonoRouteFactory<NewEnv> {
@@ -61,29 +108,29 @@ export class HonoRouteFactory<
       InputTypeJson<R>,
   >(
     routeConfig: R,
-    ...handlers: Handler<
-      E,
-      R['path'],
-      ValidationInput,
-      // If response type is defined, only TypedResponse is allowed.
-      R extends {
-        responses: {
-          [statusCode: number]: {
-            content: {
-              [mediaType: string]: ZodMediaTypeObject;
-            };
-          };
-        };
-      }
-        ? MaybePromise<RouteConfigToTypedResponse<R>>
-        : MaybePromise<RouteConfigToTypedResponse<R>> | MaybePromise<Response>
-    >[]
+    ...handlers: HandlerWithTypedResponse<R, E, R['path'], ValidationInput>[]
   ) {
     const _coreRouteProcessor = this._route(routeConfig);
 
     this.app.on(
       [routeConfig.method],
       routeConfig.getRoutingPath(),
+      async (c: HonoContext<E>, next) => {
+        const helper = HonoRouteFactory._createHelper(
+          {
+            json: (data: any, status: ContentfulStatusCode) => {
+              return c.json(data, status) as any;
+            },
+            text: (data: string, status: ContentfulStatusCode) => {
+              return c.text(data, status) as any;
+            },
+          },
+          this._validateResponse ? routeConfig : undefined,
+        );
+        (c as any).typedJson = helper.json;
+        (c as any).typedText = helper.text;
+        return next();
+      },
       ...this._middlewares,
       async (c: HonoContext<E>, next: Next) => {
         const coreProcessingContext: CoreContext<HonoRequestAdapter> = {
@@ -117,7 +164,7 @@ export class HonoRouteFactory<
           return c.json({ error: 'Internal Server Error' }, 500);
         }
       },
-      ...handlers,
+      ...(handlers as Handler[]),
     );
   }
 
@@ -156,18 +203,16 @@ export class HonoRouteFactory<
 
 export const { createRoute } = HonoRouteFactory;
 
+type PrefixKeys<T extends object> = {
+  [K in keyof T as `_${string & K}`]: T[K];
+};
+
+type HandlerResponseToTypedResponse<R extends HandlerResponse> = PrefixKeys<R>;
+
 export type RouteConfigToTypedResponse<R extends RouteConfig> =
-  RouteConfigToHandlerResponse<R> extends HandlerResponse<
-    infer Body,
-    infer Status,
-    infer Format
-  >
-    ? TypedResponse<
-        Body,
-        Status extends StatusCode ? Status : StatusCode,
-        Format extends string ? Format : string
-      >
-    : TypedResponse<any, StatusCode, string>;
+  RouteConfigToHandlerResponse<R> extends HandlerResponse
+    ? HandlerResponseToTypedResponse<RouteConfigToHandlerResponse<R>>
+    : never;
 
 export { z } from '@node-openapi/core';
 export type { OpenAPIDefinitions, RouteConfig };
