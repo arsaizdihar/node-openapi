@@ -157,14 +157,17 @@ export class ExpressRouteFactory<
   private static createHelper<R extends RouteConfig>(
     res: Response,
     routeConfig?: R,
-  ): Helper<R> {
+  ) {
     return ExpressRouteFactory._createHelper(
       {
         json: (data: any, status: number) => {
-          res.status(status).json(data);
+          return res.status(status).json(data);
         },
         text: (data: string, status: number) => {
-          res.header('Content-Type', 'text/plain').status(status).send(data);
+          return res
+            .header('Content-Type', 'text/plain')
+            .status(status)
+            .send(data);
         },
       },
       routeConfig,

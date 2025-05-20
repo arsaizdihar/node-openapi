@@ -397,7 +397,7 @@ export abstract class RouteFactory<
           'application/json',
           status,
         );
-        send.json(validated, status);
+        return send.json(validated, status);
       },
       text: ({ data, status }: { data: string; status: number }) => {
         if (!config) {
@@ -409,10 +409,10 @@ export abstract class RouteFactory<
           'text/plain',
           status,
         );
-        send.text(validated as string, status);
+        return send.text(validated as string, status);
       },
     };
-    return helper as Helper<R>;
+    return helper as Helper<R, SendReturn>;
   }
 }
 
