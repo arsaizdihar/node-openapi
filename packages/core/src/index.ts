@@ -385,7 +385,7 @@ export abstract class RouteFactory<
   protected static _createHelper<R extends RouteConfig, SendReturn>(
     send: ResponseSender<SendReturn>,
     config?: R,
-  ): Helper<R> {
+  ): Helper<R, SendReturn> {
     const helper = {
       json: ({ data, status }: { data: any; status?: number }) => {
         if (!config) {

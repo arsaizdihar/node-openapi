@@ -18,32 +18,23 @@ export const profileController = new HapiRouteFactory();
 
 const checkedAuthFactory = createOptionalAuthFactory();
 
-checkedAuthFactory.route(
-  getProfileRoute,
-  async (req, _h, { helper, input }) => {
-    const profile = await getProfile(
-      input.param.username,
-      req.app.user ?? undefined,
-    );
-    return helper.json({ status: 200, data: { profile } });
-  },
-);
+checkedAuthFactory.route(getProfileRoute, async ({ h, input, context }) => {
+  const profile = await getProfile(input.param.username, context.user);
+  return h.json({ data: { profile } });
+});
 
 const authProfileFactory = createRequiredAuthFactory();
 
-authProfileFactory.route(
-  followProfileRoute,
-  async (req, _h, { helper, input }) => {
-    const profile = await followProfile(req.app.user, input.param.username);
-    return helper.json({ status: 200, data: { profile } });
-  },
-);
+authProfileFactory.route(followProfileRoute, async ({ h, input, context }) => {
+  const profile = await followProfile(context.user, input.param.username);
+  return h.json({ data: { profile } });
+});
 
 authProfileFactory.route(
   unfollowProfileRoute,
-  async (req, _h, { helper, input }) => {
-    const profile = await unfollowProfile(req.app.user, input.param.username);
-    return helper.json({ status: 200, data: { profile } });
+  async ({ h, input, context }) => {
+    const profile = await unfollowProfile(context.user, input.param.username);
+    return h.json({ data: { profile } });
   },
 );
 

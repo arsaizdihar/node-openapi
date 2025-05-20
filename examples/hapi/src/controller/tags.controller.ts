@@ -4,7 +4,7 @@ import { getTags } from 'ws-common/service/tags.service';
 
 export const tagsController = new HapiRouteFactory();
 
-tagsController.route(getTagsRoute, async (_req, _h, { helper }) => {
+tagsController.route(getTagsRoute, async ({ h }) => {
   const tags = await getTags();
-  return helper.json({ status: 200, data: { tags } });
+  return h.json({ data: { tags } });
 });

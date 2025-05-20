@@ -18,30 +18,24 @@ export const commentsController = new HapiRouteFactory();
 
 const checkedAuthFactory = createOptionalAuthFactory();
 
-checkedAuthFactory.route(
-  getCommentsRoute,
-  async (req, _h, { helper, input }) => {
-    const comments = await getComments(
-      input.param.slug,
-      req.app.user ?? undefined,
-    );
-    return helper.json({ status: 200, data: { comments } });
-  },
-);
+checkedAuthFactory.route(getCommentsRoute, async ({ h, input, context }) => {
+  const comments = await getComments(input.param.slug, context.user);
+  return h.json({ status: 200, data: { comments } });
+});
 
 const authFactory = createRequiredAuthFactory();
 
-authFactory.route(createCommentRoute, async (req, _h, { helper, input }) => {
+authFactory.route(createCommentRoute, async ({ h, input, context }) => {
   const newComment = await createComment(
     input.param.slug,
     input.json.comment.body,
-    req.app.user,
+    context.user,
   );
-  return helper.json({ status: 201, data: { comment: newComment } });
+  return h.json({ status: 201, data: { comment: newComment } });
 });
 
-authFactory.route(deleteCommentRoute, async (req, h, { input }) => {
-  await deleteComment(input.param.slug, input.param.id, req.app.user);
+authFactory.route(deleteCommentRoute, async ({ h, input, context }) => {
+  await deleteComment(input.param.slug, input.param.id, context.user);
   return h.response().code(200);
 });
 

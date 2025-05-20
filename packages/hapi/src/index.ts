@@ -41,13 +41,17 @@ export class HapiRouteFactory<
   private plugin: Plugin<InternalPluginOptions<TRefs>, unknown>;
   private children: { path: string; factory: HapiRouteFactory<TRefs> }[] = [];
   private routes: ServerRoute<TRefs>[] = [];
+  private _validateResponse: boolean;
 
-  constructor(name?: string) {
+  constructor(options: { name?: string; validateResponse?: boolean } = {}) {
     super();
+    this._validateResponse = options.validateResponse ?? true;
+    const name =
+      options.name ||
+      'node-openapi-' + Math.random().toString(36).substring(2, 15);
 
     this.plugin = {
-      name:
-        name || 'node-openapi-' + Math.random().toString(36).substring(2, 15),
+      name,
       register: async (server, options) => {
         for (const route of this.routes) {
           let routeOptions = route.options;
@@ -94,7 +98,9 @@ export class HapiRouteFactory<
   }
 
   extend<NewContext extends TContext>(): HapiRouteFactory<NewContext> {
-    const factory = new HapiRouteFactory<NewContext>();
+    const factory = new HapiRouteFactory<NewContext>({
+      validateResponse: this._validateResponse,
+    });
     factory._middlewares = [
       ...this._middlewares,
     ] as unknown as typeof factory._middlewares;
@@ -115,11 +121,12 @@ export class HapiRouteFactory<
       InputTypeJson<R>,
   >(
     route: R,
-    handler: (
-      request: Request<TRefs>,
-      h: ResponseToolkit<TRefs>,
-      args: { input: I['out']; helper: Helper<R, ResponseObject> },
-    ) => Promise<ResponseObject>,
+    handler: (args: {
+      input: I['out'];
+      h: ResponseToolkit<TRefs> & Helper<R, ResponseObject>;
+      req: Request<TRefs>;
+      context: TContext;
+    }) => Promise<ResponseObject>,
   ) {
     if (route.method === 'head') {
       throw new Error('Hapi does not support the head method');
@@ -139,10 +146,33 @@ export class HapiRouteFactory<
           input: {},
         };
 
+        const helper = HapiRouteFactory._createHelper<R, ResponseObject>(
+          {
+            json: (data, status) => {
+              return h
+                .response(data)
+                .code(status)
+                .header('Content-Type', 'application/json');
+            },
+            text: (data, status) => {
+              return h
+                .response(data)
+                .code(status)
+                .header('Content-Type', 'text/plain');
+            },
+          },
+          this._validateResponse ? route : undefined,
+        );
+
+        (h as any).json = helper.json;
+        (h as any).text = helper.text;
+
         const c = await _route(context);
-        return handler(request, h, {
+        return handler({
+          req: request,
           input: c.input as I['out'],
-          helper: this.createHelper(h),
+          h: h as ResponseToolkit<TRefs> & Helper<R, ResponseObject>,
+          context: request.app as TContext,
         });
       },
     };
@@ -176,23 +206,6 @@ export class HapiRouteFactory<
 
   async registerServer(server: Server) {
     return server.register(this.plugin);
-  }
-
-  private createHelper<R extends RouteConfig>(
-    h: ResponseToolkit<TRefs>,
-  ): Helper<R, ResponseObject> {
-    const helper = {
-      json: (response: { data: any; status: number }) => {
-        return h.response(response.data).code(response.status);
-      },
-      text: (response: { data: string; status: number }) => {
-        return h
-          .response(response.data)
-          .type('text/plain')
-          .code(response.status);
-      },
-    };
-    return helper as Helper<R, ResponseObject>;
   }
 
   static createRoute<R extends RouteConfig>(

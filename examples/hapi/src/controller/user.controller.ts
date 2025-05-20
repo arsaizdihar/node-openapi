@@ -16,10 +16,10 @@ import { HttpError } from 'ws-common/service/error.service';
 
 export const userController = new HapiRouteFactory();
 
-userController.route(loginRoute, async (_req, _h, { helper, input }) => {
+userController.route(loginRoute, async ({ h, input }) => {
   try {
     const result = await loginUser(input.json.user);
-    return helper.json({ status: 200, data: { user: result } });
+    return h.json({ status: 200, data: { user: result } });
   } catch (error) {
     if (error instanceof UserNotFoundError) {
       throw new HttpError('Invalid email or password', 401);
@@ -28,23 +28,20 @@ userController.route(loginRoute, async (_req, _h, { helper, input }) => {
   }
 });
 
-userController.route(registerRoute, async (_req, _h, { helper, input }) => {
+userController.route(registerRoute, async ({ h, input }) => {
   const result = await registerUser(input.json.user);
-  return helper.json({ status: 201, data: { user: result } });
+  return h.json({ status: 201, data: { user: result } });
 });
 
 const checkedAuthFactory = createRequiredAuthFactory();
 
-checkedAuthFactory.route(getCurrentUserRoute, async (req, _h, { helper }) => {
-  return helper.json({ status: 200, data: { user: req.app.user } });
+checkedAuthFactory.route(getCurrentUserRoute, async ({ h, context }) => {
+  return h.json({ data: { user: context.user } });
 });
 
-checkedAuthFactory.route(
-  updateUserRoute,
-  async (req, _h, { helper, input }) => {
-    const result = await updateUser(req.app.user.username, input.json.user);
-    return helper.json({ status: 200, data: { user: result } });
-  },
-);
+checkedAuthFactory.route(updateUserRoute, async ({ h, input, context }) => {
+  const result = await updateUser(context.user.username, input.json.user);
+  return h.json({ data: { user: result } });
+});
 
 userController.router('', checkedAuthFactory);
