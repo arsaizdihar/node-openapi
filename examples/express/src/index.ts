@@ -19,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
-const mainFactory = new ExpressRouteFactory(app);
+const mainFactory = new ExpressRouteFactory({ router: app });
 
 mainFactory.router('/api', articlesController);
 mainFactory.router('/api', profileController);

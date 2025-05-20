@@ -66,9 +66,13 @@ export class ExpressRouteFactory<
   Locals extends Record<string, any> = Record<string, any>,
 > extends RouteFactory<ExpressRequestAdapter> {
   private readonly _middlewares: Array<ExpressRequestHandler> = [];
+  private readonly _router: Router;
+  private readonly _validateResponse: boolean;
 
-  constructor(private readonly _router: Router = Router()) {
+  constructor(options: { router?: Router; validateResponse?: boolean } = {}) {
     super();
+    this._router = options.router ?? Router();
+    this._validateResponse = options.validateResponse ?? true;
   }
 
   extend<NewLocals extends Locals>(): ExpressRouteFactory<NewLocals> {
@@ -118,6 +122,7 @@ export class ExpressRouteFactory<
     const expressHandlers = handlers.map((handler) =>
       ExpressRouteFactory.toExpressRequestHandler<R>(
         handler as RequestHandler<Record<string, any>, any>,
+        this._validateResponse ? route : undefined,
       ),
     );
 
@@ -138,6 +143,7 @@ export class ExpressRouteFactory<
           return;
         }
       },
+      this._validateResponse ? route : undefined,
     );
 
     this._router[route.method](
@@ -148,18 +154,22 @@ export class ExpressRouteFactory<
     );
   }
 
-  private static createHelper<R extends RouteConfig>(res: Response): Helper<R> {
-    const helper = {
-      json: (response: { data: any; status: number }) => {
-        res.status(response.status).json(response.data);
+  private static createHelper<R extends RouteConfig>(
+    res: Response,
+    routeConfig?: R,
+  ): Helper<R> {
+    return ExpressRouteFactory._createHelper(
+      {
+        json: (data: any, status: number) => {
+          res.status(status).json(data);
+        },
+        text: (data: string, status: number) => {
+          res.header('Content-Type', 'text/plain').status(status).send(data);
+        },
       },
-      text: (response: { data: string; status: number }) => {
-        res.status(response.status).send(response.data);
-      },
-    };
-    return helper as Helper<R>;
+      routeConfig,
+    );
   }
-
   router(path: string, routeFactory: ExpressRouteFactory) {
     if (this._middlewares.length > 0) {
       this._router.use(path, ...this._middlewares);
@@ -190,6 +200,7 @@ export class ExpressRouteFactory<
 
   private static toExpressRequestHandler<R extends RouteConfig>(
     handler: RequestHandler<Record<string, any>, any>,
+    routeConfig?: R,
   ): ExpressRequestHandler {
     return (req, res, next) => {
       // @ts-expect-error it is our internal property
@@ -203,7 +214,7 @@ export class ExpressRouteFactory<
       if (!c) {
         c = {
           context: {} as Record<string, any>,
-          h: ExpressRouteFactory.createHelper(res),
+          h: ExpressRouteFactory.createHelper(res, routeConfig),
         } as {
           context: Record<string, any>;
           input: unknown;

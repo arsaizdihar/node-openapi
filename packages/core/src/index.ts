@@ -6,11 +6,12 @@ import {
   OpenApiGeneratorV31,
   OpenAPIRegistry,
 } from '@asteasolutions/zod-to-openapi';
-import { z, ZodSchema, ZodType } from 'zod';
+import { z, ZodError, ZodSchema, ZodType } from 'zod';
 import type { RequestLike } from './request';
 import {
   Context,
   HasUndefined,
+  Helper,
   Input,
   InputTypeCookie,
   InputTypeForm,
@@ -34,6 +35,17 @@ export * from './json';
 export { OpenAPIDefinitions };
 
 extendZodWithOpenApi(z);
+
+export interface ResponseSender<ReturnType> {
+  json(data: any, status: number): ReturnType;
+  text(data: string, status: number): ReturnType;
+}
+
+export class ResponseValidationError extends Error {
+  constructor(public readonly zodError: ZodError) {
+    super('Response validation failed', { cause: zodError });
+  }
+}
 
 /**
  * Abstract base class for creating API routes with schema validation and OpenAPI documentation.
@@ -336,6 +348,71 @@ export abstract class RouteFactory<
         }
       }
     });
+  }
+
+  private static _validateResponse<R>(
+    config: RouteConfig,
+    response: R,
+    contentType: string,
+    status: number,
+  ) {
+    const responseByStatus = config.responses?.[status];
+    if (
+      !responseByStatus ||
+      !('content' in responseByStatus) ||
+      !responseByStatus.content?.[contentType]
+    ) {
+      return response;
+    }
+
+    const responseSchema = responseByStatus.content[contentType].schema;
+    if (!responseSchema) {
+      return response;
+    }
+
+    if (!(responseSchema instanceof ZodType)) {
+      return response;
+    }
+
+    const res = responseSchema.safeParse(response);
+    if (!res.success) {
+      throw new ResponseValidationError(res.error);
+    }
+
+    return res.data;
+  }
+
+  protected static _createHelper<R extends RouteConfig, SendReturn>(
+    send: ResponseSender<SendReturn>,
+    config?: R,
+  ): Helper<R> {
+    const helper = {
+      json: ({ data, status }: { data: any; status: number }) => {
+        if (!config) {
+          return send.json(data, status);
+        }
+        const validated = this._validateResponse(
+          config,
+          data,
+          'application/json',
+          status,
+        );
+        send.json(validated, status);
+      },
+      text: ({ data, status }: { data: string; status: number }) => {
+        if (!config) {
+          return send.text(data, status);
+        }
+        const validated = this._validateResponse(
+          config,
+          data,
+          'text/plain',
+          status,
+        );
+        send.text(validated as string, status);
+      },
+    };
+    return helper as Helper<R>;
   }
 }
 
