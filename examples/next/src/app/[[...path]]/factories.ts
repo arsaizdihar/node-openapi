@@ -6,7 +6,7 @@ import { getUserByToken } from 'ws-common/service/user.service';
 export function createOptionalAuthFactory() {
   const factory = new NextRouteFactory<{ user: User | null }>();
 
-  factory.middleware(async (req, { context }) => {
+  factory.middleware(async ({ req, context }) => {
     const token = req.headers.get('authorization');
     if (!token) {
       context.user = null;
@@ -29,7 +29,7 @@ export function createOptionalAuthFactory() {
 export function createRequiredAuthFactory() {
   const factory = createOptionalAuthFactory().extend<{ user: User }>();
 
-  factory.middleware(async (_req, { context }) => {
+  factory.middleware(async ({ context }) => {
     if (!context.user) {
       throw new HttpError('Unauthorized', 401);
     }

@@ -1,33 +1,37 @@
 import { MaybePromise, mergePath } from '@node-openapi/core';
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouter, RadixRouter } from 'radix3';
-import { NextHandler } from './helper';
 
-type Route = {
-  method: string;
-  path: string;
-  handler: NextHandler<any, any>;
-};
+export type HandlerArgs<
+  TContext extends Record<string, unknown> = any,
+  Extend = unknown,
+> = {
+  req: NextRequest;
+  params: Record<string, string | string[] | undefined>;
+  context: TContext;
+} & Extend;
+
+export type RouteHandler<
+  TContext extends Record<string, unknown> = any,
+  Extend = unknown,
+  TResp = any,
+> = (args: HandlerArgs<TContext, Extend>) => MaybePromise<NextResponse<TResp>>;
 
 type RadixPayload = {
   middlewares: RouterMiddleware[];
   method: string;
-  handler: NextHandler<any, any>;
+  handler: RouteHandler;
 };
 
-export type RouteContext<
-  TContext extends Record<string, unknown> = any,
-  Input = unknown,
-> = {
-  params: Record<string, string | string[] | undefined>;
-  context: TContext;
-  input: Input;
+type Route = {
+  method: string;
+  path: string;
+  handler: RouteHandler;
 };
 
 export type RouterMiddleware = (
-  req: NextRequest,
-  ctx: RouteContext,
-) => MaybePromise<void>;
+  args: HandlerArgs,
+) => MaybePromise<NextResponse | void>;
 
 export class Router {
   private _routes: Route[] = [];
@@ -38,7 +42,11 @@ export class Router {
   }[] = [];
   private _radixRouter: RadixRouter<RadixPayload> | null = null;
 
-  add(method: string, path: string, handler: NextHandler<any, any>) {
+  add(
+    method: string,
+    path: string,
+    handler: (args: HandlerArgs) => MaybePromise<NextResponse>,
+  ) {
     this._routes.push({
       method,
       path,
@@ -47,7 +55,7 @@ export class Router {
   }
 
   middleware(
-    middleware: (req: NextRequest, ctx: RouteContext) => MaybePromise<void>,
+    middleware: (args: HandlerArgs) => MaybePromise<NextResponse | void>,
   ) {
     this._middlewares.push(middleware);
   }
@@ -118,28 +126,44 @@ export class Router {
     const match = radixRouter.lookup(
       this.toMatchString(req.method.toLowerCase(), req.nextUrl.pathname),
     );
-    if (!match) {
+
+    const context = {};
+    const params = match?.params ?? {};
+    const args = { req, params, context };
+
+    try {
+      if (!match) {
+        return {
+          success: true as const,
+          response: new NextResponse('Not Found', { status: 404 }),
+          args,
+        };
+      }
+
+      for (const middleware of match.middlewares) {
+        const res = await middleware(args);
+        if (res) {
+          return {
+            success: true as const,
+            response: res,
+            args,
+          };
+        }
+      }
+
+      const response = await match.handler(args);
       return {
-        response: new NextResponse('Not Found', { status: 404 }),
-        context: {
-          params: {},
-          context: {} as any,
-          input: {},
-        } as RouteContext<any, any>,
+        success: true as const,
+        response,
+        args,
+      };
+    } catch (error) {
+      return {
+        success: false as const,
+        error,
+        args,
       };
     }
-    const context = {
-      params: match.params ?? {},
-      context: {} as any,
-      input: {} as any,
-    } as RouteContext<any, any>;
-
-    for (const middleware of match.middlewares) {
-      await middleware(req, context);
-    }
-
-    const response = await match.handler(req, context);
-    return { response, context };
   }
 
   private toMatchString(method: string, path: string) {

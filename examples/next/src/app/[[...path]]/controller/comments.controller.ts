@@ -13,33 +13,32 @@ import {
   deleteComment,
   getComments,
 } from 'ws-common/service/comments.service';
-import { NextResponse } from 'next/server';
 export const commentsController = new NextRouteFactory();
 
 const checkedAuthFactory = createOptionalAuthFactory();
 
-checkedAuthFactory.route(getCommentsRoute, async (req, { input, context }) => {
+checkedAuthFactory.route(getCommentsRoute, async ({ input, context, h }) => {
   const slug = input.param.slug;
-  const comments = await getComments(slug, context.user ?? undefined);
+  const comments = await getComments(slug, context.user);
 
-  return NextResponse.json({ comments });
+  return h.json({ data: { comments } });
 });
 
 const authFactory = createRequiredAuthFactory();
 
-authFactory.route(createCommentRoute, async (req, { input, context }) => {
+authFactory.route(createCommentRoute, async ({ input, context, h }) => {
   const { slug } = input.param;
   const { comment } = input.json;
   const newComment = await createComment(slug, comment.body, context.user);
 
-  return NextResponse.json({ comment: newComment });
+  return h.json({ data: { comment: newComment }, status: 201 });
 });
 
-authFactory.route(deleteCommentRoute, async (req, { input, context }) => {
+authFactory.route(deleteCommentRoute, async ({ input, context, h }) => {
   const { slug, id } = input.param;
   const deletedComment = await deleteComment(slug, id, context.user);
 
-  return NextResponse.json({ comment: deletedComment });
+  return h.json({ data: { comment: deletedComment } });
 });
 
 commentsController.router('', checkedAuthFactory);

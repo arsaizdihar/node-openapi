@@ -1,8 +1,17 @@
-import { NextResponse } from 'next/server';
 import { NextRouteFactory } from '@node-openapi/next';
 import {
-  createRequiredAuthFactory,
+  createArticle,
+  deleteArticle,
+  favoriteArticle,
+  getArticle,
+  getArticles,
+  getArticlesFeed,
+  unfavoriteArticle,
+  updateArticle,
+} from 'ws-common/service/articles.service';
+import {
   createOptionalAuthFactory,
+  createRequiredAuthFactory,
 } from '../factories';
 import {
   createArticleRoute,
@@ -14,16 +23,6 @@ import {
   unfavoriteArticleRoute,
   updateArticleRoute,
 } from '../routes/articles.routes';
-import {
-  createArticle,
-  deleteArticle,
-  favoriteArticle,
-  getArticle,
-  getArticles,
-  getArticlesFeed,
-  unfavoriteArticle,
-  updateArticle,
-} from 'ws-common/service/articles.service';
 
 export const articlesController = new NextRouteFactory();
 
@@ -33,71 +32,62 @@ const requiredAuthFactory = createRequiredAuthFactory();
 
 requiredAuthFactory.route(
   getArticlesFeedRoute,
-  async (req, { input, context }) => {
+  async ({ input, context, h }) => {
     const result = await getArticlesFeed(context.user, input.query);
 
-    return NextResponse.json(result);
+    return h.json({ data: result });
   },
 );
 
-optionalAuthFactory.route(getArticlesRoute, async (req, { input, context }) => {
-  const result = await getArticles(context.user ?? undefined, input.query);
+optionalAuthFactory.route(getArticlesRoute, async ({ input, context, h }) => {
+  const result = await getArticles(context.user, input.query);
 
-  return NextResponse.json(result);
+  return h.json({ data: result });
 });
 
-requiredAuthFactory.route(
-  createArticleRoute,
-  async (req, { input, context }) => {
-    const result = await createArticle(context.user, input.json.article);
+requiredAuthFactory.route(createArticleRoute, async ({ input, context, h }) => {
+  const result = await createArticle(context.user, input.json.article);
 
-    return NextResponse.json({ article: result }, { status: 201 });
-  },
-);
-
-optionalAuthFactory.route(getArticleRoute, async (req, { input, context }) => {
-  const result = await getArticle(input.param.slug, context.user ?? undefined);
-
-  return NextResponse.json({ article: result });
+  return h.json({ data: { article: result }, status: 201 });
 });
 
-requiredAuthFactory.route(
-  updateArticleRoute,
-  async (req, { input, context }) => {
-    const result = await updateArticle(
-      context.user,
-      input.param.slug,
-      input.json.article,
-    );
+optionalAuthFactory.route(getArticleRoute, async ({ input, context, h }) => {
+  const result = await getArticle(input.param.slug, context.user);
 
-    return NextResponse.json({ article: result });
-  },
-);
+  return h.json({ data: { article: result } });
+});
 
-requiredAuthFactory.route(
-  deleteArticleRoute,
-  async (req, { input, context }) => {
-    await deleteArticle(context.user, input.param.slug);
+requiredAuthFactory.route(updateArticleRoute, async ({ input, context, h }) => {
+  const result = await updateArticle(
+    context.user,
+    input.param.slug,
+    input.json.article,
+  );
 
-    return NextResponse.json({}, { status: 200 });
-  },
-);
+  return h.json({ data: { article: result } });
+});
+
+requiredAuthFactory.route(deleteArticleRoute, async ({ input, context, h }) => {
+  await deleteArticle(context.user, input.param.slug);
+
+  return h.json({ data: null });
+});
 
 requiredAuthFactory.route(
   favoriteArticleRoute,
-  async (req, { input, context }) => {
+  async ({ input, context, h }) => {
     const result = await favoriteArticle(context.user, input.param.slug);
 
-    return NextResponse.json({ article: result });
+    return h.json({ data: { article: result } });
   },
 );
 
 requiredAuthFactory.route(
   unfavoriteArticleRoute,
-  async (req, { input, context }) => {
+  async ({ input, context, h }) => {
     const result = await unfavoriteArticle(context.user, input.param.slug);
 
-    return NextResponse.json({ article: result });
+    return h.json({ data: { article: result } });
   },
 );
 

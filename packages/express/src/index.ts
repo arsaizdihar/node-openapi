@@ -220,6 +220,7 @@ export class ExpressRouteFactory<
         c = {
           context: {} as Record<string, any>,
           h: ExpressRouteFactory.createHelper(res, routeConfig),
+          input: undefined,
         } as {
           context: Record<string, any>;
           input: unknown;
