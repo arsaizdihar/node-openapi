@@ -2,7 +2,7 @@ import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1
 import {
   Context as CoreContext,
   HandlerResponse,
-  Helper,
+  HelperResponseArg,
   InputTypeCookie,
   InputTypeForm,
   InputTypeHeader,
@@ -14,20 +14,21 @@ import {
   RouteConfig,
   RouteConfigToHandlerResponse,
   RouteFactory,
+  StatusCodeOr200,
   z,
 } from '@node-openapi/core';
 import {
-  Context as HonoContext,
   Env,
   Handler,
   Hono,
+  Context as HonoContext,
   Input,
   MiddlewareHandler,
   Next,
   ValidationTargets,
 } from 'hono';
 import { BlankEnv, BlankInput, TypedResponse } from 'hono/types';
-import { ContentfulStatusCode, StatusCode } from 'hono/utils/http-status';
+import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { HonoRequestAdapter } from './request';
 
 type WithTypedResponse<
@@ -36,26 +37,18 @@ type WithTypedResponse<
   P extends string = any,
   I extends Input = BlankInput,
 > = HonoContext<E, P, I> & {
-  typedJson: <Response extends Parameters<Helper<R>['json']>[0]>(
+  typedJson: <Response extends HelperResponseArg<R, 'json'>>(
     response: Response,
   ) => TypedResponse<
-    'data' extends keyof Response ? Response['data'] : any,
-    'status' extends keyof Response
-      ? Response['status'] extends StatusCode
-        ? Response['status']
-        : StatusCode
-      : StatusCode,
+    Response['data'],
+    StatusCodeOr200<Response['status']>,
     'json'
   >;
-  typedText: <Response extends Parameters<Helper<R>['text']>[0]>(
+  typedText: <Response extends HelperResponseArg<R, 'text', string>>(
     response: Response,
   ) => TypedResponse<
-    'data' extends keyof Response ? Response['data'] : any,
-    'status' extends keyof Response
-      ? Response['status'] extends StatusCode
-        ? Response['status']
-        : StatusCode
-      : StatusCode,
+    Response['data'],
+    StatusCodeOr200<Response['status']>,
     'text'
   >;
 };

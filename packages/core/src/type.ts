@@ -404,15 +404,48 @@ type OmitDistributive<T, K extends keyof any> = T extends any
   ? Omit<T, K>
   : never;
 
+type OptionalIf200<
+  T extends {
+    data: any;
+    status: StatusCode;
+  },
+> = T extends { status: 200 } ? { data: T['data']; status?: 200 } : T;
+
+export type StatusCodeOr200<T extends StatusCode | undefined> = T;
+
+type HelperResponseArgKey<
+  Format extends ResponseFormat,
+  Resp,
+  DefaultData = any,
+> =
+  Extract<
+    Resp,
+    { format: Format; data: any; status: StatusCode }
+  > extends infer R
+    ? OptionalIf200<
+        Prettify<
+          Extract<
+            OmitDistributive<R, 'format'>,
+            { data: any; status: StatusCode }
+          >
+        >
+      >
+    : { status: StatusCode; data: DefaultData };
+
 type HelperKey<
   Format extends ResponseFormat,
   Resp,
   ReturnType = void,
   DefaultData = any,
-> =
-  Extract<Resp, { format: Format }> extends infer R
-    ? (response: Prettify<OmitDistributive<R, 'format'>>) => ReturnType
-    : (response: { status: StatusCode; data: DefaultData }) => ReturnType;
+> = (response: HelperResponseArgKey<Format, Resp, DefaultData>) => ReturnType;
+
+export type HelperResponseArg<
+  R extends RouteConfig,
+  Format extends ResponseFormat,
+  DefaultData = any,
+  Resp extends
+    RouteConfigToHandlerResponse<R> = RouteConfigToHandlerResponse<R>,
+> = HelperResponseArgKey<Format, Resp, DefaultData>;
 
 export type Helper<
   R extends RouteConfig,
