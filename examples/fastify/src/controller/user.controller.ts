@@ -14,33 +14,33 @@ import { createRequiredAuthFactory } from '../factories';
 
 export const userController = new FastifyRouteFactory();
 
-userController.route(loginRoute, async ({ input }) => {
+userController.route(loginRoute, async ({ input, h }) => {
   const { user } = input.json;
   const result = await loginUser(user);
 
-  return { status: 200 as const, data: { user: result } };
+  h.json({ data: { user: result } });
 });
 
-userController.route(registerRoute, async ({ input }) => {
+userController.route(registerRoute, async ({ input, h }) => {
   const { user } = input.json;
   const result = await registerUser(user);
 
-  return { status: 201 as const, data: { user: result } };
+  h.json({ data: { user: result }, status: 201 });
 });
 
 const checkedAuthFactory = createRequiredAuthFactory();
-checkedAuthFactory.route(getCurrentUserRoute, async ({ context }) => {
+checkedAuthFactory.route(getCurrentUserRoute, async ({ context, h }) => {
   const user = context.user;
 
-  return { status: 200 as const, data: { user } };
+  h.json({ data: { user } });
 });
 
-checkedAuthFactory.route(updateUserRoute, async ({ context, input }) => {
+checkedAuthFactory.route(updateUserRoute, async ({ context, input, h }) => {
   const { user } = input.json;
   const currentUser = context.user;
   const result = await updateUser(currentUser.username, user);
 
-  return { status: 200 as const, data: { user: result } };
+  h.json({ data: { user: result } });
 });
 
 userController.router('', checkedAuthFactory);

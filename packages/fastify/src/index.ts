@@ -1,7 +1,7 @@
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
   Context,
-  HandlerResponse,
+  Helper,
   Input,
   InputTypeCookie,
   InputTypeForm,
@@ -9,8 +9,8 @@ import {
   InputTypeJson,
   InputTypeParam,
   InputTypeQuery,
+  MaybePromise,
   RouteConfig,
-  RouteConfigToHandlerResponse,
   RouteFactory,
 } from '@node-openapi/core';
 import {
@@ -28,6 +28,21 @@ type RouteHandlerMethodWithContext<Context extends Record<string, any>> = (
   { context }: { context: Context },
 ) => Promise<void>;
 
+const INTERNAL = Symbol('INTERNAL');
+
+function getInternal(request: FastifyRequest) {
+  // @ts-expect-error internal symbol
+  let c = request[INTERNAL];
+  if (!c) {
+    c = {
+      context: {},
+    };
+    // @ts-expect-error internal symbol
+    request[INTERNAL] = c;
+  }
+  return c;
+}
+
 class Router {
   private routes: Array<RouteOptions> = [];
 
@@ -41,12 +56,8 @@ class Router {
 
   middleware(handler: RouteHandlerMethodWithContext<any>) {
     this.middlewares.push(async (request, reply) => {
-      let context = (request as any).__internal_node_openapi_context;
-      if (!context) {
-        context = {};
-        (request as any).__internal_node_openapi_context = context;
-      }
-      await handler(request, reply, { context });
+      const c = getInternal(request);
+      await handler(request, reply, { context: c.context });
     });
   }
 
@@ -89,15 +100,19 @@ export class FastifyRouteFactory<
   TContext extends Record<string, any> = Record<string, any>,
 > extends RouteFactory<FastifyRequestAdapter> {
   private readonly _router: Router = new Router();
+  private readonly _validateResponse: boolean;
 
-  constructor() {
+  constructor(options: { validateResponse?: boolean } = {}) {
     super();
+    this._validateResponse = options.validateResponse ?? true;
   }
 
   extend<NewContext extends TContext>(): FastifyRouteFactory<
     TContext & NewContext
   > {
-    const factory = new FastifyRouteFactory<TContext & NewContext>();
+    const factory = new FastifyRouteFactory<TContext & NewContext>({
+      validateResponse: this._validateResponse,
+    });
     factory._router.middlewares = [...this._router.middlewares];
     return factory;
   }
@@ -126,9 +141,8 @@ export class FastifyRouteFactory<
       input: I['out'];
       request: FastifyRequest;
       reply: FastifyReply;
-    }) =>
-      | Promise<Omit<RouteConfigToHandlerResponse<R>, 'format'>>
-      | Omit<RouteConfigToHandlerResponse<R>, 'format'>,
+      h: Helper<R>;
+    }) => MaybePromise<void>,
   ) {
     const _route = this._route(route);
 
@@ -142,24 +156,36 @@ export class FastifyRouteFactory<
             input: {},
           };
 
-          const c = await _route(context);
-          const input = c.input as any;
-          (request as any).__internal_node_openapi_routeConfig = {
-            ...(request as any).__internal_node_openapi_routeConfig,
-            ...input,
-          };
+          const validatorContext = await _route(context);
+          const c = getInternal(request);
+          c.input = validatorContext.input;
         },
       ],
       handler: async (request, reply) => {
-        const context = (request as any).__internal_node_openapi_context;
-        const input = (request as any)
-          .__internal_node_openapi_routeConfig as I['out'];
-        const result = await handler({ context, input, request, reply });
-        const response = result as Omit<
-          HandlerResponse<any, any, any>,
-          'format'
-        >;
-        return reply.status(response.status).send(response.data);
+        const c = getInternal(request);
+        await handler({
+          context: c.context,
+          input: c.input,
+          request,
+          reply,
+          h: FastifyRouteFactory._createHelper(
+            {
+              json: (data, status) => {
+                reply
+                  .header('Content-Type', 'application/json')
+                  .status(status)
+                  .send(data);
+              },
+              text: (data, status) => {
+                reply
+                  .header('Content-Type', 'text/plain')
+                  .status(status)
+                  .send(data);
+              },
+            },
+            this._validateResponse ? route : undefined,
+          ),
+        });
       },
     });
   }

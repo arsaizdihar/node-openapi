@@ -46,7 +46,9 @@ export class HonoRouteFactory<
   }
 
   extend<NewEnv extends Env>(): HonoRouteFactory<NewEnv> {
-    const factory = new HonoRouteFactory<NewEnv>();
+    const factory = new HonoRouteFactory<NewEnv>({
+      validateResponse: this._validateResponse,
+    });
     factory._middlewares.push(
       ...(this._middlewares as unknown as MiddlewareHandler<NewEnv>[]),
     );

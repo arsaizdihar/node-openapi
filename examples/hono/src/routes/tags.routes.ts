@@ -13,5 +13,8 @@ export const getTagsRoute = createRoute({
         'application/json': { schema: z.object({ tags: z.array(z.string()) }) },
       },
     },
+    400: {
+      description: 'Bad Request',
+    },
   },
 });

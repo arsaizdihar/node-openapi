@@ -3,9 +3,13 @@
  * Provides types, validation, and OpenAPI documentation utilities.
  */
 import {
+  extendZodWithOpenApi,
   OpenApiGeneratorV31,
   OpenAPIRegistry,
 } from '@asteasolutions/zod-to-openapi';
+import type { OpenAPIDefinitions } from '@asteasolutions/zod-to-openapi/dist/openapi-registry';
+import { OpenAPIObjectConfig } from '@asteasolutions/zod-to-openapi/dist/v3.0/openapi-generator';
+import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import { z, ZodError, ZodSchema, ZodType } from 'zod';
 import type { RequestLike } from './request';
 import {
@@ -23,22 +27,18 @@ import {
   RouteConfig,
   ValidationTargets,
 } from './type';
-import { OpenAPIObjectConfig } from '@asteasolutions/zod-to-openapi/dist/v3.0/openapi-generator';
-import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
-import type { OpenAPIDefinitions } from '@asteasolutions/zod-to-openapi/dist/openapi-registry';
-export * from './type';
-export * from './status';
-export * from './request';
 export * from './json';
+export * from './request';
+export * from './status';
+export * from './type';
 
 export { OpenAPIDefinitions };
 
 extendZodWithOpenApi(z);
 
 export interface ResponseSender<ReturnType> {
-  json(data: any, status?: number): ReturnType;
-  text(data: string, status?: number): ReturnType;
+  json(data: any, status: number): ReturnType;
+  text(data: string, status: number): ReturnType;
 }
 
 export class ResponseValidationError extends Error {

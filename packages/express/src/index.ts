@@ -31,7 +31,7 @@ export type { OpenAPIDefinitions, RouteConfig };
 type RequestArg<
   ReqContext extends Record<string, any>,
   Input = never,
-  H extends Helper<any> = Helper<any>,
+  H = Helper<any>,
   Locals extends Record<string, any> = Record<string, any>,
   P = Record<string, string>,
   ResBody = any,
@@ -48,7 +48,7 @@ type RequestArg<
 type RequestHandler<
   ReqContext extends Record<string, any>,
   Input = never,
-  H extends Helper<any> = Helper<any>,
+  H = Helper<any>,
   Locals extends Record<string, any> = Record<string, any>,
   P = Record<string, string>,
   ResBody = any,
@@ -76,7 +76,9 @@ export class ExpressRouteFactory<
   }
 
   extend<NewLocals extends Locals>(): ExpressRouteFactory<NewLocals> {
-    const factory = new ExpressRouteFactory<NewLocals>();
+    const factory = new ExpressRouteFactory<NewLocals>({
+      validateResponse: this._validateResponse,
+    });
     factory._middlewares.push(...this._middlewares);
     return factory;
   }
@@ -110,9 +112,9 @@ export class ExpressRouteFactory<
           ? RouteConfigToHandlerResponse<R>['data']
           : any,
         'json' extends keyof I['out'] ? I['out']['json'] : any,
-        'query' extends keyof I['out']
-          ? I['out']['query'] extends Record<string, any>
-            ? I['out']['query']
+        'query' extends keyof I['in']
+          ? I['in']['query'] extends Record<string, any>
+            ? I['in']['query']
             : Record<string, any>
           : Record<string, any>
       >
@@ -121,7 +123,7 @@ export class ExpressRouteFactory<
     const _route = this._route(route);
     const expressHandlers = handlers.map((handler) =>
       ExpressRouteFactory.toExpressRequestHandler<R>(
-        handler as RequestHandler<Record<string, any>, any>,
+        handler as any,
         this._validateResponse ? route : undefined,
       ),
     );
@@ -160,13 +162,13 @@ export class ExpressRouteFactory<
   ) {
     return ExpressRouteFactory._createHelper(
       {
-        json: (data: any, status: number) => {
-          return res.status(status).json(data);
+        json: (data, status) => {
+          return res.status(status ?? 200).json(data);
         },
-        text: (data: string, status: number) => {
+        text: (data, status) => {
           return res
             .header('Content-Type', 'text/plain')
-            .status(status)
+            .status(status ?? 200)
             .send(data);
         },
       },
@@ -230,7 +232,7 @@ export class ExpressRouteFactory<
         {
           context: c.context,
           input: c.input,
-          h: c.h,
+          h: c.h as any,
           req,
           res,
         },

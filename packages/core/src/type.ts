@@ -425,20 +425,20 @@ type HelperResponseArgKey<
   Format extends ResponseFormat,
   Resp,
   DefaultData = any,
-> =
-  Extract<
-    Resp,
-    { format: Format; data: any; status: StatusCode | undefined }
-  > extends infer R
-    ? OptionalIf200<
-        Prettify<
-          Extract<
-            OmitDistributive<R, 'format'>,
-            { data: any; status: StatusCode }
-          >
+> = Resp extends { format: Format; data: any; status: StatusCode }
+  ? Prettify<OptionalIf200<OmitDistributive<Resp, 'format'>>>
+  : Resp extends {
+        format: KnownResponseFormat;
+      }
+    ? never
+    : Resp extends { status: StatusCode; data: DefaultData }
+      ? Prettify<
+          OptionalIf200<{
+            data: DefaultData;
+            status: Resp['status'];
+          }>
         >
-      >
-    : { status: StatusCode; data: DefaultData };
+      : never;
 
 type HelperKey<
   Format extends ResponseFormat,

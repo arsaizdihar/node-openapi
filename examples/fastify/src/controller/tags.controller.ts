@@ -4,8 +4,8 @@ import { getTags } from 'ws-common/service/tags.service';
 
 export const tagsController = new FastifyRouteFactory();
 
-tagsController.route(getTagsRoute, async () => {
+tagsController.route(getTagsRoute, async ({ h }) => {
   const tags = await getTags();
 
-  return { status: 200 as const, data: { tags } };
+  h.json({ data: { tags } });
 });
