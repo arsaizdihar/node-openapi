@@ -1,6 +1,6 @@
 {
   "name": "@node-openapi/hono",
-  "version": "1.0.0",
+  "version": "0.0.1-beta.1",
   "description": "Hono adapter for node-openapi",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -29,7 +29,7 @@
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
     "@node-openapi/core": "workspace:*",
-    "hono": "^4.7.5",
+    "hono": "^4",
     "zod": "catalog:"
   },
   "devDependencies": {

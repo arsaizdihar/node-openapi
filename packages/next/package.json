@@ -1,6 +1,6 @@
 {
   "name": "@node-openapi/next",
-  "version": "1.0.0",
+  "version": "0.0.1-beta.1",
   "description": "Next.js adapter for node-openapi",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -29,7 +29,7 @@
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
     "@node-openapi/core": "workspace:*",
-    "next": "^15.3.1",
+    "next": "^15",
     "radix3": "^1.1.2",
     "zod": "catalog:"
   },
