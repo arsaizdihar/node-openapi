@@ -18,37 +18,46 @@ export const profileController = new ExpressRouteFactory();
 
 const checkedAuthFactory = createOptionalAuthFactory();
 
-checkedAuthFactory.route(getProfileRoute, async (req, res, next) => {
-  const { username } = req.params;
-  try {
-    const profile = await getProfile(username, res.locals.user ?? undefined);
-    res.status(200).json({ profile });
-  } catch (error) {
-    next(error);
-  }
-});
+checkedAuthFactory.route(
+  getProfileRoute,
+  async ({ input, context, h }, next) => {
+    const username = input.param.username;
+    try {
+      const profile = await getProfile(username, context.user ?? undefined);
+      h.json({ status: 200, data: { profile } });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 const authProfileFactory = createRequiredAuthFactory();
 
-authProfileFactory.route(followProfileRoute, async (req, res, next) => {
-  const { username } = req.params;
-  try {
-    const profile = await followProfile(res.locals.user, username);
-    res.status(200).json({ profile });
-  } catch (error) {
-    next(error);
-  }
-});
+authProfileFactory.route(
+  followProfileRoute,
+  async ({ input, context, h }, next) => {
+    const username = input.param.username;
+    try {
+      const profile = await followProfile(context.user, username);
+      h.json({ status: 200, data: { profile } });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
-authProfileFactory.route(unfollowProfileRoute, async (req, res, next) => {
-  const { username } = req.params;
-  try {
-    const profile = await unfollowProfile(res.locals.user, username);
-    res.status(200).json({ profile });
-  } catch (error) {
-    next(error);
-  }
-});
+authProfileFactory.route(
+  unfollowProfileRoute,
+  async ({ input, context, h }, next) => {
+    const username = input.param.username;
+    try {
+      const profile = await unfollowProfile(context.user, username);
+      h.json({ status: 200, data: { profile } });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 profileController.router('', checkedAuthFactory);
 profileController.router('', authProfileFactory);

@@ -30,103 +30,112 @@ const optionalAuthFactory = createOptionalAuthFactory();
 
 const requiredAuthFactory = createRequiredAuthFactory();
 
-requiredAuthFactory.route(getArticlesFeedRoute, async (_, res, next) => {
-  try {
-    const result = await getArticlesFeed(res.locals.user, res.locals.query);
+requiredAuthFactory.route(
+  getArticlesFeedRoute,
+  async ({ input, context, h }, next) => {
+    try {
+      const result = await getArticlesFeed(context.user, input.query);
 
-    res.locals.helper.json({ status: 200, data: result });
-  } catch (error) {
-    next(error);
-  }
-});
+      h.json({ status: 200, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
-optionalAuthFactory.route(getArticlesRoute, async (_, res, next) => {
-  try {
-    const result = await getArticles(
-      res.locals.user ?? undefined,
-      res.locals.query,
-    );
+optionalAuthFactory.route(
+  getArticlesRoute,
+  async ({ input, context, h }, next) => {
+    try {
+      const result = await getArticles(context.user, input.query);
 
-    res.locals.helper.json({ status: 200, data: result });
-  } catch (error) {
-    next(error);
-  }
-});
+      h.json({ status: 200, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
-requiredAuthFactory.route(createArticleRoute, async (_, res, next) => {
-  try {
-    const result = await createArticle(
-      res.locals.user,
-      res.locals.json.article,
-    );
+requiredAuthFactory.route(
+  createArticleRoute,
+  async ({ input, context, h }, next) => {
+    try {
+      const result = await createArticle(context.user, input.json.article);
 
-    res.locals.helper.json({ status: 201, data: { article: result } });
-  } catch (error) {
-    next(error);
-  }
-});
+      h.json({ status: 201, data: { article: result } });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
-optionalAuthFactory.route(getArticleRoute, async (_, res, next) => {
-  try {
-    const result = await getArticle(
-      res.locals.param.slug,
-      res.locals.user ?? undefined,
-    );
+optionalAuthFactory.route(
+  getArticleRoute,
+  async ({ input, context, h }, next) => {
+    try {
+      const result = await getArticle(input.param.slug, context.user);
 
-    res.locals.helper.json({ status: 200, data: { article: result } });
-  } catch (error) {
-    next(error);
-  }
-});
+      h.json({ status: 200, data: { article: result } });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
-requiredAuthFactory.route(updateArticleRoute, async (_, res, next) => {
-  try {
-    const result = await updateArticle(
-      res.locals.user,
-      res.locals.param.slug,
-      res.locals.json.article,
-    );
+requiredAuthFactory.route(
+  updateArticleRoute,
+  async ({ input, context, h }, next) => {
+    try {
+      const result = await updateArticle(
+        context.user,
+        input.param.slug,
+        input.json.article,
+      );
 
-    res.locals.helper.json({ status: 200, data: { article: result } });
-  } catch (error) {
-    next(error);
-  }
-});
+      h.json({ status: 200, data: { article: result } });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
-requiredAuthFactory.route(deleteArticleRoute, async (_, res, next) => {
-  try {
-    await deleteArticle(res.locals.user, res.locals.param.slug);
-    res.status(200).send();
-  } catch (error) {
-    next(error);
-  }
-});
+requiredAuthFactory.route(
+  deleteArticleRoute,
+  async ({ input, context, res }, next) => {
+    try {
+      await deleteArticle(context.user, input.param.slug);
+      res.send();
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
-requiredAuthFactory.route(favoriteArticleRoute, async (_, res, next) => {
-  try {
-    const result = await favoriteArticle(
-      res.locals.user,
-      res.locals.param.slug,
-    );
+requiredAuthFactory.route(
+  favoriteArticleRoute,
+  async ({ input, context, h }, next) => {
+    try {
+      const result = await favoriteArticle(context.user, input.param.slug);
 
-    res.locals.helper.json({ status: 200, data: { article: result } });
-  } catch (error) {
-    next(error);
-  }
-});
+      h.json({ status: 200, data: { article: result } });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
-requiredAuthFactory.route(unfavoriteArticleRoute, async (_, res, next) => {
-  try {
-    const result = await unfavoriteArticle(
-      res.locals.user,
-      res.locals.param.slug,
-    );
+requiredAuthFactory.route(
+  unfavoriteArticleRoute,
+  async ({ input, context, h }, next) => {
+    try {
+      const result = await unfavoriteArticle(context.user, input.param.slug);
 
-    res.locals.helper.json({ status: 200, data: { article: result } });
-  } catch (error) {
-    next(error);
-  }
-});
+      h.json({ status: 200, data: { article: result } });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 articlesController.router('', requiredAuthFactory);
 articlesController.router('', optionalAuthFactory);

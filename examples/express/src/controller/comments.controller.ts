@@ -17,34 +17,38 @@ export const commentsController = new ExpressRouteFactory();
 
 const checkedAuthFactory = createOptionalAuthFactory();
 
-checkedAuthFactory.route(getCommentsRoute, async (_req, res, next) => {
-  const slug = res.locals.param.slug;
-  try {
-    const comments = await getComments(slug, res.locals.user ?? undefined);
-    res.status(200).json({ comments });
-  } catch (error) {
-    next(error);
-  }
-});
+checkedAuthFactory.route(
+  getCommentsRoute,
+  async ({ input, context, h }, next) => {
+    const slug = input.param.slug;
+    try {
+      const comments = await getComments(slug, context.user);
+      h.json({ status: 200, data: { comments } });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 const authFactory = createRequiredAuthFactory();
 
-authFactory.route(createCommentRoute, async (_, res, next) => {
-  const { slug } = res.locals.param;
-  const { comment } = res.locals.json;
+authFactory.route(createCommentRoute, async ({ input, context, h }, next) => {
+  const slug = input.param.slug;
+  const comment = input.json.comment;
   try {
-    const newComment = await createComment(slug, comment.body, res.locals.user);
-    res.status(201).json({ comment: newComment });
+    const newComment = await createComment(slug, comment.body, context.user);
+    h.json({ status: 201, data: { comment: newComment } });
   } catch (error) {
     next(error);
   }
 });
 
-authFactory.route(deleteCommentRoute, async (_, res, next) => {
-  const { slug, id } = res.locals.param;
+authFactory.route(deleteCommentRoute, async ({ input, context, res }, next) => {
+  const slug = input.param.slug;
+  const id = input.param.id;
   try {
-    const deletedComment = await deleteComment(slug, id, res.locals.user);
-    res.status(200).json({ comment: deletedComment });
+    await deleteComment(slug, id, context.user);
+    res.send();
   } catch (error) {
     next(error);
   }

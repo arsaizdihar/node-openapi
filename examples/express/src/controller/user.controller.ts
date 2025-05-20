@@ -14,37 +14,37 @@ import { createRequiredAuthFactory } from '../factories';
 
 export const userController = new ExpressRouteFactory();
 
-userController.route(loginRoute, async (_, res, next) => {
-  const { user } = res.locals.json;
+userController.route(loginRoute, async ({ input, h }, next) => {
+  const { user } = input.json;
   try {
     const result = await loginUser(user);
-    res.locals.helper.json({ status: 200, data: { user: result } });
+    h.json({ status: 200, data: { user: result } });
   } catch (error) {
     next(error);
   }
 });
 
-userController.route(registerRoute, async (_, res, next) => {
-  const { user } = res.locals.json;
+userController.route(registerRoute, async ({ input, h }, next) => {
+  const { user } = input.json;
   try {
     const result = await registerUser(user);
-    res.locals.helper.json({ status: 201, data: { user: result } });
+    h.json({ status: 201, data: { user: result } });
   } catch (error) {
     next(error);
   }
 });
 
 const checkedAuthFactory = createRequiredAuthFactory();
-checkedAuthFactory.route(getCurrentUserRoute, async (_, res) => {
-  const user = res.locals.user;
-  res.locals.helper.json({ status: 200, data: { user } });
+checkedAuthFactory.route(getCurrentUserRoute, async ({ context, h }) => {
+  const user = context.user;
+  h.json({ status: 200, data: { user } });
 });
 
-checkedAuthFactory.route(updateUserRoute, async (_, res) => {
-  const { user } = res.locals.json;
-  const currentUser = res.locals.user;
+checkedAuthFactory.route(updateUserRoute, async ({ input, context, h }) => {
+  const { user } = input.json;
+  const currentUser = context.user;
   const result = await updateUser(currentUser.username, user);
-  res.locals.helper.json({ status: 200, data: { user: result } });
+  h.json({ status: 200, data: { user: result } });
 });
 
 userController.router('', checkedAuthFactory);

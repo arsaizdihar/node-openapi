@@ -21,7 +21,7 @@ export async function deleteComment(
   return toCommentView(comment);
 }
 
-export async function getComments(slug: string, currentUser?: User) {
+export async function getComments(slug: string, currentUser: User | null) {
   const comments = await commentsGet(slug, currentUser?.id);
   return comments.map((comment) => toCommentView(comment));
 }

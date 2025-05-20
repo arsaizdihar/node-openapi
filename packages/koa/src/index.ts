@@ -10,6 +10,7 @@ import {
   InputTypeParam,
   InputTypeQuery,
   Prettify,
+  PrettifyRec,
   RouteConfig,
   RouteConfigToHandlerResponse,
   RouteFactory,
@@ -57,7 +58,7 @@ export class KoaRouteFactory<
     route: R,
     ...handlers: Array<
       Koa.Middleware<
-        Prettify<{ input: I['out'] } & StateT & { helper: Helper<R> }>,
+        PrettifyRec<{ input: I['out'] } & StateT & { helper: Helper<R> }>,
         Koa.DefaultContext,
         'data' extends keyof RouteConfigToHandlerResponse<R>
           ? RouteConfigToHandlerResponse<R>['data']

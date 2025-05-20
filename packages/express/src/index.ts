@@ -9,24 +9,63 @@ import {
   InputTypeJson,
   InputTypeParam,
   InputTypeQuery,
+  MaybePromise,
   OpenAPIDefinitions,
   Prettify,
   RouteConfig,
   RouteConfigToHandlerResponse,
   RouteFactory,
 } from '@node-openapi/core';
-import { RequestHandler, Response, Router } from 'express';
+import {
+  NextFunction,
+  Request,
+  RequestHandler as ExpressRequestHandler,
+  Response,
+  Router,
+} from 'express';
 import { ExpressRequestAdapter } from './request';
 export { z } from '@node-openapi/core';
 
 export type { OpenAPIDefinitions, RouteConfig };
 
+type RequestArg<
+  ReqContext extends Record<string, any>,
+  Input = never,
+  H extends Helper<any> = Helper<any>,
+  Locals extends Record<string, any> = Record<string, any>,
+  P = Record<string, string>,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery extends Record<string, any> = Record<string, any>,
+> = Prettify<{
+  context: ReqContext;
+  req: Request<P, ResBody, ReqBody, ReqQuery, Locals>;
+  res: Response<ResBody, Locals>;
+  input: Input extends never ? never : Input;
+  h: H;
+}>;
+
+type RequestHandler<
+  ReqContext extends Record<string, any>,
+  Input = never,
+  H extends Helper<any> = Helper<any>,
+  Locals extends Record<string, any> = Record<string, any>,
+  P = Record<string, string>,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery extends Record<string, any> = Record<string, any>,
+> = (
+  req: RequestArg<ReqContext, Input, H, Locals, P, ResBody, ReqBody, ReqQuery>,
+  next: NextFunction,
+) => MaybePromise<void>;
+
+const INTERNAL = Symbol('INTERNAL');
+
 export class ExpressRouteFactory<
+  TContext extends Record<string, any> = Record<string, any>,
   Locals extends Record<string, any> = Record<string, any>,
 > extends RouteFactory<ExpressRequestAdapter> {
-  private readonly _middlewares: Array<
-    RequestHandler<Record<string, string>, any, any, any, Locals>
-  > = [];
+  private readonly _middlewares: Array<ExpressRequestHandler> = [];
 
   constructor(private readonly _router: Router = Router()) {
     super();
@@ -38,10 +77,12 @@ export class ExpressRouteFactory<
     return factory;
   }
 
-  middleware<
-    R extends RequestHandler<Record<string, string>, any, any, any, Locals>,
-  >(handler: R) {
-    this._middlewares.push(handler);
+  middleware<M extends RequestHandler<TContext, never, Helper<any>, Locals>>(
+    middleware: M,
+  ) {
+    this._middlewares.push(
+      ExpressRouteFactory.toExpressRequestHandler<any>(middleware as any),
+    );
   }
 
   route<
@@ -56,47 +97,58 @@ export class ExpressRouteFactory<
     route: R,
     ...handlers: Array<
       RequestHandler<
+        TContext,
+        I['out'],
+        Helper<R>,
+        Locals,
         Record<string, string>,
         'data' extends keyof RouteConfigToHandlerResponse<R>
           ? RouteConfigToHandlerResponse<R>['data']
           : any,
         'json' extends keyof I['out'] ? I['out']['json'] : any,
-        'query' extends keyof I['out'] ? I['out']['query'] : any,
-        I['out'] extends {}
-          ? Prettify<I['out'] & Locals & { helper: Helper<R> }>
-          : Locals & { helper: Helper<R> }
+        'query' extends keyof I['out']
+          ? I['out']['query'] extends Record<string, any>
+            ? I['out']['query']
+            : Record<string, any>
+          : Record<string, any>
       >
     >
   ) {
     const _route = this._route(route);
+    const expressHandlers = handlers.map((handler) =>
+      ExpressRouteFactory.toExpressRequestHandler<R>(
+        handler as RequestHandler<Record<string, any>, any>,
+      ),
+    );
 
-    this._router[route.method](
-      route.getRoutingPath(),
-      ...this._middlewares,
-      async (req, res, next) => {
-        const context: Context<ExpressRequestAdapter> = {
-          req: new ExpressRequestAdapter(req as any),
+    const validatorMiddleware = ExpressRouteFactory.toExpressRequestHandler<R>(
+      async (c, next) => {
+        const validatorContext: Context<ExpressRequestAdapter> = {
+          req: new ExpressRequestAdapter(c.req),
           input: {},
         };
+
         try {
-          const c = await _route(context);
-          const input = c.input as any;
-          res.locals = {
-            ...res.locals,
-            ...input,
-            helper: this.createHelper(res),
-          };
+          const { input } = await _route(validatorContext);
+          // @ts-expect-error it is our internal property
+          c.req[INTERNAL].input = input as I['out'];
           next();
         } catch (error) {
           next(error);
           return;
         }
       },
-      ...(handlers as any),
+    );
+
+    this._router[route.method](
+      route.getRoutingPath(),
+      ...this._middlewares,
+      validatorMiddleware,
+      ...expressHandlers,
     );
   }
 
-  private createHelper<R extends RouteConfig>(res: Response): Helper<R> {
+  private static createHelper<R extends RouteConfig>(res: Response): Helper<R> {
     const helper = {
       json: (response: { data: any; status: number }) => {
         res.status(response.status).json(response.data);
@@ -135,12 +187,43 @@ export class ExpressRouteFactory<
       }
     });
   }
-}
 
-export function helper<Locals extends Record<string, any>>(
-  res: Response<any, Locals>,
-): Locals['helper'] {
-  return res.locals.helper;
+  private static toExpressRequestHandler<R extends RouteConfig>(
+    handler: RequestHandler<Record<string, any>, any>,
+  ): ExpressRequestHandler {
+    return (req, res, next) => {
+      // @ts-expect-error it is our internal property
+      let c = req[INTERNAL] as
+        | {
+            context: Record<string, any>;
+            input: unknown;
+            h: Helper<R>;
+          }
+        | undefined;
+      if (!c) {
+        c = {
+          context: {} as Record<string, any>,
+          h: ExpressRouteFactory.createHelper(res),
+        } as {
+          context: Record<string, any>;
+          input: unknown;
+          h: Helper<R>;
+        };
+        // @ts-expect-error it is our internal property
+        req[INTERNAL] = c;
+      }
+      return handler(
+        {
+          context: c.context,
+          input: c.input,
+          h: c.h,
+          req,
+          res,
+        },
+        next,
+      );
+    };
+  }
 }
 
 export const { createRoute } = ExpressRouteFactory;

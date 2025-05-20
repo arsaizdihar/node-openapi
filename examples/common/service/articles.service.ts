@@ -102,7 +102,7 @@ export async function getArticlesFeed(user: User, query: ArticleFeedQuery) {
   };
 }
 
-export async function getArticles(user?: User, query?: ArticleQuery) {
+export async function getArticles(user: User | null, query?: ArticleQuery) {
   const fullUser = user ? await userGet(user.username) : undefined;
 
   const result = await articlesList(
@@ -121,7 +121,7 @@ export async function getArticles(user?: User, query?: ArticleQuery) {
   };
 }
 
-export async function getArticle(slug: string, user?: User) {
+export async function getArticle(slug: string, user: User | null) {
   const fullUser = user ? await userGet(user.username) : undefined;
 
   const article = await articleGet(slug);
