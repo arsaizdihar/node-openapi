@@ -1,6 +1,6 @@
 {
   "name": "@node-openapi/express",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Express adapter for node-openapi",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -28,6 +28,11 @@
   "keywords": ["openapi", "express", "zod", "typescript", "swagger"],
   "author": "Arsa Izdihar",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arsaizdihar/node-openapi.git",
+    "directory": "packages/express"
+  },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
     "@node-openapi/core": "workspace:*"

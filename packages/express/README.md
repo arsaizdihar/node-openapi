@@ -11,7 +11,7 @@
 
 > Express adapter for `@node-openapi/core` — define Zod-validated routes, generate OpenAPI 3.1 docs, and send type-safe responses in Express.
 
-**Read more in the [core library docs](https://github.com/arsaizdihar/rest-zod-openapi/tree/main/packages/core).**
+**Read more in the [core library docs](https://github.com/arsaizdihar/node-openapi/tree/main/packages/core).**
 
 ---
 
@@ -194,4 +194,4 @@ examples/express/
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/arsaizdihar/rest-zod-openapi/blob/main/LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/arsaizdihar/node-openapi/blob/main/LICENSE) file for details.
