@@ -1,10 +1,10 @@
-import { HonoRouteFactory } from '@node-openapi/hono';
+import { OpenAPIRouter } from '@node-openapi/hono';
 import {
   loginUser,
   registerUser,
   updateUser,
 } from 'ws-common/service/user.service';
-import { createRequiredAuthFactory } from '../factories';
+import { createRequiredAuthRouter } from '../factories';
 import {
   getCurrentUserRoute,
   loginRoute,
@@ -12,32 +12,32 @@ import {
   updateUserRoute,
 } from '../routes/user.routes';
 
-export const userController = new HonoRouteFactory();
+export const userRouter = new OpenAPIRouter();
 
-userController.route(loginRoute, async (c) => {
+userRouter.route(loginRoute, async (c) => {
   const { user } = c.req.valid('json');
   const result = await loginUser(user);
   return c.typedJson({ data: { user: result } });
 });
 
-userController.route(registerRoute, async (c) => {
+userRouter.route(registerRoute, async (c) => {
   const { user } = c.req.valid('json');
   const result = await registerUser(user);
   return c.typedJson({ data: { user: result }, status: 201 });
 });
 
-const checkedAuthFactory = createRequiredAuthFactory();
+const checkedAuthRouter = createRequiredAuthRouter();
 
-checkedAuthFactory.route(getCurrentUserRoute, async (c) => {
+checkedAuthRouter.route(getCurrentUserRoute, async (c) => {
   const user = c.get('user');
   return c.typedJson({ data: { user } });
 });
 
-checkedAuthFactory.route(updateUserRoute, async (c) => {
+checkedAuthRouter.route(updateUserRoute, async (c) => {
   const { user } = c.req.valid('json');
   const currentUser = c.get('user');
   const result = await updateUser(currentUser.username, user);
   return c.typedJson({ data: { user: result } });
 });
 
-userController.router('', checkedAuthFactory);
+userRouter.use('', checkedAuthRouter);

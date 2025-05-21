@@ -1,10 +1,10 @@
-import { HonoRouteFactory } from '@node-openapi/hono';
+import { OpenAPIRouter } from '@node-openapi/hono';
 import { getTagsRoute } from '../routes/tags.routes';
 import { getTags } from 'ws-common/service/tags.service';
 
-export const tagsController = new HonoRouteFactory();
+export const tagsRouter = new OpenAPIRouter();
 
-tagsController.route(getTagsRoute, async (c) => {
+tagsRouter.route(getTagsRoute, async (c) => {
   const tags = await getTags();
   return c.typedJson({ data: { tags } });
 });

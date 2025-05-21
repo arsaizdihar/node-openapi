@@ -1,12 +1,12 @@
-import { HonoRouteFactory } from '@node-openapi/hono';
+import { OpenAPIRouter } from '@node-openapi/hono';
 import {
   followProfile,
   getProfile,
   unfollowProfile,
 } from 'ws-common/service/user.service';
 import {
-  createOptionalAuthFactory,
-  createRequiredAuthFactory,
+  createOptionalAuthRouter,
+  createRequiredAuthRouter,
 } from '../factories';
 import {
   followProfileRoute,
@@ -14,29 +14,29 @@ import {
   unfollowProfileRoute,
 } from '../routes/profile.routes';
 
-export const profileController = new HonoRouteFactory();
+export const profileRouter = new OpenAPIRouter();
 
-const checkedAuthFactory = createOptionalAuthFactory();
+const checkedAuthRouter = createOptionalAuthRouter();
 
-checkedAuthFactory.route(getProfileRoute, async (c) => {
+checkedAuthRouter.route(getProfileRoute, async (c) => {
   const { username } = c.req.valid('param');
   const profile = await getProfile(username, c.var.user);
   return c.typedJson({ data: { profile } });
 });
 
-const authProfileFactory = createRequiredAuthFactory();
+const authRouter = createRequiredAuthRouter();
 
-authProfileFactory.route(followProfileRoute, async (c) => {
+authRouter.route(followProfileRoute, async (c) => {
   const { username } = c.req.valid('param');
   const profile = await followProfile(c.var.user, username);
   return c.typedJson({ data: { profile } });
 });
 
-authProfileFactory.route(unfollowProfileRoute, async (c) => {
+authRouter.route(unfollowProfileRoute, async (c) => {
   const { username } = c.req.valid('param');
   const profile = await unfollowProfile(c.var.user, username);
   return c.json({ profile });
 });
 
-profileController.router('', checkedAuthFactory);
-profileController.router('', authProfileFactory);
+profileRouter.use('', checkedAuthRouter);
+profileRouter.use('', authRouter);

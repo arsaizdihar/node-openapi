@@ -174,9 +174,11 @@ export class OpenAPIRouter<
    * // Add middleware to userRouter that sets user
    * ```
    */
-  extend<NewContext extends TContext>(): OpenAPIRouter<NewContext> {
+  extend<NewContext extends TContext>({
+    validateResponse,
+  }: OpenAPIRouterOptions = {}): OpenAPIRouter<NewContext> {
     const router = new OpenAPIRouter<NewContext>({
-      validateResponse: this._validateResponse,
+      validateResponse: validateResponse ?? this._validateResponse,
     });
     router._middlewares = [
       ...this._middlewares,

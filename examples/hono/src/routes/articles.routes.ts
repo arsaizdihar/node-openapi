@@ -26,6 +26,7 @@ export const getArticlesFeedRoute = createRoute({
         'application/json': {
           schema: z.object({
             articlesCount: z.number(),
+            articles: z.array(articleSchema),
           }),
         },
       },

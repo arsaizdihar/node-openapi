@@ -6,14 +6,14 @@ import { cors } from 'hono/cors';
 import { prettyJSON } from 'hono/pretty-json';
 import { HTTPException } from 'hono/http-exception';
 import { HttpError } from 'ws-common/service/error.service';
-import { HonoRouteFactory, z } from '@node-openapi/hono';
+import { z, OpenAPIRouter } from '@node-openapi/hono';
 
-import { userController } from './controller/user.controller';
-import { profileController } from './controller/profile.controller';
-import { articlesController } from './controller/articles.controller';
+import { userRouter } from './controller/user.controller';
+import { profileRouter } from './controller/profile.controller';
+import { articlesRouter } from './controller/articles.controller';
 import { bearerSecurity } from './routes/security';
-import { commentsController } from './controller/comments.controller';
-import { tagsController } from './controller/tags.controller';
+import { commentsRouter } from './controller/comments.controller';
+import { tagsRouter } from './controller/tags.controller';
 import { logger } from 'hono/logger';
 const app = new Hono();
 app.use(logger());
@@ -21,16 +21,16 @@ app.use(logger());
 app.use('*', cors());
 app.use('*', prettyJSON());
 
-const mainFactory = new HonoRouteFactory({ app });
+const mainRouter = new OpenAPIRouter({ app });
 
-mainFactory.router('/api', userController);
-mainFactory.router('/api', profileController);
-mainFactory.router('/api', articlesController);
-mainFactory.router('/api', commentsController);
-mainFactory.router('/api', tagsController);
+mainRouter.use('/api', userRouter);
+mainRouter.use('/api', profileRouter);
+mainRouter.use('/api', articlesRouter);
+mainRouter.use('/api', commentsRouter);
+mainRouter.use('/api', tagsRouter);
 
 const openAPIDocPath = '/openapi.json';
-mainFactory.doc(
+mainRouter.doc(
   openAPIDocPath,
   {
     openapi: '3.1.0',
