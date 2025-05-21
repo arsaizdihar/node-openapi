@@ -49,7 +49,7 @@ yarn add express @node-openapi/express
 pnpm add express @node-openapi/express
 ```
 
-Ensure you have a compatible version of **Express** (v4+) and **Zod** (v3+).
+Ensure you have a compatible version of **Express** (v5+) and **Zod** (v3+).
 
 ---
 
