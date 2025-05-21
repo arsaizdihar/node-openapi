@@ -1,7 +1,7 @@
 import express from 'express';
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
-import { createRoute, ExpressRouteFactory, helper, z } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { createRoute, ExpressRouteFactory, z } from '../src';
 
 describe('ExpressRouteFactory', () => {
   it('should create an instance', () => {
@@ -11,7 +11,7 @@ describe('ExpressRouteFactory', () => {
 
   it('should handle a simple GET route', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory(app);
+    const factory = new ExpressRouteFactory({ router: app });
 
     factory.route(
       createRoute({
@@ -30,8 +30,8 @@ describe('ExpressRouteFactory', () => {
           },
         },
       }),
-      (_req, res) => {
-        helper(res).json({ status: 200, data: { message: 'world' } });
+      ({ h }) => {
+        h.json({ status: 200, data: { message: 'world' } });
       },
     );
 
@@ -43,10 +43,10 @@ describe('ExpressRouteFactory', () => {
 
   it('should apply middleware', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory<{ user?: string }>(app);
+    const factory = new ExpressRouteFactory<{ user?: string }>({ router: app });
 
-    factory.middleware((_req, res, next) => {
-      res.locals.user = 'test-user';
+    factory.middleware(({ context }, next) => {
+      context.user = 'test-user';
       next();
     });
 
@@ -67,8 +67,8 @@ describe('ExpressRouteFactory', () => {
           },
         },
       }),
-      (_req, res) => {
-        helper(res).json({ status: 200, data: { user: res.locals.user } });
+      ({ h, context }) => {
+        h.json({ status: 200, data: { user: context.user } });
       },
     );
 
@@ -80,7 +80,7 @@ describe('ExpressRouteFactory', () => {
 
   it('should handle route parameters', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory(app);
+    const factory = new ExpressRouteFactory({ router: app });
 
     factory.route(
       createRoute({
@@ -100,10 +100,10 @@ describe('ExpressRouteFactory', () => {
           },
         },
       }),
-      (_req, res) => {
-        helper(res).json({
+      ({ h, input }) => {
+        h.json({
           status: 200,
-          data: { itemId: res.locals.params.id },
+          data: { itemId: input.param.id },
         });
       },
     );
@@ -116,7 +116,7 @@ describe('ExpressRouteFactory', () => {
 
   it('should handle query parameters', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory(app);
+    const factory = new ExpressRouteFactory({ router: app });
 
     factory.route(
       createRoute({
@@ -136,10 +136,10 @@ describe('ExpressRouteFactory', () => {
           },
         },
       }),
-      (_req, res) => {
-        helper(res).json({
+      ({ h, input }) => {
+        h.json({
           status: 200,
-          data: { query: res.locals.query.q },
+          data: { query: input.query.q },
         });
       },
     );
@@ -154,7 +154,7 @@ describe('ExpressRouteFactory', () => {
     const app = express();
     app.use(express.json());
 
-    const factory = new ExpressRouteFactory(app);
+    const factory = new ExpressRouteFactory({ router: app });
 
     const BodySchema = z.object({
       name: z.string(),
@@ -203,8 +203,8 @@ describe('ExpressRouteFactory', () => {
       },
     });
 
-    factory.route(route, (_req, res) => {
-      helper(res).json({ status: 201, data: { name: 'John Doe', age: 30 } });
+    factory.route(route, ({ h }) => {
+      h.json({ status: 201, data: { name: 'John Doe', age: 30 } });
     });
 
     const userData = { name: 'John Doe', age: 30 };
@@ -216,7 +216,7 @@ describe('ExpressRouteFactory', () => {
 
   it('should return validation error for invalid params', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory(app);
+    const factory = new ExpressRouteFactory({ router: app });
 
     factory.route(
       createRoute({
@@ -227,8 +227,8 @@ describe('ExpressRouteFactory', () => {
         },
         responses: { 200: { description: 'Success' } },
       }),
-      (_req, res) => {
-        res.json({ itemId: res.locals.params.id });
+      ({ h, input }) => {
+        h.json({ data: { itemId: input.param.id } });
       },
     );
 
@@ -244,5 +244,188 @@ describe('ExpressRouteFactory', () => {
     expect(response.body).toHaveProperty('error', 'Validation failed');
     expect(response.body).toHaveProperty('details');
     expect(response.body.details[0].path).toEqual(['id']);
+  });
+
+  it('should validate response', async () => {
+    const app = express();
+    const factory = new ExpressRouteFactory({ router: app });
+
+    factory.route(
+      createRoute({
+        method: 'get',
+        path: '/test',
+        responses: {
+          200: {
+            description: 'Success',
+            content: {
+              'application/json': { schema: z.object({ message: z.string() }) },
+            },
+          },
+        },
+      }),
+      ({ h }) => {
+        // @ts-expect-error - want to test validation error
+        h.json({ status: 200, data: { message: 123 } });
+      },
+    );
+
+    const response = await request(app).get('/test');
+
+    expect(response.status).toBe(500);
+  });
+
+  it('should not validate reponse when validateResponse is false', async () => {
+    const app = express();
+    const factory = new ExpressRouteFactory({
+      router: app,
+      validateResponse: false,
+    });
+
+    factory.route(
+      createRoute({
+        method: 'get',
+        path: '/test',
+        responses: {
+          200: {
+            description: 'Success',
+            content: {
+              'application/json': { schema: z.object({ message: z.string() }) },
+            },
+          },
+        },
+      }),
+      ({ h }) => {
+        // @ts-expect-error - want to test validation error
+        h.json({ status: 200, data: { message: 123 } });
+      },
+    );
+    const response = await request(app).get('/test');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ message: 123 });
+  });
+
+  it('extends the factory should have the same middleware and options', async () => {
+    const app = express();
+    const factory = new ExpressRouteFactory({ validateResponse: false });
+
+    const middleware = vi.fn((_, next) => {
+      console.log('middleware');
+      next();
+    });
+    factory.middleware(middleware);
+
+    const extendedFactory = factory.extend({ router: app });
+
+    extendedFactory.route(
+      createRoute({
+        method: 'get',
+        path: '/test',
+        responses: { 200: { description: 'Success' } },
+      }),
+      ({ h }) => {
+        h.text({ data: 'test' });
+      },
+    );
+
+    await request(app).get('/test');
+
+    expect(extendedFactory).toBeInstanceOf(ExpressRouteFactory);
+    expect(extendedFactory).not.toBe(factory);
+    expect(middleware).toHaveBeenCalled();
+
+    // @ts-expect-error - private field
+    expect(extendedFactory._validateResponse).toBe(false);
+  });
+
+  it('should handle nested router correctly using factory.router', async () => {
+    const app = express();
+    const factory = new ExpressRouteFactory({ router: app });
+
+    const childFactory = new ExpressRouteFactory();
+
+    childFactory.route(
+      createRoute({
+        method: 'get',
+        path: '/hello',
+        responses: { 200: { description: 'Success' } },
+      }),
+      ({ h }) => {
+        h.json({ status: 200, data: { message: 'world' } });
+      },
+    );
+
+    factory.router('/api', childFactory);
+
+    const response = await request(app).get('/api/hello');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ message: 'world' });
+  });
+
+  it('should generate openapi doc', async () => {
+    const app = express();
+    const factory = new ExpressRouteFactory({ router: app });
+    factory.route(
+      createRoute({
+        method: 'get',
+        path: '/test',
+        responses: {
+          200: {
+            description: 'Success',
+            content: {
+              'application/json': { schema: z.object({ message: z.string() }) },
+            },
+          },
+        },
+      }),
+      ({ h }) => {
+        h.json({ status: 200, data: { message: 'test' } });
+      },
+    );
+    factory.doc('/api', {
+      openapi: '3.1.0',
+      info: { title: 'Test', version: '1.0.0' },
+    });
+
+    const res = await request(app).get('/api');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      openapi: '3.1.0',
+      info: {
+        title: 'Test',
+        version: '1.0.0',
+      },
+      components: {
+        schemas: {},
+        parameters: {},
+      },
+      paths: {
+        '/test': {
+          get: {
+            responses: {
+              '200': {
+                description: 'Success',
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        message: {
+                          type: 'string',
+                        },
+                      },
+                      required: ['message'],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      webhooks: {},
+    });
   });
 });

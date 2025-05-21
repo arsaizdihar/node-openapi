@@ -13,8 +13,8 @@
     "lint": "eslint ."
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Arsa Izdihar",
+  "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "@types/node": "^22.8.6",

@@ -61,23 +61,32 @@ type RequestHandler<
 
 const INTERNAL = Symbol('INTERNAL');
 
+export type ExpressRouteFactoryOptions = {
+  router?: Router;
+  validateResponse?: boolean;
+};
+
 export class ExpressRouteFactory<
-  TContext extends Record<string, any> = Record<string, any>,
+  TContext extends Record<string, unknown> = Record<string, unknown>,
   Locals extends Record<string, any> = Record<string, any>,
 > extends RouteFactory<ExpressRequestAdapter> {
   private readonly _middlewares: Array<ExpressRequestHandler> = [];
   private readonly _router: Router;
   private readonly _validateResponse: boolean;
 
-  constructor(options: { router?: Router; validateResponse?: boolean } = {}) {
+  constructor(options: ExpressRouteFactoryOptions = {}) {
     super();
     this._router = options.router ?? Router();
     this._validateResponse = options.validateResponse ?? true;
   }
 
-  extend<NewLocals extends Locals>(): ExpressRouteFactory<NewLocals> {
+  extend<NewLocals extends Locals>({
+    router,
+    validateResponse,
+  }: ExpressRouteFactoryOptions = {}): ExpressRouteFactory<NewLocals> {
     const factory = new ExpressRouteFactory<NewLocals>({
-      validateResponse: this._validateResponse,
+      validateResponse: validateResponse ?? this._validateResponse,
+      router: router,
     });
     factory._middlewares.push(...this._middlewares);
     return factory;

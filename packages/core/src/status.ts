@@ -10,14 +10,14 @@ export type SuccessStatusCode =
   | 207
   | 208
   | 226;
-export type DeprecatedStatusCode = 305 | 306;
 export type RedirectStatusCode =
   | 300
   | 301
   | 302
   | 303
   | 304
-  | DeprecatedStatusCode
+  | 305
+  | 306
   | 307
   | 308;
 export type ClientErrorStatusCode =
@@ -74,12 +74,6 @@ export type ServerErrorStatusCode =
  * ```
  */
 export type UnofficialStatusCode = -1;
-
-/**
- * @deprecated
- * Use `UnofficialStatusCode` instead.
- */
-export type UnOfficalStatusCode = UnofficialStatusCode;
 
 /**
  * If you want to use an unofficial status, use `UnofficialStatusCode`.
