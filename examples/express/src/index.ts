@@ -1,13 +1,13 @@
 import 'dotenv/config';
 
-import { ExpressRouteFactory } from '@node-openapi/express';
+import { OpenAPIRouter } from '@node-openapi/express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import { HttpError } from 'ws-common/service/error.service';
 import { ZodError } from 'zod';
-import { articlesController } from './controller/articles.controller';
+import { articlesRouter } from './controller/articles.controller';
 import { commentsController } from './controller/comments.controller';
 import { profileController } from './controller/profile.controller';
 import { tagsController } from './controller/tags.controller';
@@ -19,15 +19,15 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
-const mainFactory = new ExpressRouteFactory({ router: app });
+const mainRouter = new OpenAPIRouter({ expressRouter: app });
 
-mainFactory.router('/api', articlesController);
-mainFactory.router('/api', profileController);
-mainFactory.router('/api', userController);
-mainFactory.router('/api', commentsController);
-mainFactory.router('/api', tagsController);
+mainRouter.use('/api', articlesRouter);
+mainRouter.use('/api', profileController);
+mainRouter.use('/api', userController);
+mainRouter.use('/api', commentsController);
+mainRouter.use('/api', tagsController);
 
-mainFactory.doc(
+mainRouter.doc(
   '/docs',
   {
     openapi: '3.1.0',

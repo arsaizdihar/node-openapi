@@ -1,19 +1,19 @@
 import express from 'express';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
-import { createRoute, ExpressRouteFactory, z } from '../src';
+import { createRoute, OpenAPIRouter, z } from '../src';
 
-describe('ExpressRouteFactory', () => {
+describe('OpenAPIRouter', () => {
   it('should create an instance', () => {
-    const factory = new ExpressRouteFactory();
-    expect(factory).toBeInstanceOf(ExpressRouteFactory);
+    const router = new OpenAPIRouter();
+    expect(router).toBeInstanceOf(OpenAPIRouter);
   });
 
   it('should handle a simple GET route', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory({ router: app });
+    const router = new OpenAPIRouter({ expressRouter: app });
 
-    factory.route(
+    router.route(
       createRoute({
         method: 'get',
         path: '/hello',
@@ -43,14 +43,16 @@ describe('ExpressRouteFactory', () => {
 
   it('should apply middleware', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory<{ user?: string }>({ router: app });
+    const router = new OpenAPIRouter<{ user?: string }>({
+      expressRouter: app,
+    });
 
-    factory.middleware(({ context }, next) => {
+    router.middleware(({ context }, next) => {
       context.user = 'test-user';
       next();
     });
 
-    factory.route(
+    router.route(
       createRoute({
         method: 'get',
         path: '/user',
@@ -80,9 +82,9 @@ describe('ExpressRouteFactory', () => {
 
   it('should handle route parameters', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory({ router: app });
+    const router = new OpenAPIRouter({ expressRouter: app });
 
-    factory.route(
+    router.route(
       createRoute({
         method: 'get',
         path: '/items/:id',
@@ -116,9 +118,9 @@ describe('ExpressRouteFactory', () => {
 
   it('should handle query parameters', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory({ router: app });
+    const router = new OpenAPIRouter({ expressRouter: app });
 
-    factory.route(
+    router.route(
       createRoute({
         method: 'get',
         path: '/search',
@@ -154,7 +156,7 @@ describe('ExpressRouteFactory', () => {
     const app = express();
     app.use(express.json());
 
-    const factory = new ExpressRouteFactory({ router: app });
+    const router = new OpenAPIRouter({ expressRouter: app });
 
     const BodySchema = z.object({
       name: z.string(),
@@ -203,7 +205,7 @@ describe('ExpressRouteFactory', () => {
       },
     });
 
-    factory.route(route, ({ h }) => {
+    router.route(route, ({ h }) => {
       h.json({ status: 201, data: { name: 'John Doe', age: 30 } });
     });
 
@@ -216,9 +218,9 @@ describe('ExpressRouteFactory', () => {
 
   it('should return validation error for invalid params', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory({ router: app });
+    const router = new OpenAPIRouter({ expressRouter: app });
 
-    factory.route(
+    router.route(
       createRoute({
         method: 'get',
         path: '/items/:id',
@@ -248,9 +250,9 @@ describe('ExpressRouteFactory', () => {
 
   it('should validate response', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory({ router: app });
+    const router = new OpenAPIRouter({ expressRouter: app });
 
-    factory.route(
+    router.route(
       createRoute({
         method: 'get',
         path: '/test',
@@ -276,12 +278,12 @@ describe('ExpressRouteFactory', () => {
 
   it('should not validate reponse when validateResponse is false', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory({
-      router: app,
+    const router = new OpenAPIRouter({
+      expressRouter: app,
       validateResponse: false,
     });
 
-    factory.route(
+    router.route(
       createRoute({
         method: 'get',
         path: '/test',
@@ -305,19 +307,19 @@ describe('ExpressRouteFactory', () => {
     expect(response.body).toEqual({ message: 123 });
   });
 
-  it('extends the factory should have the same middleware and options', async () => {
+  it('extends the router should have the same middleware and options', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory({ validateResponse: false });
+    const router = new OpenAPIRouter({ validateResponse: false });
 
     const middleware = vi.fn((_, next) => {
       console.log('middleware');
       next();
     });
-    factory.middleware(middleware);
+    router.middleware(middleware);
 
-    const extendedFactory = factory.extend({ router: app });
+    const extendedRouter = router.extend({ expressRouter: app });
 
-    extendedFactory.route(
+    extendedRouter.route(
       createRoute({
         method: 'get',
         path: '/test',
@@ -330,21 +332,21 @@ describe('ExpressRouteFactory', () => {
 
     await request(app).get('/test');
 
-    expect(extendedFactory).toBeInstanceOf(ExpressRouteFactory);
-    expect(extendedFactory).not.toBe(factory);
+    expect(extendedRouter).toBeInstanceOf(OpenAPIRouter);
+    expect(extendedRouter).not.toBe(router);
     expect(middleware).toHaveBeenCalled();
 
     // @ts-expect-error - private field
-    expect(extendedFactory._validateResponse).toBe(false);
+    expect(extendedRouter._validateResponse).toBe(false);
   });
 
-  it('should handle nested router correctly using factory.router', async () => {
+  it('should handle nested router correctly using router.use', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory({ router: app });
+    const router = new OpenAPIRouter({ expressRouter: app });
 
-    const childFactory = new ExpressRouteFactory();
+    const childRouter = new OpenAPIRouter();
 
-    childFactory.route(
+    childRouter.route(
       createRoute({
         method: 'get',
         path: '/hello',
@@ -355,7 +357,7 @@ describe('ExpressRouteFactory', () => {
       },
     );
 
-    factory.router('/api', childFactory);
+    router.use('/api', childRouter);
 
     const response = await request(app).get('/api/hello');
 
@@ -365,8 +367,8 @@ describe('ExpressRouteFactory', () => {
 
   it('should generate openapi doc', async () => {
     const app = express();
-    const factory = new ExpressRouteFactory({ router: app });
-    factory.route(
+    const router = new OpenAPIRouter({ expressRouter: app });
+    router.route(
       createRoute({
         method: 'get',
         path: '/test',
@@ -383,7 +385,7 @@ describe('ExpressRouteFactory', () => {
         h.json({ status: 200, data: { message: 'test' } });
       },
     );
-    factory.doc('/api', {
+    router.doc('/api', {
       openapi: '3.1.0',
       info: { title: 'Test', version: '1.0.0' },
     });

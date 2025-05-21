@@ -1,12 +1,12 @@
-import { ExpressRouteFactory } from '@node-openapi/express';
+import { OpenAPIRouter } from '@node-openapi/express';
 import { User } from 'ws-common/domain/user.domain';
 import { HttpError } from 'ws-common/service/error.service';
 import { getUserByToken } from 'ws-common/service/user.service';
 
-export function createOptionalAuthFactory() {
-  const factory = new ExpressRouteFactory<{ user: User | null }>();
+export function createOptionalAuthRouter() {
+  const router = new OpenAPIRouter<{ user: User | null }>();
 
-  factory.middleware(async ({ req, context }, next) => {
+  router.middleware(async ({ req, context }, next) => {
     try {
       const token = req.headers.authorization;
       if (!token) {
@@ -28,13 +28,13 @@ export function createOptionalAuthFactory() {
     }
   });
 
-  return factory;
+  return router;
 }
 
-export function createRequiredAuthFactory() {
-  const factory = createOptionalAuthFactory().extend<{ user: User }>();
+export function createRequiredAuthRouter() {
+  const router = createOptionalAuthRouter().extend<{ user: User }>();
 
-  factory.middleware(async ({ context }, next) => {
+  router.middleware(async ({ context }, next) => {
     if (!context.user) {
       next(new HttpError('Unauthorized', 401));
       return;
@@ -43,5 +43,5 @@ export function createRequiredAuthFactory() {
     next();
   });
 
-  return factory;
+  return router;
 }

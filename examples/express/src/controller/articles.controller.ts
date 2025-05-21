@@ -1,7 +1,7 @@
-import { ExpressRouteFactory } from '@node-openapi/express';
+import { OpenAPIRouter } from '@node-openapi/express';
 import {
-  createRequiredAuthFactory,
-  createOptionalAuthFactory,
+  createRequiredAuthRouter,
+  createOptionalAuthRouter,
 } from '../factories';
 import {
   createArticleRoute,
@@ -24,13 +24,13 @@ import {
   updateArticle,
 } from 'ws-common/service/articles.service';
 
-export const articlesController = new ExpressRouteFactory();
+export const articlesRouter = new OpenAPIRouter();
 
-const optionalAuthFactory = createOptionalAuthFactory();
+const optionalAuthRouter = createOptionalAuthRouter();
 
-const requiredAuthFactory = createRequiredAuthFactory();
+const requiredAuthRouter = createRequiredAuthRouter();
 
-requiredAuthFactory.route(
+requiredAuthRouter.route(
   getArticlesFeedRoute,
   async ({ input, context, h }, next) => {
     try {
@@ -43,7 +43,7 @@ requiredAuthFactory.route(
   },
 );
 
-optionalAuthFactory.route(
+optionalAuthRouter.route(
   getArticlesRoute,
   async ({ input, context, h }, next) => {
     try {
@@ -56,7 +56,7 @@ optionalAuthFactory.route(
   },
 );
 
-requiredAuthFactory.route(
+requiredAuthRouter.route(
   createArticleRoute,
   async ({ input, context, h }, next) => {
     try {
@@ -69,7 +69,7 @@ requiredAuthFactory.route(
   },
 );
 
-optionalAuthFactory.route(
+optionalAuthRouter.route(
   getArticleRoute,
   async ({ input, context, h }, next) => {
     try {
@@ -82,7 +82,7 @@ optionalAuthFactory.route(
   },
 );
 
-requiredAuthFactory.route(
+requiredAuthRouter.route(
   updateArticleRoute,
   async ({ input, context, h }, next) => {
     try {
@@ -99,7 +99,7 @@ requiredAuthFactory.route(
   },
 );
 
-requiredAuthFactory.route(
+requiredAuthRouter.route(
   deleteArticleRoute,
   async ({ input, context, res }, next) => {
     try {
@@ -111,7 +111,7 @@ requiredAuthFactory.route(
   },
 );
 
-requiredAuthFactory.route(
+requiredAuthRouter.route(
   favoriteArticleRoute,
   async ({ input, context, h }, next) => {
     try {
@@ -124,7 +124,7 @@ requiredAuthFactory.route(
   },
 );
 
-requiredAuthFactory.route(
+requiredAuthRouter.route(
   unfavoriteArticleRoute,
   async ({ input, context, h }, next) => {
     try {
@@ -137,5 +137,5 @@ requiredAuthFactory.route(
   },
 );
 
-articlesController.router('', requiredAuthFactory);
-articlesController.router('', optionalAuthFactory);
+articlesRouter.use('', requiredAuthRouter);
+articlesRouter.use('', optionalAuthRouter);

@@ -52,7 +52,7 @@ export class ResponseValidationError extends Error {
  * @template Req - Request type extending RequestLike
  * @template FormValueType - Type of form values for the framework
  */
-export abstract class RouteFactory<
+export abstract class CoreOpenApiRouter<
   Req extends RequestLike,
   FormValueType extends NonNullable<
     Req['form'][keyof Req['form']]
@@ -78,7 +78,7 @@ export abstract class RouteFactory<
    *
    * @example
    * ```ts
-   * const route = RouteFactory.createRoute({
+   * const route = CoreOpenApiRouter.createRoute({
    *   path: '/users',
    *   method: 'GET',
    *   request: {
@@ -99,7 +99,7 @@ export abstract class RouteFactory<
   static createRoute<R extends RouteConfig>(routeConfig: R) {
     const route = {
       ...routeConfig,
-      getRoutingPath: () => RouteFactory.getRoutingPath(routeConfig.path),
+      getRoutingPath: () => CoreOpenApiRouter.getRoutingPath(routeConfig.path),
     };
     return Object.defineProperty(route, 'getRoutingPath', {
       enumerable: false,
@@ -311,13 +311,13 @@ export abstract class RouteFactory<
   /**
    * Register routes and components in the OpenAPI registry as a sub-router
    * @param pathForOpenAPI - The base path for the OpenAPI document
-   * @param routeFactory - The route factory to register
+   * @param router - The router to register
    */
   protected _registerRouter(
     pathForOpenAPI: string,
-    routeFactory: RouteFactory<Req>,
+    router: CoreOpenApiRouter<Req>,
   ) {
-    routeFactory.openAPIRegistry.definitions.forEach((def) => {
+    router.openAPIRegistry.definitions.forEach((def) => {
       switch (def.type) {
         case 'component':
           return this.openAPIRegistry.registerComponent(

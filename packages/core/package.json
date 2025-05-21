@@ -1,6 +1,6 @@
 {
   "name": "@node-openapi/core",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Core package for node-openapi",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

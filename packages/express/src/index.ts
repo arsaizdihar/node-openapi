@@ -14,7 +14,7 @@ import {
   Prettify,
   RouteConfig,
   RouteConfigToHandlerResponse,
-  RouteFactory,
+  CoreOpenApiRouter,
 } from '@node-openapi/core';
 import {
   NextFunction,
@@ -61,45 +61,97 @@ type RequestHandler<
 
 const INTERNAL = Symbol('INTERNAL');
 
-export type ExpressRouteFactoryOptions = {
-  router?: Router;
+export type OpenAPIRouterOptions = {
+  expressRouter?: Router;
   validateResponse?: boolean;
 };
 
-export class ExpressRouteFactory<
+export class OpenAPIRouter<
   TContext extends Record<string, unknown> = Record<string, unknown>,
   Locals extends Record<string, any> = Record<string, any>,
-> extends RouteFactory<ExpressRequestAdapter> {
+> extends CoreOpenApiRouter<ExpressRequestAdapter> {
   private readonly _middlewares: Array<ExpressRequestHandler> = [];
-  private readonly _router: Router;
+  private readonly _expressRouter: Router;
   private readonly _validateResponse: boolean;
 
-  constructor(options: ExpressRouteFactoryOptions = {}) {
+  /**
+   * Create a new router instance for express
+   * @param options - Construct options
+   * @param options.expressRouter - The express router to use. Defaults to a new instance of express.Router(). Use express() for the main router.
+   * @param options.validateResponse - Whether to validate the response. Defaults to true
+   *
+   * @example
+   * ```ts
+   * const mainRouter = new OpenAPIRouter({ expressRouter: express() });
+   *
+   * const authedRouter = new OpenAPIRouter<{ user: { id: string } }>({ validateResponse: false });
+   *
+   * ```
+   */
+  constructor(options: OpenAPIRouterOptions = {}) {
     super();
-    this._router = options.router ?? Router();
+    this._expressRouter = options.expressRouter ?? Router();
     this._validateResponse = options.validateResponse ?? true;
   }
 
-  extend<NewLocals extends Locals>({
-    router,
+  /**
+   * Extend the router with a new context. It will create a new instance with the current middlewares as the initial new middlewares.
+   * @param options - Construct options
+   * @param options.expressRouter - The express router to use. Defaults to a new instance of express.Router(). Use express() for the main router.
+   * @param options.validateResponse - Whether to validate the response. Defaults to true
+   *
+   * @example
+   * ```ts
+   * const authedRouter = publicRouter.extend<{ user: { id: string } }>();
+   * ```
+   */
+  extend<NewContext extends TContext>({
+    expressRouter,
     validateResponse,
-  }: ExpressRouteFactoryOptions = {}): ExpressRouteFactory<NewLocals> {
-    const factory = new ExpressRouteFactory<NewLocals>({
+  }: OpenAPIRouterOptions = {}): OpenAPIRouter<NewContext> {
+    const router = new OpenAPIRouter<NewContext>({
       validateResponse: validateResponse ?? this._validateResponse,
-      router: router,
+      expressRouter,
     });
-    factory._middlewares.push(...this._middlewares);
-    return factory;
+    router._middlewares.push(...this._middlewares);
+    return router;
   }
 
+  /**
+   * Add a middleware to the router. It will be applied to the router's handlers and it's children. The execution will not continue if the next function is not called.
+   * @param middleware
+   *
+   * @example
+   * ```ts
+   * router.middleware(async ({ req, res }, next) => {
+   *   // ...
+   *
+   *   next();
+   * });
+   * ```
+   */
   middleware<M extends RequestHandler<TContext, never, Helper<any>, Locals>>(
     middleware: M,
   ) {
     this._middlewares.push(
-      ExpressRouteFactory.toExpressRequestHandler<any>(middleware as any),
+      OpenAPIRouter.toExpressRequestHandler<any>(middleware as any),
     );
   }
 
+  /**
+   * Add the handler into a route
+   * @param route - The route config to add
+   * @param handlers - The handlers to add. These will have the validated input as the argument.
+   *
+   * @example
+   * ```ts
+   * router.route('/users', async ({ req, res, h, input, context }, next) => {
+   *   // ...
+   *
+   *   h.json(res, { message: 'Hello, world!' });
+   * });
+   * ```
+   */
   route<
     R extends RouteConfig & { getRoutingPath: () => string },
     I extends Input = InputTypeParam<R> &
@@ -131,13 +183,13 @@ export class ExpressRouteFactory<
   ) {
     const _route = this._route(route);
     const expressHandlers = handlers.map((handler) =>
-      ExpressRouteFactory.toExpressRequestHandler<R>(
+      OpenAPIRouter.toExpressRequestHandler<R>(
         handler as any,
         this._validateResponse ? route : undefined,
       ),
     );
 
-    const validatorMiddleware = ExpressRouteFactory.toExpressRequestHandler<R>(
+    const validatorMiddleware = OpenAPIRouter.toExpressRequestHandler<R>(
       async (c, next) => {
         const validatorContext: Context<ExpressRequestAdapter> = {
           req: new ExpressRequestAdapter(c.req),
@@ -157,7 +209,7 @@ export class ExpressRouteFactory<
       this._validateResponse ? route : undefined,
     );
 
-    this._router[route.method](
+    this._expressRouter[route.method](
       route.getRoutingPath(),
       ...this._middlewares,
       validatorMiddleware,
@@ -169,7 +221,7 @@ export class ExpressRouteFactory<
     res: Response,
     routeConfig?: R,
   ) {
-    return ExpressRouteFactory._createHelper(
+    return OpenAPIRouter._createHelper(
       {
         json: (data, status) => {
           return res.status(status ?? 200).json(data);
@@ -184,22 +236,44 @@ export class ExpressRouteFactory<
       routeConfig,
     );
   }
-  router(path: string, routeFactory: ExpressRouteFactory) {
+
+  /**
+   * Add a child subrouter to the router under a base path.
+   * @param path - The base path to use
+   * @param router - The subrouter to use
+   *
+   * @example
+   * ```ts
+   * router.use('/users', userRouter);
+   * ```
+   */
+  use(path: string, router: OpenAPIRouter) {
     if (this._middlewares.length > 0) {
-      this._router.use(path, ...this._middlewares);
+      this._expressRouter.use(path, ...this._middlewares);
     }
-    this._router.use(path, routeFactory._router);
+    this._expressRouter.use(path, router._expressRouter);
 
     const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');
-    this._registerRouter(pathForOpenAPI, routeFactory);
+    this._registerRouter(pathForOpenAPI, router);
   }
 
+  /**
+   * Add a documentation route to the router.
+   * @param path - The path where the documentation will be available
+   * @param configure - The OpenAPI configuration
+   * @param additionalDefinitions - The additional OpenAPI definitions to add
+   *
+   * @example
+   * ```ts
+   * router.doc('/docs', { openapi: '3.1.0' });
+   * ```
+   */
   doc<P extends string>(
     path: P,
     configure: OpenAPIObjectConfigV31,
     additionalDefinitions?: OpenAPIDefinitions[],
   ) {
-    this._router.get(path, (_, res, next) => {
+    this._expressRouter.get(path, (_, res, next) => {
       try {
         const document = this.getOpenAPIDocument(
           configure,
@@ -228,7 +302,7 @@ export class ExpressRouteFactory<
       if (!c) {
         c = {
           context: {} as Record<string, any>,
-          h: ExpressRouteFactory.createHelper(res, routeConfig),
+          h: OpenAPIRouter.createHelper(res, routeConfig),
           input: undefined,
         } as {
           context: Record<string, any>;
@@ -252,4 +326,4 @@ export class ExpressRouteFactory<
   }
 }
 
-export const { createRoute } = ExpressRouteFactory;
+export const { createRoute } = OpenAPIRouter;

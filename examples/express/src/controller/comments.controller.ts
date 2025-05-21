@@ -1,7 +1,7 @@
-import { ExpressRouteFactory } from '@node-openapi/express';
+import { OpenAPIRouter } from '@node-openapi/express';
 import {
-  createRequiredAuthFactory,
-  createOptionalAuthFactory,
+  createRequiredAuthRouter,
+  createOptionalAuthRouter,
 } from '../factories';
 import {
   createCommentRoute,
@@ -13,11 +13,11 @@ import {
   deleteComment,
   getComments,
 } from 'ws-common/service/comments.service';
-export const commentsController = new ExpressRouteFactory();
+export const commentsController = new OpenAPIRouter();
 
-const checkedAuthFactory = createOptionalAuthFactory();
+const checkedAuthRouter = createOptionalAuthRouter();
 
-checkedAuthFactory.route(
+checkedAuthRouter.route(
   getCommentsRoute,
   async ({ input, context, h }, next) => {
     const slug = input.param.slug;
@@ -30,9 +30,9 @@ checkedAuthFactory.route(
   },
 );
 
-const authFactory = createRequiredAuthFactory();
+const authRouter = createRequiredAuthRouter();
 
-authFactory.route(createCommentRoute, async ({ input, context, h }, next) => {
+authRouter.route(createCommentRoute, async ({ input, context, h }, next) => {
   const slug = input.param.slug;
   const comment = input.json.comment;
   try {
@@ -43,7 +43,7 @@ authFactory.route(createCommentRoute, async ({ input, context, h }, next) => {
   }
 });
 
-authFactory.route(deleteCommentRoute, async ({ input, context, res }, next) => {
+authRouter.route(deleteCommentRoute, async ({ input, context, res }, next) => {
   const slug = input.param.slug;
   const id = input.param.id;
   try {
@@ -54,5 +54,5 @@ authFactory.route(deleteCommentRoute, async ({ input, context, res }, next) => {
   }
 });
 
-commentsController.router('', checkedAuthFactory);
-commentsController.router('', authFactory);
+commentsController.use('', checkedAuthRouter);
+commentsController.use('', authRouter);

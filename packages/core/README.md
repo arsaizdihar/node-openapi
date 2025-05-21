@@ -10,15 +10,15 @@ This core library is not intended for direct installation and use in application
 
 ## Core Components
 
-The library revolves around the `RouteFactory` abstract class, along with several helper types and utilities.
+The library revolves around the `CoreOpenAPIRouter` abstract class, along with several helper types and utilities.
 
-### `RouteFactory<Req extends RequestLike, FormValueType>`
+### `CoreOpenAPIRouter<Req extends RequestLike, FormValueType>`
 
 This is the abstract base class that framework adapters must extend.
 
 - **`constructor()`**: Initializes an `OpenAPIRegistry` instance for collecting route definitions.
 - **`static getRoutingPath<P extends string>(path: P): string`**: A static utility to convert OpenAPI-style path parameters (e.g., `/users/{id}`) to a framework-specific format (e.g., `/users/:id`). Adapters can use this or implement their own logic.
-- **`static createRoute<R extends RouteConfig>(routeConfig: R): R & { getRoutingPath: () => string }`**: A static factory method to create a route configuration object. It also attaches a `getRoutingPath` method to the route object itself, which uses the static `RouteFactory.getRoutingPath` by default.
+- **`static createRoute<R extends RouteConfig>(routeConfig: R): R & { getRoutingPath: () => string }`**: A static factory method to create a route configuration object. It also attaches a `getRoutingPath` method to the route object itself, which uses the static `CoreOpenAPIRouter.getRoutingPath` by default.
 - **`protected _route<R extends RouteConfig, I extends Input>(route: R): (c: Context<Req>) => Promise<Context<Req, I>>`**:
   This protected method is crucial for integrating request validation.
   1.  It registers the provided `route` configuration with the `openAPIRegistry`.
@@ -31,8 +31,8 @@ This is the abstract base class that framework adapters must extend.
   Generates the complete OpenAPI document (version 3.1) based on all routes and components registered with the `openAPIRegistry`.
 - **`zValidator<T extends ZodSchema, Target extends keyof ValidationTargets, ...>(target: Target, schema: T): MiddlewareHandler<Req, I>`**:
   Creates a middleware function for a specific part of the request (`target`: 'query', 'json', 'form', 'text', 'header', 'cookie', 'param'). This middleware parses and validates the incoming data against the provided Zod `schema`. Validated data is then attached to `c.input[target]`.
-- **`protected _registerRouter(pathForOpenAPI: string, routeFactory: RouteFactory<Req>): void`**:
-  A utility to merge OpenAPI definitions from a "sub-router" (another `RouteFactory` instance) into the current factory's registry. Paths from the sub-router are prefixed with `pathForOpenAPI`.
+- **`protected _registerRouter(pathForOpenAPI: string, router: CoreOpenAPIRouter<Req>): void`**:
+  A utility to merge OpenAPI definitions from a "sub-router" (another `OpenAPIRouter` instance) into the current factory's registry. Paths from the sub-router are prefixed with `pathForOpenAPI`.
 - **`private static _validateResponse<R>(config: RouteConfig, response: R, contentType: string, status: number): R | ZodError`**:
   A static utility to validate response data against the schema defined in the route's `responses` configuration for a given status code and content type.
 - **`protected static _createHelper<R extends RouteConfig, SendReturn>(send: ResponseSender<SendReturn>, config?: R): Helper<R, SendReturn>`**:
@@ -113,19 +113,19 @@ Creating an adapter for a new framework involves the following steps:
     }
     ```
 
-2.  **Create a `FrameworkRouteFactory` class**:
-    This class must extend `RouteFactory<YourRequestAdapterClass>`.
+2.  **Create a `FrameworkOpenAPIRouter` class**:
+    This class must extend `CoreOpenAPIRouter<YourRequestAdapterClass>`.
 
     ```typescript
-    import { RouteFactory, RouteConfig, OpenAPIObjectConfigV31, OpenAPIDefinitions } from '@node-openapi/core';
+    import { CoreOpenAPIRouter, RouteConfig, OpenAPIObjectConfigV31, OpenAPIDefinitions } from '@node-openapi/core';
     import { MyFrameworkRequestAdapter } from './request'; // Your adapter from step 1
     // Import necessary types/functions from your framework
     // e.g., Router, RequestHandler, Response objects for Express
 
-    export class MyFrameworkRouteFactory<
+    export class OpenAPIRouter<
       TContext extends Record<string, any> = Record<string, any>
       // You can add framework specific generics like Locals for Express
-    > extends RouteFactory<MyFrameworkRequestAdapter> {
+    > extends CoreOpenAPIRouter<MyFrameworkRequestAdapter> {
 
       private readonly _router: YourFrameworkRouterType; // e.g., express.Router
 
@@ -178,7 +178,7 @@ Creating an adapter for a new framework involves the following steps:
 
         // 2. Adapt user-provided handlers to the framework's expected signature.
         //    This involves:
-        //    - Creating the response helper 'h' using `MyFrameworkRouteFactory._createHelper`.
+        //    - Creating the response helper 'h' using `OpenAPIRouter._createHelper`.
         //    - Providing access to validated input.
         const adaptedHandlers = handlers.map(handler =>
           (fwReq, fwRes, fwNext) => {
@@ -186,7 +186,7 @@ Creating an adapter for a new framework involves the following steps:
                 json: (data, status) => { fwRes.status(status ?? 200).json(data); },
                 text: (data, status) => { fwRes.status(status ?? 200).type('text/plain').send(data); }
             };
-            const helper = MyFrameworkRouteFactory._createHelper(
+            const helper = OpenAPIRouter._createHelper(
                 responseSender,
                 /* pass routeConfig if response validation is enabled */
             );
@@ -214,10 +214,10 @@ Creating an adapter for a new framework involves the following steps:
       }
 
       // Optional: Implement a 'router' or 'use' method to nest factories
-      router(path: string, subFactory: MyFrameworkRouteFactory): void {
-        this._router.use(path, subFactory._router); // Mount sub-router
+      use(path: string, subRouter: OpenAPIRouter): void {
+        this._router.use(path, subRouter._router); // Mount sub-router
         const pathForOpenAPI = path.replace(/:([^/]+)/g, '{$1}'); // Convert framework path to OpenAPI path
-        this._registerRouter(pathForOpenAPI, subFactory); // Register with core
+        this._registerRouter(pathForOpenAPI, subRouter); // Register with core
       }
 
       // Optional: Add framework-specific middleware support
@@ -230,11 +230,11 @@ Creating an adapter for a new framework involves the following steps:
     }
     ```
 
-3.  **Re-export `createRoute` and `z` **:
-    It's good practice to re-export `createRoute` and zod `z` from your `FrameworkRouteFactory` for a better user experience.
+3.  **Re-export `createRoute`**:
+    It's good practice to re-export `createRoute` from your `OpenAPIRouter` for a better user experience.
 
     ```typescript
-    export const { createRoute, z } = MyFrameworkRouteFactory;
+    export const { createRoute } = OpenAPIRouter;
     ```
 
 4.  **Documentation and Examples**:

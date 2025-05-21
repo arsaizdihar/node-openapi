@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { RouteFactory } from '../src/index';
+import { CoreOpenApiRouter } from '../src/index';
 import { RequestLike } from '../src/request';
 import { ValidationTargets } from '../dist';
 
@@ -29,8 +29,8 @@ class MockRequest implements RequestLike {
   }
 }
 
-// Testing implementation of RouteFactory
-class TestRouteFactory extends RouteFactory<MockRequest> {
+// Testing implementation of CoreOpenAPIRouter
+class TestOpenAPIRouter extends CoreOpenApiRouter<MockRequest> {
   doc<P extends string>(_path: P, _configure: any): void {
     // Mock implementation
   }
@@ -41,16 +41,16 @@ class TestRouteFactory extends RouteFactory<MockRequest> {
   }
 }
 
-describe('RouteFactory Validation', () => {
+describe('CoreOpenAPIRouter Validation', () => {
   describe('zValidator', () => {
     it('should validate query parameters', async () => {
-      const factory = new TestRouteFactory();
+      const router = new TestOpenAPIRouter();
       const querySchema = z.object({
         page: z.string().optional(),
         limit: z.string().optional(),
       });
 
-      const validator = factory.validate('query', querySchema);
+      const validator = router.validate('query', querySchema);
       const mockReq = new MockRequest();
       mockReq.query = { page: '1', limit: '10' };
 
@@ -62,13 +62,13 @@ describe('RouteFactory Validation', () => {
     });
 
     it('should validate JSON body', async () => {
-      const factory = new TestRouteFactory();
+      const router = new TestOpenAPIRouter();
       const bodySchema = z.object({
         name: z.string(),
         email: z.string().email(),
       });
 
-      const validator = factory.validate('json', bodySchema);
+      const validator = router.validate('json', bodySchema);
       const mockReq = new MockRequest();
       mockReq.headers['content-type'] = 'application/json';
       mockReq.json = { name: 'John Doe', email: 'john@example.com' };
@@ -84,13 +84,13 @@ describe('RouteFactory Validation', () => {
     });
 
     it('should validate form data', async () => {
-      const factory = new TestRouteFactory();
+      const router = new TestOpenAPIRouter();
       const formSchema = z.object({
         username: z.string(),
         password: z.string(),
       });
 
-      const validator = factory.validate('form', formSchema);
+      const validator = router.validate('form', formSchema);
       const mockReq = new MockRequest();
       mockReq.headers['content-type'] = 'multipart/form-data';
       mockReq.form = { username: 'johndoe', password: 'secret123' };
@@ -106,12 +106,12 @@ describe('RouteFactory Validation', () => {
     });
 
     it('should validate request headers', async () => {
-      const factory = new TestRouteFactory();
+      const router = new TestOpenAPIRouter();
       const headerSchema = z.object({
         'api-key': z.string(),
       });
 
-      const validator = factory.validate('header', headerSchema);
+      const validator = router.validate('header', headerSchema);
       const mockReq = new MockRequest();
       mockReq.headers = { 'api-key': 'abc123' };
 
@@ -123,12 +123,12 @@ describe('RouteFactory Validation', () => {
     });
 
     it('should validate URL parameters', async () => {
-      const factory = new TestRouteFactory();
+      const router = new TestOpenAPIRouter();
       const paramSchema = z.object({
         id: z.string(),
       });
 
-      const validator = factory.validate('param', paramSchema);
+      const validator = router.validate('param', paramSchema);
       const mockReq = new MockRequest();
       mockReq.params = { id: '123' };
 
@@ -140,12 +140,12 @@ describe('RouteFactory Validation', () => {
     });
 
     it('should throw an error for invalid data', async () => {
-      const factory = new TestRouteFactory();
+      const router = new TestOpenAPIRouter();
       const schema = z.object({
         email: z.string().email(),
       });
 
-      const validator = factory.validate('json', schema);
+      const validator = router.validate('json', schema);
       const mockReq = new MockRequest();
       mockReq.headers['content-type'] = 'application/json';
       mockReq.json = { email: 'not-an-email' };

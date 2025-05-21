@@ -15,6 +15,25 @@
 
 ---
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+  - [`new OpenAPIRouter(options?)`](#new-openapirouteroptions)
+  - [`.middleware(fn)`](#middlewarefn)
+  - [`.route(routeConfig, ...handlers)`](#routerouteconfig-handlers)
+  - [`.use(path, subRouter)`](#usepath-subrouter)
+  - [`.doc(path, openapiConfig, additionalDefinitions?)`](#docpath-openapiconfig-additionaldefinitions)
+  - [`createRoute`](#createroute)
+  - [`z`](#z)
+- [Configuration](#configuration)
+- [Examples](#examples)
+- [Advanced Usage](#advanced-usage)
+- [License](#license)
+
+---
+
 ## Installation
 
 Install the adapter along with its peer dependencies:
@@ -40,13 +59,13 @@ Create a minimal Express server with a **GET /ping** route and serve the OpenAPI
 
 ```ts
 import express from 'express';
-import { ExpressRouteFactory, createRoute, z } from '@node-openapi/express';
+import { OpenAPIRouter, createRoute, z } from '@node-openapi/express';
 
 const app = express();
 app.use(express.json());
 
-// 1. Initialize the route factory. Pass the app instance to be the main factory.
-const factory = new ExpressRouteFactory({ router: app });
+// 1. Initialize the router. Pass the app instance to be the main router.
+const router = new OpenAPIRouter({ router: app });
 
 // 2. Define a simple ping route
 const pingRoute = createRoute({
@@ -62,12 +81,12 @@ const pingRoute = createRoute({
   },
 });
 
-factory.route(pingRoute, async ({ h }, next) => {
+router.route(pingRoute, async ({ h }, next) => {
   h.json({ data: { message: 'pong' } });
 });
 
 // 3. Serve OpenAPI docs
-factory.doc('/docs', {
+router.doc('/docs', {
   openapi: '3.1.0',
   info: { title: 'API', version: '1.0.0' },
 });
@@ -83,19 +102,19 @@ app.listen(3000, () => {
 
 ## API Reference
 
-### `new ExpressRouteFactory(options?)`
+### `new OpenAPIRouter(options?)`
 
-- `options.router?: Router` — Provide an existing Express `Router` instance to mount routes. Pass express app instance to the main factory. If not provided, a new one will be created.
+- `options.router?: Router` — Provide an existing Express `Router` instance to mount routes. Pass express app instance to the main router. If not provided, a new one will be created.
 - `options.validateResponse?: boolean` — (default `true`) Enable or disable runtime response validation against your OpenAPI schemas.
 
 ### `.middleware(fn)`
 
-Register global middleware for **all** routes defined on this factory. The typing of the middleware can be passed when creating the factory.
+Register global middleware for **all** routes defined on this router. The typing of the middleware can be passed when creating the router.
 
 ```ts
-const factory = new ExpressRouteFactory<{ user: User }>();
+const router = new OpenAPIRouter<{ user: User }>();
 
-factory.middleware(async ({ req, context }, next) => {
+router.middleware(async ({ req, context }, next) => {
   // attach data to context or handle auth
   context.user = await getUser(req.headers.authorization);
   next();
@@ -113,19 +132,19 @@ Define one or more handlers for a route. It will run the handlers after the midd
 - `h`: a typed helper for sending `json` or `text`. The typing is based on the response schema in the route config. The function will also validates the data that is given if the `validateResponse` option is enabled.
 
 ```ts
-factory.route(myRouteConfig, async ({ input, context, h }, next) => {
+router.route(myRouteConfig, async ({ input, context, h }, next) => {
   // ... your logic ...
   // the data type is inferred by the status, and the default status is 200.
   h.json({ data: result, status: 200 });
 });
 ```
 
-### `.router(path, subFactory)`
+### `.use(path, subRouter)`
 
-Mount a child `ExpressRouteFactory` under a base path and merge its OpenAPI definitions.
+Mount a child `OpenAPIRouter` under a base path and merge its OpenAPI definitions.
 
 ```ts
-factory.router('/admin', adminFactory);
+router.use('/admin', adminRouter);
 ```
 
 ### `.doc(path, openapiConfig, additionalDefinitions?)`
@@ -133,7 +152,7 @@ factory.router('/admin', adminFactory);
 Serve the merged OpenAPI document as JSON at `path`.
 
 ```ts
-factory.doc('/docs', {
+router.doc('/docs', {
   openapi: '3.1.0',
   info: { title: 'My Service', version: '1.2.3' },
 });
@@ -160,14 +179,14 @@ const userSchema = z
 
 ## Configuration
 
-- **Response validation**: disable by `new ExpressRouteFactory({ validateResponse: false })`.
-- **Custom router**: pass your own Express `Router` via `router` option.
+- **Response validation**: disable by `new OpenAPIRouter({ validateResponse: false })`.
+- **Override router**: pass your own Express `Router` via `expressRouter` option, otherwise a new one will be created.
 
 ---
 
 ## Examples
 
-See a complete example with authentication and CRUD routes in the [`examples/express`](../../examples/express) folder:
+See a complete example with authentication and CRUD routes in the [`examples/express`](https://github.com/arsaizdihar/node-openapi/tree/main/examples/express) folder:
 
 ```
 examples/express/
@@ -186,7 +205,7 @@ examples/express/
 
 ## Advanced Usage
 
-- **Nesting**: use `.extend()` on a factory to create sub-factories with different `context` types.
+- **Nesting**: use `.extend()` on a router to create sub-factories with different `context` types.
 - **Error handling**: Zod or route errors bubble through `next(err)`, use Express error middleware.
 - **Middleware ordering**: `.middleware()` applies globally before every route's validator and handlers.
 

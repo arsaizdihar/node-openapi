@@ -10,13 +10,13 @@ import {
   InputTypeParam,
   InputTypeQuery,
   RouteConfig,
-  RouteFactory,
+  CoreOpenApiRouter,
   mergePath,
 } from '../src/index';
 import type { Context, ValidationTargets } from '../src/type';
 
-// Create a mock implementation of RouteFactory for testing
-class TestRouteFactory extends RouteFactory<any, any> {
+// Create a mock implementation of CoreOpenApiRouter for testing
+class TestCoreOpenAPIRouter extends CoreOpenApiRouter<any, any> {
   doc<P extends string>(path: P, _configure: OpenAPIObjectConfigV31): void {
     // Mock implementation
     this.openAPIRegistry.registerPath({
@@ -32,7 +32,7 @@ class TestRouteFactory extends RouteFactory<any, any> {
 
   // Expose protected methods for testing
   getRoutingPath<P extends string>(path: P): string {
-    return RouteFactory.getRoutingPath(path);
+    return CoreOpenApiRouter.getRoutingPath(path);
   }
 
   route<
@@ -52,34 +52,31 @@ class TestRouteFactory extends RouteFactory<any, any> {
   }
 
   // Expose protected _registerRouter for testing
-  publicRegisterRouter(
-    pathForOpenAPI: string,
-    routeFactory: RouteFactory<any>,
-  ) {
-    this._registerRouter(pathForOpenAPI, routeFactory);
+  publicRegisterRouter(pathForOpenAPI: string, router: CoreOpenApiRouter<any>) {
+    this._registerRouter(pathForOpenAPI, router);
   }
 }
 
-describe('RouteFactory', () => {
-  let factory: TestRouteFactory;
+describe('OpenApiRouter', () => {
+  let router: TestCoreOpenAPIRouter;
 
   beforeEach(() => {
-    factory = new TestRouteFactory();
+    router = new TestCoreOpenAPIRouter();
   });
 
   describe('getRoutingPath', () => {
     it('should convert OpenAPI path params to framework path params', () => {
-      expect(factory.getRoutingPath('/users/{id}')).toBe('/users/:id');
-      expect(factory.getRoutingPath('/users/{userId}/posts/{postId}')).toBe(
+      expect(router.getRoutingPath('/users/{id}')).toBe('/users/:id');
+      expect(router.getRoutingPath('/users/{userId}/posts/{postId}')).toBe(
         '/users/:userId/posts/:postId',
       );
-      expect(factory.getRoutingPath('/plain/path')).toBe('/plain/path');
+      expect(router.getRoutingPath('/plain/path')).toBe('/plain/path');
     });
   });
 
   describe('createRoute', () => {
     it('should create a route with utility methods', () => {
-      const route = RouteFactory.createRoute({
+      const route = CoreOpenApiRouter.createRoute({
         method: 'get',
         path: '/users/{id}',
         responses: {
@@ -99,9 +96,9 @@ describe('RouteFactory', () => {
   describe('getOpenAPIDocument', () => {
     it('should generate an OpenAPI document from registered routes', () => {
       // Using an empty object for the second parameter, actual properties are handled in the mock
-      factory.doc('/users', {} as OpenAPIObjectConfigV31);
+      router.doc('/users', {} as OpenAPIObjectConfigV31);
 
-      const document = factory.getOpenAPIDocument({
+      const document = router.getOpenAPIDocument({
         openapi: '3.1.0',
         info: {
           title: 'Test API',
@@ -123,10 +120,10 @@ describe('RouteFactory', () => {
   describe('_route', () => {
     it('should register route with OpenAPI and create validators', () => {
       // Spy on openAPIRegistry.registerPath
-      const registerPathSpy = vi.spyOn(factory.openAPIRegistry, 'registerPath');
+      const registerPathSpy = vi.spyOn(router.openAPIRegistry, 'registerPath');
 
       // Create a route with various schema validations
-      const route = RouteFactory.createRoute({
+      const route = CoreOpenApiRouter.createRoute({
         method: 'post',
         path: '/users',
         request: {
@@ -148,14 +145,14 @@ describe('RouteFactory', () => {
       });
 
       // Call the route method
-      factory.route(route);
+      router.route(route);
 
       // Verify it registered the path
       expect(registerPathSpy).toHaveBeenCalledWith(route);
     });
 
     it('should implement the route validations for json body', async () => {
-      const route = RouteFactory.createRoute({
+      const route = CoreOpenApiRouter.createRoute({
         method: 'post',
         path: '/users',
         request: {
@@ -172,7 +169,7 @@ describe('RouteFactory', () => {
         },
       });
 
-      const handler = factory.route(route);
+      const handler = router.route(route);
       const context = {
         req: {
           json: { name: 'Test User' },
@@ -187,7 +184,7 @@ describe('RouteFactory', () => {
     });
 
     it('should implement the route validations for form data', async () => {
-      const route = RouteFactory.createRoute({
+      const route = CoreOpenApiRouter.createRoute({
         method: 'post',
         path: '/users',
         request: {
@@ -204,7 +201,7 @@ describe('RouteFactory', () => {
         },
       });
 
-      const handler = factory.route(route);
+      const handler = router.route(route);
       const context = {
         req: {
           form: { name: 'Test User' },
@@ -219,7 +216,7 @@ describe('RouteFactory', () => {
     });
 
     it('should implement the route validations for query params', async () => {
-      const route = RouteFactory.createRoute({
+      const route = CoreOpenApiRouter.createRoute({
         method: 'get',
         path: '/users',
         request: {
@@ -230,7 +227,7 @@ describe('RouteFactory', () => {
         },
       });
 
-      const handler = factory.route(route);
+      const handler = router.route(route);
       const context = {
         req: { query: { search: 'test' } },
         input: {} as any,
@@ -246,7 +243,7 @@ describe('RouteFactory', () => {
   describe('zValidator', () => {
     it('should validate query parameters', async () => {
       const schema = z.object({ id: z.string() });
-      const validator = factory.validate('query', schema);
+      const validator = router.validate('query', schema);
 
       const context = {
         req: { query: { id: '123' } },
@@ -260,7 +257,7 @@ describe('RouteFactory', () => {
 
     it('should validate JSON body', async () => {
       const schema = z.object({ name: z.string() });
-      const validator = factory.validate('json', schema);
+      const validator = router.validate('json', schema);
 
       const context = {
         req: {
@@ -278,7 +275,7 @@ describe('RouteFactory', () => {
 
     it('should validate form data', async () => {
       const schema = z.object({ email: z.string().email() });
-      const validator = factory.validate('form', schema);
+      const validator = router.validate('form', schema);
 
       const context = {
         req: {
@@ -295,7 +292,7 @@ describe('RouteFactory', () => {
 
     it('should validate text body', async () => {
       const schema = z.string();
-      const validator = factory.validate('text', schema);
+      const validator = router.validate('text', schema);
 
       const context = {
         req: { body: 'plain text content' },
@@ -309,7 +306,7 @@ describe('RouteFactory', () => {
 
     it('should validate headers', async () => {
       const schema = z.object({ 'api-key': z.string() });
-      const validator = factory.validate('header', schema);
+      const validator = router.validate('header', schema);
 
       const context = {
         req: { headers: { 'api-key': 'secret-key' } },
@@ -323,7 +320,7 @@ describe('RouteFactory', () => {
 
     it('should validate cookies', async () => {
       const schema = z.object({ session: z.string() });
-      const validator = factory.validate('cookie', schema);
+      const validator = router.validate('cookie', schema);
 
       const context = {
         req: { cookies: { session: 'abc123' } },
@@ -337,7 +334,7 @@ describe('RouteFactory', () => {
 
     it("should create input object if it doesn't exist", async () => {
       const schema = z.object({ id: z.string() });
-      const validator = factory.validate('param', schema);
+      const validator = router.validate('param', schema);
 
       const context = {
         req: { params: { id: '123' } },
@@ -352,27 +349,27 @@ describe('RouteFactory', () => {
   });
 
   describe('_registerRouter', () => {
-    let parentFactory: TestRouteFactory;
-    let childFactory: TestRouteFactory;
+    let parentRouter: TestCoreOpenAPIRouter;
+    let childRouter: TestCoreOpenAPIRouter;
 
     beforeEach(() => {
-      parentFactory = new TestRouteFactory();
-      childFactory = new TestRouteFactory();
+      parentRouter = new TestCoreOpenAPIRouter();
+      childRouter = new TestCoreOpenAPIRouter();
     });
 
-    it('should register components from child factory', () => {
+    it('should register components from child router', () => {
       const component = z.object({ id: z.string() }).openapi('User');
-      childFactory.openAPIRegistry.registerComponent(
+      childRouter.openAPIRegistry.registerComponent(
         'schemas',
         'User',
         component as any,
       );
 
       const registerComponentSpy = vi.spyOn(
-        parentFactory.openAPIRegistry,
+        parentRouter.openAPIRegistry,
         'registerComponent',
       );
-      parentFactory.publicRegisterRouter('/api', childFactory);
+      parentRouter.publicRegisterRouter('/api', childRouter);
 
       expect(registerComponentSpy).toHaveBeenCalledTimes(1);
       expect(registerComponentSpy).toHaveBeenCalledWith(
@@ -382,49 +379,49 @@ describe('RouteFactory', () => {
       );
     });
 
-    it('should register schemas from child factory', () => {
+    it('should register schemas from child router', () => {
       const schema = z.string().openapi('TestString');
-      childFactory.openAPIRegistry.register('TestString', schema);
+      childRouter.openAPIRegistry.register('TestString', schema);
 
-      const registerSpy = vi.spyOn(parentFactory.openAPIRegistry, 'register');
-      parentFactory.publicRegisterRouter('/api', childFactory);
+      const registerSpy = vi.spyOn(parentRouter.openAPIRegistry, 'register');
+      parentRouter.publicRegisterRouter('/api', childRouter);
 
       expect(registerSpy).toHaveBeenCalledTimes(1);
       expect(registerSpy.mock.calls[0][0]).toBe('TestString');
     });
 
-    it('should register parameters from child factory', () => {
+    it('should register parameters from child router', () => {
       const parameter = z
         .string()
         .openapi('TestParam', { param: { name: 'myParam', in: 'query' } });
-      childFactory.openAPIRegistry.registerParameter(
+      childRouter.openAPIRegistry.registerParameter(
         'TestParam',
         parameter as any,
       );
 
       const registerParameterSpy = vi.spyOn(
-        parentFactory.openAPIRegistry,
+        parentRouter.openAPIRegistry,
         'registerParameter',
       );
-      parentFactory.publicRegisterRouter('/api', childFactory);
+      parentRouter.publicRegisterRouter('/api', childRouter);
 
       expect(registerParameterSpy).toHaveBeenCalledTimes(1);
       expect(registerParameterSpy.mock.calls[0][0]).toBe('TestParam');
     });
 
-    it('should register webhooks from child factory with prefixed paths', () => {
+    it('should register webhooks from child router with prefixed paths', () => {
       const webhookConfig = {
         method: 'post',
         path: '/hook',
         responses: { 200: { description: 'OK' } },
       } as RouteConfig; // Cast as RouteConfig for simplicity, actual type is WebhookConfig
-      childFactory.openAPIRegistry.registerWebhook(webhookConfig as any);
+      childRouter.openAPIRegistry.registerWebhook(webhookConfig as any);
 
       const registerWebhookSpy = vi.spyOn(
-        parentFactory.openAPIRegistry,
+        parentRouter.openAPIRegistry,
         'registerWebhook',
       );
-      parentFactory.publicRegisterRouter('/api', childFactory);
+      parentRouter.publicRegisterRouter('/api', childRouter);
 
       expect(registerWebhookSpy).toHaveBeenCalledTimes(1);
       expect(registerWebhookSpy).toHaveBeenCalledWith({
@@ -433,18 +430,18 @@ describe('RouteFactory', () => {
       });
     });
 
-    it('should handle various definition types from child factory', () => {
+    it('should handle various definition types from child router', () => {
       // Route
-      const routeConfig = RouteFactory.createRoute({
+      const routeConfig = CoreOpenApiRouter.createRoute({
         method: 'get',
         path: '/items',
         responses: { 200: { description: 'OK' } },
       });
-      childFactory.openAPIRegistry.registerPath(routeConfig);
+      childRouter.openAPIRegistry.registerPath(routeConfig);
 
       // Component
       const component = z.object({ name: z.string() }).openapi('Item');
-      childFactory.openAPIRegistry.registerComponent(
+      childRouter.openAPIRegistry.registerComponent(
         'schemas',
         'Item',
         component as any,
@@ -452,16 +449,13 @@ describe('RouteFactory', () => {
 
       // Schema
       const schema = z.number().openapi('ItemCount');
-      childFactory.openAPIRegistry.register('ItemCount', schema);
+      childRouter.openAPIRegistry.register('ItemCount', schema);
 
       // Parameter
       const parameter = z
         .string()
         .openapi('ItemID', { param: { name: 'itemId', in: 'path' } });
-      childFactory.openAPIRegistry.registerParameter(
-        'ItemID',
-        parameter as any,
-      );
+      childRouter.openAPIRegistry.registerParameter('ItemID', parameter as any);
 
       // Webhook
       const webhookConfig = {
@@ -469,27 +463,27 @@ describe('RouteFactory', () => {
         path: '/item-event',
         responses: { 200: { description: 'OK' } },
       } as RouteConfig;
-      childFactory.openAPIRegistry.registerWebhook(webhookConfig as any);
+      childRouter.openAPIRegistry.registerWebhook(webhookConfig as any);
 
       const registerPathSpy = vi.spyOn(
-        parentFactory.openAPIRegistry,
+        parentRouter.openAPIRegistry,
         'registerPath',
       );
       const registerComponentSpy = vi.spyOn(
-        parentFactory.openAPIRegistry,
+        parentRouter.openAPIRegistry,
         'registerComponent',
       );
-      const registerSpy = vi.spyOn(parentFactory.openAPIRegistry, 'register');
+      const registerSpy = vi.spyOn(parentRouter.openAPIRegistry, 'register');
       const registerParameterSpy = vi.spyOn(
-        parentFactory.openAPIRegistry,
+        parentRouter.openAPIRegistry,
         'registerParameter',
       );
       const registerWebhookSpy = vi.spyOn(
-        parentFactory.openAPIRegistry,
+        parentRouter.openAPIRegistry,
         'registerWebhook',
       );
 
-      parentFactory.publicRegisterRouter('/v2', childFactory);
+      parentRouter.publicRegisterRouter('/v2', childRouter);
 
       expect(registerPathSpy).toHaveBeenCalledWith({
         ...routeConfig,

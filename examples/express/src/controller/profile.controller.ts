@@ -4,21 +4,21 @@ import {
   unfollowProfile,
 } from 'ws-common/service/user.service';
 import {
-  createRequiredAuthFactory,
-  createOptionalAuthFactory,
+  createRequiredAuthRouter,
+  createOptionalAuthRouter,
 } from '../factories';
 import {
   followProfileRoute,
   getProfileRoute,
   unfollowProfileRoute,
 } from '../routes/profile.routes';
-import { ExpressRouteFactory } from '@node-openapi/express';
+import { OpenAPIRouter } from '@node-openapi/express';
 
-export const profileController = new ExpressRouteFactory();
+export const profileController = new OpenAPIRouter();
 
-const checkedAuthFactory = createOptionalAuthFactory();
+const checkedAuthRouter = createOptionalAuthRouter();
 
-checkedAuthFactory.route(
+checkedAuthRouter.route(
   getProfileRoute,
   async ({ input, context, h }, next) => {
     const username = input.param.username;
@@ -31,7 +31,7 @@ checkedAuthFactory.route(
   },
 );
 
-const authProfileFactory = createRequiredAuthFactory();
+const authProfileFactory = createRequiredAuthRouter();
 
 authProfileFactory.route(
   followProfileRoute,
@@ -59,5 +59,5 @@ authProfileFactory.route(
   },
 );
 
-profileController.router('', checkedAuthFactory);
-profileController.router('', authProfileFactory);
+profileController.use('', checkedAuthRouter);
+profileController.use('', authProfileFactory);

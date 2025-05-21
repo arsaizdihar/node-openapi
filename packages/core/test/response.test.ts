@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import {
-  RouteFactory,
+  CoreOpenApiRouter,
   ResponseValidationError,
   RouteConfig,
 } from '../src/index';
@@ -21,8 +21,8 @@ class MockRequest implements RequestLike {
   body: any = null;
 }
 
-// A concrete implementation of RouteFactory to access protected static methods
-class TestRouteFactory extends RouteFactory<MockRequest> {
+// A concrete implementation of CoreOpenAPIRouter to access protected static methods
+class TestOpenAPIRouter extends CoreOpenApiRouter<MockRequest> {
   doc<P extends string>(_path: P, _configure: any): void {
     // Mock implementation
   }
@@ -45,7 +45,7 @@ class TestRouteFactory extends RouteFactory<MockRequest> {
   }
 }
 
-describe('RouteFactory Response Handling', () => {
+describe('CoreOpenAPIRouter Response Handling', () => {
   describe('_validateResponse', () => {
     const routeConfigWithSchema: RouteConfig = {
       method: 'get',
@@ -70,7 +70,7 @@ describe('RouteFactory Response Handling', () => {
 
     it('should return original response if no schema defined for status/contentType', () => {
       const response = { message: 'No schema here' };
-      const validated = TestRouteFactory.publicValidateResponse(
+      const validated = TestOpenAPIRouter.publicValidateResponse(
         routeConfigWithSchema,
         response,
         'application/json',
@@ -78,7 +78,7 @@ describe('RouteFactory Response Handling', () => {
       );
       expect(validated).toEqual(response);
 
-      const validated2 = TestRouteFactory.publicValidateResponse(
+      const validated2 = TestOpenAPIRouter.publicValidateResponse(
         routeConfigWithSchema,
         response,
         'application/xml', // ContentType not defined
@@ -103,7 +103,7 @@ describe('RouteFactory Response Handling', () => {
         },
       };
       const response = { id: 1, name: 'Test' };
-      const validated = TestRouteFactory.publicValidateResponse(
+      const validated = TestOpenAPIRouter.publicValidateResponse(
         configWithNonZodSchema,
         response,
         'application/json',
@@ -114,7 +114,7 @@ describe('RouteFactory Response Handling', () => {
 
     it('should validate and return data for valid JSON response', () => {
       const response = { id: 1, name: 'Test Item' };
-      const validated = TestRouteFactory.publicValidateResponse(
+      const validated = TestOpenAPIRouter.publicValidateResponse(
         routeConfigWithSchema,
         response,
         'application/json',
@@ -126,7 +126,7 @@ describe('RouteFactory Response Handling', () => {
     it('should throw ResponseValidationError for invalid JSON response', () => {
       const invalidResponse = { id: 'not-a-number', name: 'Test Item' };
       expect(() =>
-        TestRouteFactory.publicValidateResponse(
+        TestOpenAPIRouter.publicValidateResponse(
           routeConfigWithSchema,
           invalidResponse,
           'application/json',
@@ -137,7 +137,7 @@ describe('RouteFactory Response Handling', () => {
 
     it('should validate and return data for valid text response', () => {
       const response = 'This is a valid text';
-      const validated = TestRouteFactory.publicValidateResponse(
+      const validated = TestOpenAPIRouter.publicValidateResponse(
         routeConfigWithSchema,
         response,
         'text/plain',
@@ -149,7 +149,7 @@ describe('RouteFactory Response Handling', () => {
     it('should throw ResponseValidationError for invalid text response', () => {
       const invalidResponse = ''; // Empty string, schema expects min(1)
       expect(() =>
-        TestRouteFactory.publicValidateResponse(
+        TestOpenAPIRouter.publicValidateResponse(
           routeConfigWithSchema,
           invalidResponse,
           'text/plain',
@@ -165,7 +165,7 @@ describe('RouteFactory Response Handling', () => {
         responses: undefined as any, // Adjusted type assertion
       };
       const response = { data: 'test' };
-      const validated = TestRouteFactory.publicValidateResponse(
+      const validated = TestOpenAPIRouter.publicValidateResponse(
         configWithoutResponses,
         response,
         'application/json',
@@ -185,7 +185,7 @@ describe('RouteFactory Response Handling', () => {
         },
       };
       const response = { data: 'test' };
-      const validated = TestRouteFactory.publicValidateResponse(
+      const validated = TestOpenAPIRouter.publicValidateResponse(
         configWithoutContent,
         response,
         'application/json',
@@ -206,7 +206,7 @@ describe('RouteFactory Response Handling', () => {
         },
       };
       const response = { data: 'test' };
-      const validated = TestRouteFactory.publicValidateResponse(
+      const validated = TestOpenAPIRouter.publicValidateResponse(
         configWithoutContentType,
         response,
         'application/json',
@@ -255,7 +255,7 @@ describe('RouteFactory Response Handling', () => {
     };
 
     it('should create a helper that sends JSON response without validation if no config', () => {
-      const helper = TestRouteFactory.publicCreateHelper(mockSend);
+      const helper = TestOpenAPIRouter.publicCreateHelper(mockSend);
       const data = { info: 'test' };
       helper.json({ data, status: 200 });
       expect(mockSend.json).toHaveBeenCalledWith(data, 200);
@@ -264,14 +264,17 @@ describe('RouteFactory Response Handling', () => {
     });
 
     it('should create a helper that sends text response without validation if no config', () => {
-      const helper = TestRouteFactory.publicCreateHelper(mockSend);
+      const helper = TestOpenAPIRouter.publicCreateHelper(mockSend);
       const data = 'hello world';
       helper.text({ data, status: 200 });
       expect(mockSend.text).toHaveBeenCalledWith(data, 200);
     });
 
     it('should validate and send JSON response using helper', () => {
-      const helper = TestRouteFactory.publicCreateHelper(mockSend, routeConfig);
+      const helper = TestOpenAPIRouter.publicCreateHelper(
+        mockSend,
+        routeConfig,
+      );
       const validData = { message: 'Validated' };
       helper.json({ data: validData, status: 200 });
       expect(mockSend.json).toHaveBeenCalledWith(validData, 200);
@@ -282,7 +285,10 @@ describe('RouteFactory Response Handling', () => {
     });
 
     it('should throw ResponseValidationError for invalid JSON via helper', () => {
-      const helper = TestRouteFactory.publicCreateHelper(mockSend, routeConfig);
+      const helper = TestOpenAPIRouter.publicCreateHelper(
+        mockSend,
+        routeConfig,
+      );
       const invalidData = { message: 123 }; // Should be string
       expect(() => helper.json({ data: invalidData, status: 200 })).toThrow(
         ResponseValidationError,
@@ -291,14 +297,20 @@ describe('RouteFactory Response Handling', () => {
     });
 
     it('should validate and send text response using helper', () => {
-      const helper = TestRouteFactory.publicCreateHelper(mockSend, routeConfig);
+      const helper = TestOpenAPIRouter.publicCreateHelper(
+        mockSend,
+        routeConfig,
+      );
       const validData = 'This is a valid text response';
       helper.text({ data: validData, status: 200 });
       expect(mockSend.text).toHaveBeenCalledWith(validData, 200);
     });
 
     it('should throw ResponseValidationError for invalid text via helper', () => {
-      const helper = TestRouteFactory.publicCreateHelper(mockSend, routeConfig);
+      const helper = TestOpenAPIRouter.publicCreateHelper(
+        mockSend,
+        routeConfig,
+      );
       const invalidData = 'one'; // Schema expects min(5)
       expect(() => helper.text({ data: invalidData, status: 200 })).toThrow(
         ResponseValidationError,
@@ -307,7 +319,10 @@ describe('RouteFactory Response Handling', () => {
     });
 
     it('helper.json should use default status 200 if not provided', () => {
-      const helper = TestRouteFactory.publicCreateHelper(mockSend, routeConfig);
+      const helper = TestOpenAPIRouter.publicCreateHelper(
+        mockSend,
+        routeConfig,
+      );
       const data = { message: 'Default status test' };
       helper.json({ data });
       expect(mockSend.json).toHaveBeenCalledWith(data, 200);
