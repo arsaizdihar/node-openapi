@@ -1,4 +1,4 @@
-import { KoaRouteFactory } from '@node-openapi/koa';
+import { OpenAPIRouter } from '@node-openapi/koa';
 import { User } from 'ws-common/domain/user.domain';
 import { HttpError } from 'ws-common/service/error.service';
 import { getUserByToken } from 'ws-common/service/user.service';
@@ -11,10 +11,10 @@ export type RequiredAuthEnv = {
   user: User;
 };
 
-export function createOptionalAuthFactory() {
-  const factory = new KoaRouteFactory<OptionalAuthEnv>();
+export function createOptionalAuthRouter() {
+  const router = new OpenAPIRouter<OptionalAuthEnv>();
 
-  factory.middleware(async (c, next) => {
+  router.middleware(async (c, next) => {
     const authHeader = c.req.headers.authorization;
     if (!authHeader) {
       c.state.user = null;
@@ -32,18 +32,18 @@ export function createOptionalAuthFactory() {
     await next();
   });
 
-  return factory;
+  return router;
 }
 
-export function createRequiredAuthFactory() {
-  const factory = createOptionalAuthFactory().extend<RequiredAuthEnv>();
+export function createRequiredAuthRouter() {
+  const router = createOptionalAuthRouter().extend<RequiredAuthEnv>();
 
-  factory.middleware(async (c, next) => {
+  router.middleware(async (c, next) => {
     if (!c.state.user) {
       throw new HttpError('Unauthorized', 401);
     }
     await next();
   });
 
-  return factory;
+  return router;
 }

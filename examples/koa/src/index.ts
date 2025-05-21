@@ -2,16 +2,16 @@ import 'dotenv/config';
 
 import bodyParser from '@koa/bodyparser';
 import cors from '@koa/cors';
-import { KoaRouteFactory } from '@node-openapi/koa';
+import { OpenAPIRouter } from '@node-openapi/koa';
 import Koa from 'koa';
 import { koaSwagger } from 'koa2-swagger-ui';
 import { HttpError } from 'ws-common/service/error.service';
 import { ZodError } from 'zod';
-import { articlesController } from './controller/articles.controller';
-import { commentsController } from './controller/comments.controller';
-import { profileController } from './controller/profile.controller';
-import { tagsController } from './controller/tags.controller';
-import { userController } from './controller/user.controller';
+import { articlesRouter } from './controller/articles.controller';
+import { commentsRouter } from './controller/comments.controller';
+import { profileRouter } from './controller/profile.controller';
+import { tagsRouter } from './controller/tags.controller';
+import { userRouter } from './controller/user.controller';
 
 const app = new Koa();
 
@@ -57,15 +57,15 @@ app.use(async (ctx, next) => {
 });
 
 app.use(bodyParser());
-const mainFactory = new KoaRouteFactory();
+const mainRouter = new OpenAPIRouter();
 
-mainFactory.router('/api', articlesController);
-mainFactory.router('/api', profileController);
-mainFactory.router('/api', userController);
-mainFactory.router('/api', commentsController);
-mainFactory.router('/api', tagsController);
+mainRouter.use('/api', articlesRouter);
+mainRouter.use('/api', profileRouter);
+mainRouter.use('/api', userRouter);
+mainRouter.use('/api', commentsRouter);
+mainRouter.use('/api', tagsRouter);
 
-mainFactory.doc('/docs', {
+mainRouter.doc('/docs', {
   openapi: '3.1.0',
   info: {
     title: 'API',
@@ -73,7 +73,7 @@ mainFactory.doc('/docs', {
   },
 });
 
-mainFactory.registerApp(app);
+mainRouter.registerApp(app);
 
 app.use(
   koaSwagger({
