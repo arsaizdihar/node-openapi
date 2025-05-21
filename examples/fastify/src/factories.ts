@@ -1,10 +1,10 @@
-import { FastifyRouteFactory } from '@node-openapi/fastify';
+import { OpenAPIRouter } from '@node-openapi/fastify';
 import { User } from 'ws-common/domain/user.domain';
 import { HttpError } from 'ws-common/service/error.service';
 import { getUserByToken } from 'ws-common/service/user.service';
 
-export function createOptionalAuthFactory() {
-  const factory = new FastifyRouteFactory<{ user: User | null }>();
+export function createOptionalAuthRouter() {
+  const factory = new OpenAPIRouter<{ user: User | null }>();
 
   factory.middleware(async (req, _reply, { context }) => {
     const token = req.headers.authorization;
@@ -26,8 +26,8 @@ export function createOptionalAuthFactory() {
   return factory;
 }
 
-export function createRequiredAuthFactory() {
-  const factory = createOptionalAuthFactory().extend<{ user: User }>();
+export function createRequiredAuthRouter() {
+  const factory = createOptionalAuthRouter().extend<{ user: User }>();
 
   factory.middleware(async (_req, _reply, { context }) => {
     if (!context.user) {

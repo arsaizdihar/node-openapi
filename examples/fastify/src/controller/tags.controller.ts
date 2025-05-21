@@ -1,10 +1,10 @@
-import { FastifyRouteFactory } from '@node-openapi/fastify';
+import { OpenAPIRouter } from '@node-openapi/fastify';
 import { getTagsRoute } from '../routes/tags.routes';
 import { getTags } from 'ws-common/service/tags.service';
 
-export const tagsController = new FastifyRouteFactory();
+export const tagsRouter = new OpenAPIRouter();
 
-tagsController.route(getTagsRoute, async ({ h }) => {
+tagsRouter.route(getTagsRoute, async ({ h }) => {
   const tags = await getTags();
 
   h.json({ data: { tags } });

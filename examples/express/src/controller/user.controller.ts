@@ -12,9 +12,9 @@ import {
 } from 'ws-common/service/user.service';
 import { createRequiredAuthRouter } from '../factories';
 
-export const userController = new OpenAPIRouter();
+export const userRouter = new OpenAPIRouter();
 
-userController.route(loginRoute, async ({ input, h }, next) => {
+userRouter.route(loginRoute, async ({ input, h }, next) => {
   const { user } = input.json;
   try {
     const result = await loginUser(user);
@@ -24,7 +24,7 @@ userController.route(loginRoute, async ({ input, h }, next) => {
   }
 });
 
-userController.route(registerRoute, async ({ input, h }, next) => {
+userRouter.route(registerRoute, async ({ input, h }, next) => {
   const { user } = input.json;
   try {
     const result = await registerUser(user);
@@ -47,4 +47,4 @@ checkedAuthRouter.route(updateUserRoute, async ({ input, context, h }) => {
   h.json({ data: { user: result } });
 });
 
-userController.use('', checkedAuthRouter);
+userRouter.use('', checkedAuthRouter);

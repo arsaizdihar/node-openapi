@@ -1,4 +1,4 @@
-import { FastifyRouteFactory } from '@node-openapi/fastify';
+import { OpenAPIRouter } from '@node-openapi/fastify';
 import {
   getCurrentUserRoute,
   loginRoute,
@@ -10,32 +10,32 @@ import {
   registerUser,
   updateUser,
 } from 'ws-common/service/user.service';
-import { createRequiredAuthFactory } from '../factories';
+import { createRequiredAuthRouter } from '../factories';
 
-export const userController = new FastifyRouteFactory();
+export const userRouter = new OpenAPIRouter();
 
-userController.route(loginRoute, async ({ input, h }) => {
+userRouter.route(loginRoute, async ({ input, h }) => {
   const { user } = input.json;
   const result = await loginUser(user);
 
   h.json({ data: { user: result } });
 });
 
-userController.route(registerRoute, async ({ input, h }) => {
+userRouter.route(registerRoute, async ({ input, h }) => {
   const { user } = input.json;
   const result = await registerUser(user);
 
   h.json({ data: { user: result }, status: 201 });
 });
 
-const checkedAuthFactory = createRequiredAuthFactory();
-checkedAuthFactory.route(getCurrentUserRoute, async ({ context, h }) => {
+const checkedAuthRouter = createRequiredAuthRouter();
+checkedAuthRouter.route(getCurrentUserRoute, async ({ context, h }) => {
   const user = context.user;
 
   h.json({ data: { user } });
 });
 
-checkedAuthFactory.route(updateUserRoute, async ({ context, input, h }) => {
+checkedAuthRouter.route(updateUserRoute, async ({ context, input, h }) => {
   const { user } = input.json;
   const currentUser = context.user;
   const result = await updateUser(currentUser.username, user);
@@ -43,4 +43,4 @@ checkedAuthFactory.route(updateUserRoute, async ({ context, input, h }) => {
   h.json({ data: { user: result } });
 });
 
-userController.router('', checkedAuthFactory);
+userRouter.use('', checkedAuthRouter);

@@ -10,13 +10,13 @@ import {
   InputTypeParam,
   InputTypeQuery,
   RouteConfig,
-  CoreOpenApiRouter,
+  CoreOpenAPIRouter,
   mergePath,
 } from '../src/index';
 import type { Context, ValidationTargets } from '../src/type';
 
-// Create a mock implementation of CoreOpenApiRouter for testing
-class TestCoreOpenAPIRouter extends CoreOpenApiRouter<any, any> {
+// Create a mock implementation of CoreOpenAPIRouter for testing
+class TestCoreOpenAPIRouter extends CoreOpenAPIRouter<any, any> {
   doc<P extends string>(path: P, _configure: OpenAPIObjectConfigV31): void {
     // Mock implementation
     this.openAPIRegistry.registerPath({
@@ -32,7 +32,7 @@ class TestCoreOpenAPIRouter extends CoreOpenApiRouter<any, any> {
 
   // Expose protected methods for testing
   getRoutingPath<P extends string>(path: P): string {
-    return CoreOpenApiRouter.getRoutingPath(path);
+    return CoreOpenAPIRouter.getRoutingPath(path);
   }
 
   route<
@@ -52,7 +52,7 @@ class TestCoreOpenAPIRouter extends CoreOpenApiRouter<any, any> {
   }
 
   // Expose protected _registerRouter for testing
-  publicRegisterRouter(pathForOpenAPI: string, router: CoreOpenApiRouter<any>) {
+  publicRegisterRouter(pathForOpenAPI: string, router: CoreOpenAPIRouter<any>) {
     this._registerRouter(pathForOpenAPI, router);
   }
 }
@@ -76,7 +76,7 @@ describe('OpenApiRouter', () => {
 
   describe('createRoute', () => {
     it('should create a route with utility methods', () => {
-      const route = CoreOpenApiRouter.createRoute({
+      const route = CoreOpenAPIRouter.createRoute({
         method: 'get',
         path: '/users/{id}',
         responses: {
@@ -123,7 +123,7 @@ describe('OpenApiRouter', () => {
       const registerPathSpy = vi.spyOn(router.openAPIRegistry, 'registerPath');
 
       // Create a route with various schema validations
-      const route = CoreOpenApiRouter.createRoute({
+      const route = CoreOpenAPIRouter.createRoute({
         method: 'post',
         path: '/users',
         request: {
@@ -152,7 +152,7 @@ describe('OpenApiRouter', () => {
     });
 
     it('should implement the route validations for json body', async () => {
-      const route = CoreOpenApiRouter.createRoute({
+      const route = CoreOpenAPIRouter.createRoute({
         method: 'post',
         path: '/users',
         request: {
@@ -184,7 +184,7 @@ describe('OpenApiRouter', () => {
     });
 
     it('should implement the route validations for form data', async () => {
-      const route = CoreOpenApiRouter.createRoute({
+      const route = CoreOpenAPIRouter.createRoute({
         method: 'post',
         path: '/users',
         request: {
@@ -216,7 +216,7 @@ describe('OpenApiRouter', () => {
     });
 
     it('should implement the route validations for query params', async () => {
-      const route = CoreOpenApiRouter.createRoute({
+      const route = CoreOpenAPIRouter.createRoute({
         method: 'get',
         path: '/users',
         request: {
@@ -432,7 +432,7 @@ describe('OpenApiRouter', () => {
 
     it('should handle various definition types from child router', () => {
       // Route
-      const routeConfig = CoreOpenApiRouter.createRoute({
+      const routeConfig = CoreOpenAPIRouter.createRoute({
         method: 'get',
         path: '/items',
         responses: { 200: { description: 'OK' } },

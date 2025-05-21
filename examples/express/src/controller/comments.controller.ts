@@ -13,7 +13,7 @@ import {
   deleteComment,
   getComments,
 } from 'ws-common/service/comments.service';
-export const commentsController = new OpenAPIRouter();
+export const commentsRouter = new OpenAPIRouter();
 
 const checkedAuthRouter = createOptionalAuthRouter();
 
@@ -54,5 +54,5 @@ authRouter.route(deleteCommentRoute, async ({ input, context, res }, next) => {
   }
 });
 
-commentsController.use('', checkedAuthRouter);
-commentsController.use('', authRouter);
+commentsRouter.use('', checkedAuthRouter);
+commentsRouter.use('', authRouter);

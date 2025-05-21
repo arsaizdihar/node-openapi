@@ -11,7 +11,7 @@ import {
   InputTypeQuery,
   MaybePromise,
   RouteConfig,
-  RouteFactory,
+  CoreOpenAPIRouter,
 } from '@node-openapi/core';
 import {
   FastifyInstance,
@@ -96,31 +96,149 @@ class Router {
   }
 }
 
-export class FastifyRouteFactory<
+export type OpenAPIRouterOptions = {
+  /**
+   * Whether to validate the response in the h helper
+   * @default true
+   */
+  validateResponse?: boolean;
+};
+
+/**
+ * Router for Fastify with OpenAPI support.
+ *
+ * @example
+ * ```ts
+ * const app = fastify();
+ * const router = new OpenAPIRouter();
+ *
+ * router.route(
+ *   {
+ *     method: 'get',
+ *     path: '/hello',
+ *     getRoutingPath: () => '/hello',
+ *     responses: {
+ *       200: {
+ *         description: 'Successful response',
+ *         content: {
+ *           'application/json': {
+ *             schema: z.object({ message: z.string() }),
+ *           },
+ *         },
+ *       },
+ *     },
+ *   },
+ *   async ({ h }) => {
+ *     h.json({ message: 'Hello, world!' });
+ *   },
+ * );
+ *
+ * router.registerApp(app);
+ * ```
+ */
+export class OpenAPIRouter<
   TContext extends Record<string, any> = Record<string, any>,
-> extends RouteFactory<FastifyRequestAdapter> {
+> extends CoreOpenAPIRouter<FastifyRequestAdapter> {
   private readonly _router: Router = new Router();
   private readonly _validateResponse: boolean;
 
-  constructor(options: { validateResponse?: boolean } = {}) {
+  /**
+   * Create a new OpenAPIRouter for Fastify.
+   * @param options - Options for the router.
+   * @param options.validateResponse - Whether to validate the response in the h helper. Defaults to true.
+   */
+  constructor(options: OpenAPIRouterOptions = {}) {
     super();
     this._validateResponse = options.validateResponse ?? true;
   }
 
-  extend<NewContext extends TContext>(): FastifyRouteFactory<
-    TContext & NewContext
-  > {
-    const factory = new FastifyRouteFactory<TContext & NewContext>({
-      validateResponse: this._validateResponse,
+  /**
+   * Extend the router with a new context. It will create a new instance with the current middlewares as the initial new middlewares.
+   * @param options - Options for the router.
+   * @param options.validateResponse - Whether to validate the response in the h helper. Defaults to the parent router's setting.
+   *
+   * @example
+   * ```ts
+   * const authedRouter = publicRouter.extend<{ user: { id: string } }>();
+   * ```
+   */
+  extend<NewContext extends TContext>({
+    validateResponse,
+  }: OpenAPIRouterOptions = {}): OpenAPIRouter<TContext & NewContext> {
+    const router = new OpenAPIRouter<TContext & NewContext>({
+      validateResponse: validateResponse ?? this._validateResponse,
     });
-    factory._router.middlewares = [...this._router.middlewares];
-    return factory;
+    router._router.middlewares = [...this._router.middlewares];
+    return router;
   }
 
+  /**
+   * Add a middleware to the router. It will be applied to all routes registered after this middleware.
+   * The context can be modified in the middleware and will be available in subsequent middlewares and the route handler.
+   *
+   * @param handler - The middleware handler function.
+   *
+   * @example
+   * ```ts
+   * router.middleware(async (request, reply, { context }) => {
+   *   // Assuming context is typed as { user?: { id: string } }
+   *   const userId = request.headers['x-user-id'];
+   *   if (typeof userId === 'string') {
+   *     context.user = { id: userId };
+   *   }
+   * });
+   * ```
+   */
   middleware<R extends RouteHandlerMethodWithContext<TContext>>(handler: R) {
     this._router.middleware(handler);
   }
 
+  /**
+   * Add a route to the router.
+   *
+   * @param route - The route configuration object, created using `createRoute`.
+   * @param handler - The route handler function. It receives the request context, validated input, Fastify request and reply objects, and a helper object `h` for sending responses.
+   *
+   * @example
+   * ```ts
+   * const userSchema = z.object({
+   *   id: z.string(),
+   *   name: z.string(),
+   * });
+   *
+   * router.route(
+   *   createRoute({
+   *     method: 'get',
+   *     path: '/users/{id}',
+   *     getRoutingPath: () => '/users/:id', // Fastify specific path format
+   *     request: {
+   *       params: z.object({ id: z.string() }),
+   *     },
+   *     responses: {
+   *       200: {
+   *         description: 'User found',
+   *         content: {
+   *           'application/json': {
+   *             schema: userSchema,
+   *           },
+   *         },
+   *       },
+   *       404: {
+   *         description: 'User not found',
+   *       },
+   *     },
+   *   }),
+   *   async ({ input, h, context }) => {
+   *     // const user = await findUserById(input.params.id, context.db);
+   *     // if (!user) {
+   *     //   return h.json({ message: 'User not found' }, 404);
+   *     // }
+   *     // return h.json(user);
+   *     return h.json({ id: input.params.id, name: 'John Doe' });
+   *   },
+   * );
+   * ```
+   */
   route<
     R extends RouteConfig & { getRoutingPath: () => string },
     I extends Input = InputTypeParam<R> &
@@ -168,7 +286,7 @@ export class FastifyRouteFactory<
           input: c.input,
           request,
           reply,
-          h: FastifyRouteFactory._createHelper(
+          h: OpenAPIRouter._createHelper(
             {
               json: (data, status) => {
                 reply
@@ -190,16 +308,49 @@ export class FastifyRouteFactory<
     });
   }
 
-  router<TContext extends Record<string, any>>(
+  /**
+   * Mount a sub-router at a specific path prefix.
+   * All routes defined in the sub-router will be prefixed with this path.
+   * Middlewares from the parent router will be applied to the sub-router's routes.
+   *
+   * @param path - The path prefix for the sub-router.
+   * @param router - The `OpenAPIRouter` instance to mount.
+   *
+   * @example
+   * ```ts
+   * const userRouter = new OpenAPIRouter();
+   * // Define routes on userRouter...
+   *
+   * mainRouter.use('/users', userRouter);
+   * ```
+   */
+  use<TContext extends Record<string, any>>(
     path: string,
-    routeFactory: FastifyRouteFactory<TContext>,
+    router: OpenAPIRouter<TContext>,
   ) {
-    this._router.registerRouter(path, routeFactory._router);
+    this._router.registerRouter(path, router._router);
 
     const pathForOpenAPI = path.replaceAll(/:([^/]+)/g, '{$1}');
-    this._registerRouter(pathForOpenAPI, routeFactory);
+    this._registerRouter(pathForOpenAPI, router);
   }
 
+  /**
+   * Register a route to serve the OpenAPI documentation (e.g., in JSON format).
+   *
+   * @param path - The path where the OpenAPI documentation will be served (e.g., '/openapi.json').
+   * @param configure - The OpenAPI configuration object.
+   *
+   * @example
+   * ```ts
+   * router.doc('/openapi.json', {
+   *   openapi: '3.1.0',
+   *   info: {
+   *     title: 'My API',
+   *     version: '1.0.0',
+   *   },
+   * });
+   * ```
+   */
   doc<P extends string>(path: P, configure: OpenAPIObjectConfigV31) {
     this._router.route({
       method: 'get',
@@ -217,9 +368,23 @@ export class FastifyRouteFactory<
     });
   }
 
+  /**
+   * Register all defined routes and middlewares with the Fastify application instance.
+   * This method should be called after all routes and middlewares have been defined on the router.
+   *
+   * @param app - The Fastify application instance.
+   *
+   * @example
+   * ```ts
+   * const app = fastify();
+   * const router = new OpenAPIRouter();
+   * // Define routes and middlewares on the router...
+   * router.registerApp(app);
+   * ```
+   */
   registerApp(app: FastifyInstance) {
     this._router.registerApp(app);
   }
 }
 
-export const { createRoute } = FastifyRouteFactory;
+export const { createRoute } = OpenAPIRouter;

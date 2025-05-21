@@ -52,7 +52,7 @@ export class ResponseValidationError extends Error {
  * @template Req - Request type extending RequestLike
  * @template FormValueType - Type of form values for the framework
  */
-export abstract class CoreOpenApiRouter<
+export abstract class CoreOpenAPIRouter<
   Req extends RequestLike,
   FormValueType extends NonNullable<
     Req['form'][keyof Req['form']]
@@ -78,7 +78,7 @@ export abstract class CoreOpenApiRouter<
    *
    * @example
    * ```ts
-   * const route = CoreOpenApiRouter.createRoute({
+   * const route = CoreOpenAPIRouter.createRoute({
    *   path: '/users',
    *   method: 'GET',
    *   request: {
@@ -99,7 +99,7 @@ export abstract class CoreOpenApiRouter<
   static createRoute<R extends RouteConfig>(routeConfig: R) {
     const route = {
       ...routeConfig,
-      getRoutingPath: () => CoreOpenApiRouter.getRoutingPath(routeConfig.path),
+      getRoutingPath: () => CoreOpenAPIRouter.getRoutingPath(routeConfig.path),
     };
     return Object.defineProperty(route, 'getRoutingPath', {
       enumerable: false,
@@ -315,7 +315,7 @@ export abstract class CoreOpenApiRouter<
    */
   protected _registerRouter(
     pathForOpenAPI: string,
-    router: CoreOpenApiRouter<Req>,
+    router: CoreOpenAPIRouter<Req>,
   ) {
     router.openAPIRegistry.definitions.forEach((def) => {
       switch (def.type) {

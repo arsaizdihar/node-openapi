@@ -1,32 +1,32 @@
-import { FastifyRouteFactory } from '@node-openapi/fastify';
+import { OpenAPIRouter } from '@node-openapi/fastify';
 import {
   createComment,
   deleteComment,
   getComments,
 } from 'ws-common/service/comments.service';
 import {
-  createOptionalAuthFactory,
-  createRequiredAuthFactory,
+  createOptionalAuthRouter,
+  createRequiredAuthRouter,
 } from '../factories';
 import {
   createCommentRoute,
   deleteCommentRoute,
   getCommentsRoute,
 } from '../routes/comments.routes';
-export const commentsController = new FastifyRouteFactory();
+export const commentsRouter = new OpenAPIRouter();
 
-const checkedAuthFactory = createOptionalAuthFactory();
+const checkedAuthRouter = createOptionalAuthRouter();
 
-checkedAuthFactory.route(getCommentsRoute, async ({ context, input, h }) => {
+checkedAuthRouter.route(getCommentsRoute, async ({ context, input, h }) => {
   const slug = input.param.slug;
   const comments = await getComments(slug, context.user);
 
   h.json({ data: { comments } });
 });
 
-const authFactory = createRequiredAuthFactory();
+const authRouter = createRequiredAuthRouter();
 
-authFactory.route(createCommentRoute, async ({ context, input, h }) => {
+authRouter.route(createCommentRoute, async ({ context, input, h }) => {
   const { slug } = input.param;
   const { comment } = input.json;
   const newComment = await createComment(slug, comment.body, context.user);
@@ -34,12 +34,12 @@ authFactory.route(createCommentRoute, async ({ context, input, h }) => {
   h.json({ data: { comment: newComment }, status: 201 });
 });
 
-authFactory.route(deleteCommentRoute, async ({ context, input, h }) => {
+authRouter.route(deleteCommentRoute, async ({ context, input, h }) => {
   const { slug, id } = input.param;
   const deletedComment = await deleteComment(slug, id, context.user);
 
   h.json({ data: { comment: deletedComment } });
 });
 
-commentsController.router('', checkedAuthFactory);
-commentsController.router('', authFactory);
+commentsRouter.use('', checkedAuthRouter);
+commentsRouter.use('', authRouter);

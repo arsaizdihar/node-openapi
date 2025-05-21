@@ -14,7 +14,7 @@ import {
   Prettify,
   RouteConfig,
   RouteConfigToHandlerResponse,
-  CoreOpenApiRouter,
+  CoreOpenAPIRouter,
 } from '@node-openapi/core';
 import {
   NextFunction,
@@ -69,7 +69,7 @@ export type OpenAPIRouterOptions = {
 export class OpenAPIRouter<
   TContext extends Record<string, unknown> = Record<string, unknown>,
   Locals extends Record<string, any> = Record<string, any>,
-> extends CoreOpenApiRouter<ExpressRequestAdapter> {
+> extends CoreOpenAPIRouter<ExpressRequestAdapter> {
   private readonly _middlewares: Array<ExpressRequestHandler> = [];
   private readonly _expressRouter: Router;
   private readonly _validateResponse: boolean;

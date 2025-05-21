@@ -8,10 +8,10 @@ import swaggerUi from 'swagger-ui-express';
 import { HttpError } from 'ws-common/service/error.service';
 import { ZodError } from 'zod';
 import { articlesRouter } from './controller/articles.controller';
-import { commentsController } from './controller/comments.controller';
-import { profileController } from './controller/profile.controller';
-import { tagsController } from './controller/tags.controller';
-import { userController } from './controller/user.controller';
+import { commentsRouter } from './controller/comments.controller';
+import { profileRouter } from './controller/profile.controller';
+import { tagsRouter } from './controller/tags.controller';
+import { userRouter } from './controller/user.controller';
 import { bearerSecurity } from './routes/security';
 
 const app = express();
@@ -22,10 +22,10 @@ app.use(cookieParser());
 const mainRouter = new OpenAPIRouter({ expressRouter: app });
 
 mainRouter.use('/api', articlesRouter);
-mainRouter.use('/api', profileController);
-mainRouter.use('/api', userController);
-mainRouter.use('/api', commentsController);
-mainRouter.use('/api', tagsController);
+mainRouter.use('/api', profileRouter);
+mainRouter.use('/api', userRouter);
+mainRouter.use('/api', commentsRouter);
+mainRouter.use('/api', tagsRouter);
 
 mainRouter.doc(
   '/docs',

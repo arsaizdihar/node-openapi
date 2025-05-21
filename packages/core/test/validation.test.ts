@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { CoreOpenApiRouter } from '../src/index';
+import { CoreOpenAPIRouter } from '../src/index';
 import { RequestLike } from '../src/request';
 import { ValidationTargets } from '../dist';
 
@@ -30,7 +30,7 @@ class MockRequest implements RequestLike {
 }
 
 // Testing implementation of CoreOpenAPIRouter
-class TestOpenAPIRouter extends CoreOpenApiRouter<MockRequest> {
+class TestOpenAPIRouter extends CoreOpenAPIRouter<MockRequest> {
   doc<P extends string>(_path: P, _configure: any): void {
     // Mock implementation
   }

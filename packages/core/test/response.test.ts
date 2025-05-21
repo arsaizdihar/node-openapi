@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import {
-  CoreOpenApiRouter,
+  CoreOpenAPIRouter,
   ResponseValidationError,
   RouteConfig,
 } from '../src/index';
@@ -22,7 +22,7 @@ class MockRequest implements RequestLike {
 }
 
 // A concrete implementation of CoreOpenAPIRouter to access protected static methods
-class TestOpenAPIRouter extends CoreOpenApiRouter<MockRequest> {
+class TestOpenAPIRouter extends CoreOpenAPIRouter<MockRequest> {
   doc<P extends string>(_path: P, _configure: any): void {
     // Mock implementation
   }

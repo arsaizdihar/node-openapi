@@ -14,7 +14,7 @@ import {
 } from '../routes/profile.routes';
 import { OpenAPIRouter } from '@node-openapi/express';
 
-export const profileController = new OpenAPIRouter();
+export const profileRouter = new OpenAPIRouter();
 
 const checkedAuthRouter = createOptionalAuthRouter();
 
@@ -59,5 +59,5 @@ authProfileFactory.route(
   },
 );
 
-profileController.use('', checkedAuthRouter);
-profileController.use('', authProfileFactory);
+profileRouter.use('', checkedAuthRouter);
+profileRouter.use('', authProfileFactory);

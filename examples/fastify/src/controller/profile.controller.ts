@@ -4,45 +4,42 @@ import {
   unfollowProfile,
 } from 'ws-common/service/user.service';
 import {
-  createRequiredAuthFactory,
-  createOptionalAuthFactory,
+  createRequiredAuthRouter,
+  createOptionalAuthRouter,
 } from '../factories';
 import {
   followProfileRoute,
   getProfileRoute,
   unfollowProfileRoute,
 } from '../routes/profile.routes';
-import { FastifyRouteFactory } from '@node-openapi/fastify';
+import { OpenAPIRouter } from '@node-openapi/fastify';
 
-export const profileController = new FastifyRouteFactory();
+export const profileRouter = new OpenAPIRouter();
 
-const checkedAuthFactory = createOptionalAuthFactory();
+const checkedAuthRouter = createOptionalAuthRouter();
 
-checkedAuthFactory.route(getProfileRoute, async ({ context, input, h }) => {
+checkedAuthRouter.route(getProfileRoute, async ({ context, input, h }) => {
   const { username } = input.param;
   const profile = await getProfile(username, context.user);
 
   h.json({ data: { profile } });
 });
 
-const authProfileFactory = createRequiredAuthFactory();
+const authRouter = createRequiredAuthRouter();
 
-authProfileFactory.route(followProfileRoute, async ({ context, input, h }) => {
+authRouter.route(followProfileRoute, async ({ context, input, h }) => {
   const { username } = input.param;
   const profile = await followProfile(context.user, username);
 
   h.json({ data: { profile } });
 });
 
-authProfileFactory.route(
-  unfollowProfileRoute,
-  async ({ context, input, h }) => {
-    const { username } = input.param;
-    const profile = await unfollowProfile(context.user, username);
+authRouter.route(unfollowProfileRoute, async ({ context, input, h }) => {
+  const { username } = input.param;
+  const profile = await unfollowProfile(context.user, username);
 
-    h.json({ data: { profile } });
-  },
-);
+  h.json({ data: { profile } });
+});
 
-profileController.router('', checkedAuthFactory);
-profileController.router('', authProfileFactory);
+profileRouter.use('', checkedAuthRouter);
+profileRouter.use('', authRouter);

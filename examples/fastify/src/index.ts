@@ -1,14 +1,14 @@
 import 'dotenv/config';
 
 import fastifyStatic from '@fastify/static';
-import { FastifyRouteFactory } from '@node-openapi/fastify';
+import { OpenAPIRouter } from '@node-openapi/fastify';
 import Fastify from 'fastify';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
-import { articlesController } from './controller/articles.controller';
-import { userController } from './controller/user.controller';
-import { profileController } from './controller/profile.controller';
-import { commentsController } from './controller/comments.controller';
-import { tagsController } from './controller/tags.controller';
+import { articlesRouter } from './controller/articles.controller';
+import { userRouter } from './controller/user.controller';
+import { profileRouter } from './controller/profile.controller';
+import { commentsRouter } from './controller/comments.controller';
+import { tagsRouter } from './controller/tags.controller';
 import cors from '@fastify/cors';
 import { ZodError } from 'zod';
 import { HttpError } from 'ws-common/service/error.service';
@@ -66,14 +66,14 @@ app.setErrorHandler((err, _req, reply) => {
   });
 });
 
-const mainFactory = new FastifyRouteFactory();
-mainFactory.router('/api', articlesController);
-mainFactory.router('/api', profileController);
-mainFactory.router('/api', userController);
-mainFactory.router('/api', commentsController);
-mainFactory.router('/api', tagsController);
+const mainRouter = new OpenAPIRouter();
+mainRouter.use('/api', articlesRouter);
+mainRouter.use('/api', profileRouter);
+mainRouter.use('/api', userRouter);
+mainRouter.use('/api', commentsRouter);
+mainRouter.use('/api', tagsRouter);
 
-mainFactory.doc('/docs', {
+mainRouter.doc('/docs', {
   openapi: '3.1.0',
   info: {
     title: 'API',
@@ -81,7 +81,7 @@ mainFactory.doc('/docs', {
   },
 });
 
-mainFactory.registerApp(app);
+mainRouter.registerApp(app);
 
 // Redirect /api-docs to /api-docs/
 app.get('/api-docs', (_req, reply) => {
