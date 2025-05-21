@@ -1,5 +1,9 @@
 import { NextRouteFactory } from '@node-openapi/next';
 import {
+  createOptionalAuthFactory,
+  createRequiredAuthFactory,
+} from '../factories';
+import {
   createArticle,
   deleteArticle,
   favoriteArticle,
@@ -9,10 +13,6 @@ import {
   unfavoriteArticle,
   updateArticle,
 } from 'ws-common/service/articles.service';
-import {
-  createOptionalAuthFactory,
-  createRequiredAuthFactory,
-} from '../factories';
 import {
   createArticleRoute,
   deleteArticleRoute,

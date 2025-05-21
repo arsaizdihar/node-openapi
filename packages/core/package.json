@@ -1,6 +1,6 @@
 {
   "name": "@node-openapi/core",
-  "version": "0.0.1-beta.1",
+  "version": "0.0.1",
   "description": "Core package for node-openapi",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -26,9 +26,14 @@
       }
     }
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["openapi", "zod", "typescript", "swagger"],
+  "author": "Arsa Izdihar",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arsaizdihar/node-openapi.git",
+    "directory": "packages/core"
+  },
+  "license": "MIT",
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
     "zod": "catalog:"

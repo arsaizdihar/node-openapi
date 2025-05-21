@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 import { RouteFactory } from '../src/index';
 import { RequestLike } from '../src/request';
+import { ValidationTargets } from '../dist';
 
 // Mock request class for testing
 class MockRequest implements RequestLike {
@@ -35,7 +36,7 @@ class TestRouteFactory extends RouteFactory<MockRequest> {
   }
 
   // Expose protected method for testing
-  validate<T extends z.ZodSchema>(target: any, schema: T) {
+  validate<T extends z.ZodSchema>(target: keyof ValidationTargets, schema: T) {
     return this.zValidator(target, schema);
   }
 }
@@ -110,15 +111,15 @@ describe('RouteFactory Validation', () => {
         'api-key': z.string(),
       });
 
-      const validator = factory.validate('headers', headerSchema);
+      const validator = factory.validate('header', headerSchema);
       const mockReq = new MockRequest();
       mockReq.headers = { 'api-key': 'abc123' };
 
       const context: any = { req: mockReq, input: {} };
       await validator(context);
 
-      expect(context.input).toHaveProperty('headers');
-      expect(context.input.headers).toEqual({ 'api-key': 'abc123' });
+      expect(context.input).toHaveProperty('header');
+      expect(context.input.header).toEqual({ 'api-key': 'abc123' });
     });
 
     it('should validate URL parameters', async () => {
@@ -127,15 +128,15 @@ describe('RouteFactory Validation', () => {
         id: z.string(),
       });
 
-      const validator = factory.validate('params', paramSchema);
+      const validator = factory.validate('param', paramSchema);
       const mockReq = new MockRequest();
       mockReq.params = { id: '123' };
 
       const context: any = { req: mockReq, input: {} };
       await validator(context);
 
-      expect(context.input).toHaveProperty('params');
-      expect(context.input.params).toEqual({ id: '123' });
+      expect(context.input).toHaveProperty('param');
+      expect(context.input.param).toEqual({ id: '123' });
     });
 
     it('should throw an error for invalid data', async () => {

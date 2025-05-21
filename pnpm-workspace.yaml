@@ -3,9 +3,9 @@ packages:
   - 'examples/*'
 
 catalog:
-  zod: ^3.23.8
+  zod: ^3
   tsup: ^8.3.5
-  typescript: ^5.6.3
-  '@asteasolutions/zod-to-openapi': ^7.2.0
+  typescript: ^5
+  '@asteasolutions/zod-to-openapi': ^7
   vitest: ^3.0.9
   '@vitest/coverage-v8': ^3.0.9

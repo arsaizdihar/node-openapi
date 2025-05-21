@@ -74,6 +74,27 @@ export abstract class RouteFactory<
 
   /**
    * Creates a route configuration with additional utility methods
+   * @param routeConfig - The route configuration to create
+   *
+   * @example
+   * ```ts
+   * const route = RouteFactory.createRoute({
+   *   path: '/users',
+   *   method: 'GET',
+   *   request: {
+   *     query: z.object({
+   *       name: z.string(),
+   *     }),
+   *     body: z.object({
+   *       message: z.string(),
+   *     }),
+   *   },
+   *   responses: {
+   *     200: {
+   *       content: { 'application/json': { schema: z.object({ id: z.string() }) } },
+   *     },
+   *   },
+   * });
    */
   static createRoute<R extends RouteConfig>(routeConfig: R) {
     const route = {
@@ -88,6 +109,7 @@ export abstract class RouteFactory<
   /**
    * Creates middleware to validate requests against schemas defined in route config
    * Registers the route with OpenAPI documentation
+   * @param route - The route configuration to create returned by `createRoute`
    */
   protected _route<
     R extends RouteConfig,
@@ -169,8 +191,10 @@ export abstract class RouteFactory<
   }
 
   /**
-   * Generate OpenAPI documentation for a path
+   * Generate OpenAPI documentation for a path. The implementation should register the path to the route handler serving the doc string.
    * @abstract
+   * @param path - The path to generate documentation for
+   * @param configure - The configuration to use for the OpenAPI document
    */
   abstract doc<P extends string>(
     path: P,
@@ -178,7 +202,10 @@ export abstract class RouteFactory<
   ): void;
 
   /**
-   * Generates a complete OpenAPI document based on registered routes
+   * Generates a complete JSON OpenAPI document based on registered routes
+   * @param config - The OpenAPI configuration to use for the OpenAPI document
+   * @param additionalDefinitions - Additional definitions to include in the OpenAPI document
+   * @returns The generated OpenAPI document
    */
   getOpenAPIDocument(
     config: OpenAPIObjectConfig,
@@ -282,25 +309,6 @@ export abstract class RouteFactory<
   }
 
   /**
-   * Adds a base path to all routes in an OpenAPI document
-   * @param document - OpenAPI document to modify
-   * @param basePath - Base path to add to all routes
-   * @returns Updated OpenAPI document
-   */
-  addBasePathToDocument(document: Record<string, any>, basePath: string) {
-    const updatedPaths: Record<string, any> = {};
-
-    Object.keys(document.paths).forEach((path) => {
-      updatedPaths[mergePath(basePath, path)] = document.paths[path];
-    });
-
-    return {
-      ...document,
-      paths: updatedPaths,
-    };
-  }
-
-  /**
    * Register routes and components in the OpenAPI registry as a sub-router
    * @param pathForOpenAPI - The base path for the OpenAPI document
    * @param routeFactory - The route factory to register
@@ -343,13 +351,21 @@ export abstract class RouteFactory<
           );
 
         default: {
-          const errorIfNotExhaustive: never = def;
-          throw new Error(`Unknown registry type: ${errorIfNotExhaustive}`);
+          throw new Error(`Unknown registry type: ${def}`);
         }
       }
     });
   }
 
+  /**
+   * Utility to validate the response against the schema defined in the route config.
+   * @param config - The route configuration
+   * @param response - The response data to validate
+   * @param contentType - The content type of the response. Example: `application/json`. It will search the response schema by the content type.
+   * @param status - The status code of the response. Example: `200`. It will search the response schema by the status code.
+   * @returns The validated response data. If there is no schema for the given status and content type, the response is returned as is. If the response is not valid, a `ResponseValidationError` is thrown.
+   * @throws `ResponseValidationError` if the response is not valid.
+   */
   private static _validateResponse<R>(
     config: RouteConfig,
     response: R,
@@ -382,6 +398,12 @@ export abstract class RouteFactory<
     return res.data;
   }
 
+  /**
+   * Creates a helper to send responses with typesafe annotations and runtime validation.
+   * @param send - The send adapter to use for sending the response with the given status code.
+   * @param config - The route configuration. If provided, the response will be validated against the schema defined in the route config. If not, there will be no response runtime validation.
+   * @returns The helper object with methods to send responses with typesafe annotations and runtime validation.
+   */
   protected static _createHelper<R extends RouteConfig, SendReturn>(
     send: ResponseSender<SendReturn>,
     config?: R,
@@ -453,17 +475,5 @@ export const mergePath: (...paths: string[]) => string = (
 
   return result;
 };
-
-export type RecursiveArray<T> = Array<T | RecursiveArray<T>>;
-
-export function flattenRecursiveArray<T>(array: RecursiveArray<T>): T[] {
-  return array.reduce<T[]>((acc, item) => {
-    if (Array.isArray(item)) {
-      return acc.concat(flattenRecursiveArray(item));
-    }
-
-    return acc.concat(item);
-  }, []);
-}
 
 export { z };

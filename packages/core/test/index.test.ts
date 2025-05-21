@@ -50,6 +50,14 @@ class TestRouteFactory extends RouteFactory<any, any> {
   validate(target: keyof ValidationTargets, schema: z.ZodSchema) {
     return this.zValidator(target, schema);
   }
+
+  // Expose protected _registerRouter for testing
+  publicRegisterRouter(
+    pathForOpenAPI: string,
+    routeFactory: RouteFactory<any>,
+  ) {
+    this._registerRouter(pathForOpenAPI, routeFactory);
+  }
 }
 
 describe('RouteFactory', () => {
@@ -301,7 +309,7 @@ describe('RouteFactory', () => {
 
     it('should validate headers', async () => {
       const schema = z.object({ 'api-key': z.string() });
-      const validator = factory.validate('headers', schema);
+      const validator = factory.validate('header', schema);
 
       const context = {
         req: { headers: { 'api-key': 'secret-key' } },
@@ -309,13 +317,13 @@ describe('RouteFactory', () => {
       };
 
       await validator(context);
-      expect(context.input).toHaveProperty('headers');
-      expect(context.input.headers).toEqual({ 'api-key': 'secret-key' });
+      expect(context.input).toHaveProperty('header');
+      expect(context.input.header).toEqual({ 'api-key': 'secret-key' });
     });
 
     it('should validate cookies', async () => {
       const schema = z.object({ session: z.string() });
-      const validator = factory.validate('cookies', schema);
+      const validator = factory.validate('cookie', schema);
 
       const context = {
         req: { cookies: { session: 'abc123' } },
@@ -323,13 +331,13 @@ describe('RouteFactory', () => {
       };
 
       await validator(context);
-      expect(context.input).toHaveProperty('cookies');
-      expect(context.input.cookies).toEqual({ session: 'abc123' });
+      expect(context.input).toHaveProperty('cookie');
+      expect(context.input.cookie).toEqual({ session: 'abc123' });
     });
 
     it("should create input object if it doesn't exist", async () => {
       const schema = z.object({ id: z.string() });
-      const validator = factory.validate('params', schema);
+      const validator = factory.validate('param', schema);
 
       const context = {
         req: { params: { id: '123' } },
@@ -338,35 +346,166 @@ describe('RouteFactory', () => {
 
       await validator(context);
       expect(context).toHaveProperty('input');
-      expect(context.input).toHaveProperty('params');
-      expect(context.input.params).toEqual({ id: '123' });
+      expect(context.input).toHaveProperty('param');
+      expect(context.input.param).toEqual({ id: '123' });
     });
   });
 
-  // Add tests for addBasePathToDocument
-  describe('addBasePathToDocument', () => {
-    it('should add base path to all routes in the document', () => {
-      // Create a document with some paths
-      factory.doc('/users', {} as OpenAPIObjectConfigV31);
-      factory.doc('/products', {} as OpenAPIObjectConfigV31);
+  describe('_registerRouter', () => {
+    let parentFactory: TestRouteFactory;
+    let childFactory: TestRouteFactory;
 
-      const document = factory.getOpenAPIDocument({
-        openapi: '3.1.0',
-        info: {
-          title: 'Test API',
-          version: '1.0.0',
-        },
+    beforeEach(() => {
+      parentFactory = new TestRouteFactory();
+      childFactory = new TestRouteFactory();
+    });
+
+    it('should register components from child factory', () => {
+      const component = z.object({ id: z.string() }).openapi('User');
+      childFactory.openAPIRegistry.registerComponent(
+        'schemas',
+        'User',
+        component as any,
+      );
+
+      const registerComponentSpy = vi.spyOn(
+        parentFactory.openAPIRegistry,
+        'registerComponent',
+      );
+      parentFactory.publicRegisterRouter('/api', childFactory);
+
+      expect(registerComponentSpy).toHaveBeenCalledTimes(1);
+      expect(registerComponentSpy).toHaveBeenCalledWith(
+        'schemas',
+        'User',
+        component,
+      );
+    });
+
+    it('should register schemas from child factory', () => {
+      const schema = z.string().openapi('TestString');
+      childFactory.openAPIRegistry.register('TestString', schema);
+
+      const registerSpy = vi.spyOn(parentFactory.openAPIRegistry, 'register');
+      parentFactory.publicRegisterRouter('/api', childFactory);
+
+      expect(registerSpy).toHaveBeenCalledTimes(1);
+      expect(registerSpy.mock.calls[0][0]).toBe('TestString');
+    });
+
+    it('should register parameters from child factory', () => {
+      const parameter = z
+        .string()
+        .openapi('TestParam', { param: { name: 'myParam', in: 'query' } });
+      childFactory.openAPIRegistry.registerParameter(
+        'TestParam',
+        parameter as any,
+      );
+
+      const registerParameterSpy = vi.spyOn(
+        parentFactory.openAPIRegistry,
+        'registerParameter',
+      );
+      parentFactory.publicRegisterRouter('/api', childFactory);
+
+      expect(registerParameterSpy).toHaveBeenCalledTimes(1);
+      expect(registerParameterSpy.mock.calls[0][0]).toBe('TestParam');
+    });
+
+    it('should register webhooks from child factory with prefixed paths', () => {
+      const webhookConfig = {
+        method: 'post',
+        path: '/hook',
+        responses: { 200: { description: 'OK' } },
+      } as RouteConfig; // Cast as RouteConfig for simplicity, actual type is WebhookConfig
+      childFactory.openAPIRegistry.registerWebhook(webhookConfig as any);
+
+      const registerWebhookSpy = vi.spyOn(
+        parentFactory.openAPIRegistry,
+        'registerWebhook',
+      );
+      parentFactory.publicRegisterRouter('/api', childFactory);
+
+      expect(registerWebhookSpy).toHaveBeenCalledTimes(1);
+      expect(registerWebhookSpy).toHaveBeenCalledWith({
+        ...webhookConfig,
+        path: '/api/hook',
       });
+    });
 
-      // Add base path to the document
-      const basePath = '/api/v1';
-      const updatedDoc = factory.addBasePathToDocument(document, basePath);
+    it('should handle various definition types from child factory', () => {
+      // Route
+      const routeConfig = RouteFactory.createRoute({
+        method: 'get',
+        path: '/items',
+        responses: { 200: { description: 'OK' } },
+      });
+      childFactory.openAPIRegistry.registerPath(routeConfig);
 
-      // Check that paths have been updated
-      expect(updatedDoc.paths).not.toHaveProperty('/users');
-      expect(updatedDoc.paths).not.toHaveProperty('/products');
-      expect(updatedDoc.paths).toHaveProperty('/api/v1/users');
-      expect(updatedDoc.paths).toHaveProperty('/api/v1/products');
+      // Component
+      const component = z.object({ name: z.string() }).openapi('Item');
+      childFactory.openAPIRegistry.registerComponent(
+        'schemas',
+        'Item',
+        component as any,
+      );
+
+      // Schema
+      const schema = z.number().openapi('ItemCount');
+      childFactory.openAPIRegistry.register('ItemCount', schema);
+
+      // Parameter
+      const parameter = z
+        .string()
+        .openapi('ItemID', { param: { name: 'itemId', in: 'path' } });
+      childFactory.openAPIRegistry.registerParameter(
+        'ItemID',
+        parameter as any,
+      );
+
+      // Webhook
+      const webhookConfig = {
+        method: 'post',
+        path: '/item-event',
+        responses: { 200: { description: 'OK' } },
+      } as RouteConfig;
+      childFactory.openAPIRegistry.registerWebhook(webhookConfig as any);
+
+      const registerPathSpy = vi.spyOn(
+        parentFactory.openAPIRegistry,
+        'registerPath',
+      );
+      const registerComponentSpy = vi.spyOn(
+        parentFactory.openAPIRegistry,
+        'registerComponent',
+      );
+      const registerSpy = vi.spyOn(parentFactory.openAPIRegistry, 'register');
+      const registerParameterSpy = vi.spyOn(
+        parentFactory.openAPIRegistry,
+        'registerParameter',
+      );
+      const registerWebhookSpy = vi.spyOn(
+        parentFactory.openAPIRegistry,
+        'registerWebhook',
+      );
+
+      parentFactory.publicRegisterRouter('/v2', childFactory);
+
+      expect(registerPathSpy).toHaveBeenCalledWith({
+        ...routeConfig,
+        path: '/v2/items',
+      });
+      expect(registerComponentSpy).toHaveBeenCalledWith(
+        'schemas',
+        'Item',
+        expect.any(Object),
+      );
+      expect(registerSpy.mock.calls[0][0]).toBe('ItemCount');
+      expect(registerParameterSpy.mock.calls[0][0]).toBe('ItemID');
+      expect(registerWebhookSpy).toHaveBeenCalledWith({
+        ...webhookConfig,
+        path: '/v2/item-event',
+      });
     });
   });
 });
