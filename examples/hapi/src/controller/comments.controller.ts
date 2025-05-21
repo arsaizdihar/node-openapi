@@ -1,7 +1,7 @@
-import { HapiRouteFactory } from '@node-openapi/hapi';
+import { OpenAPIRouter } from '@node-openapi/hapi';
 import {
-  createRequiredAuthFactory,
-  createOptionalAuthFactory,
+  createRequiredAuthRouter,
+  createOptionalAuthRouter,
 } from '../factories';
 import {
   createCommentRoute,
@@ -14,18 +14,18 @@ import {
   getComments,
 } from 'ws-common/service/comments.service';
 
-export const commentsController = new HapiRouteFactory();
+export const commentsRouter = new OpenAPIRouter();
 
-const checkedAuthFactory = createOptionalAuthFactory();
+const checkedAuthRouter = createOptionalAuthRouter();
 
-checkedAuthFactory.route(getCommentsRoute, async ({ h, input, context }) => {
+checkedAuthRouter.route(getCommentsRoute, async ({ h, input, context }) => {
   const comments = await getComments(input.param.slug, context.user);
   return h.json({ status: 200, data: { comments } });
 });
 
-const authFactory = createRequiredAuthFactory();
+const authRouter = createRequiredAuthRouter();
 
-authFactory.route(createCommentRoute, async ({ h, input, context }) => {
+authRouter.route(createCommentRoute, async ({ h, input, context }) => {
   const newComment = await createComment(
     input.param.slug,
     input.json.comment.body,
@@ -34,10 +34,10 @@ authFactory.route(createCommentRoute, async ({ h, input, context }) => {
   return h.json({ status: 201, data: { comment: newComment } });
 });
 
-authFactory.route(deleteCommentRoute, async ({ h, input, context }) => {
+authRouter.route(deleteCommentRoute, async ({ h, input, context }) => {
   await deleteComment(input.param.slug, input.param.id, context.user);
   return h.response().code(200);
 });
 
-commentsController.router('', checkedAuthFactory);
-commentsController.router('', authFactory);
+commentsRouter.use('', checkedAuthRouter);
+commentsRouter.use('', authRouter);

@@ -1,12 +1,12 @@
-import { HapiRouteFactory } from '@node-openapi/hapi';
+import { OpenAPIRouter } from '@node-openapi/hapi';
 import { User } from 'ws-common/domain/user.domain';
 import { HttpError } from 'ws-common/service/error.service';
 import { getUserByToken } from 'ws-common/service/user.service';
 
-export function createOptionalAuthFactory() {
-  const factory = new HapiRouteFactory<{ user: User | null }>();
+export function createOptionalAuthRouter() {
+  const router = new OpenAPIRouter<{ user: User | null }>();
 
-  factory.middleware(async (req, h) => {
+  router.middleware(async (req, h) => {
     const token = req.headers.authorization;
     if (!token) {
       req.app.user = null;
@@ -24,13 +24,13 @@ export function createOptionalAuthFactory() {
     return h.continue;
   });
 
-  return factory;
+  return router;
 }
 
-export function createRequiredAuthFactory() {
-  const factory = createOptionalAuthFactory().extend<{ user: User }>();
+export function createRequiredAuthRouter() {
+  const router = createOptionalAuthRouter().extend<{ user: User }>();
 
-  factory.middleware(async (req, h) => {
+  router.middleware(async (req, h) => {
     if (!req.app.user) {
       return h.response(new HttpError('Unauthorized', 401)).takeover();
     }
@@ -38,5 +38,5 @@ export function createRequiredAuthFactory() {
     return h.continue;
   });
 
-  return factory;
+  return router;
 }

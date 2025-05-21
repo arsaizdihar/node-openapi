@@ -4,39 +4,36 @@ import {
   unfollowProfile,
 } from 'ws-common/service/user.service';
 import {
-  createRequiredAuthFactory,
-  createOptionalAuthFactory,
+  createRequiredAuthRouter,
+  createOptionalAuthRouter,
 } from '../factories';
 import {
   followProfileRoute,
   getProfileRoute,
   unfollowProfileRoute,
 } from '../routes/profile.routes';
-import { HapiRouteFactory } from '@node-openapi/hapi';
+import { OpenAPIRouter } from '@node-openapi/hapi';
 
-export const profileController = new HapiRouteFactory();
+export const profileRouter = new OpenAPIRouter();
 
-const checkedAuthFactory = createOptionalAuthFactory();
+const checkedAuthRouter = createOptionalAuthRouter();
 
-checkedAuthFactory.route(getProfileRoute, async ({ h, input, context }) => {
+checkedAuthRouter.route(getProfileRoute, async ({ h, input, context }) => {
   const profile = await getProfile(input.param.username, context.user);
   return h.json({ data: { profile } });
 });
 
-const authProfileFactory = createRequiredAuthFactory();
+const authProfileRouter = createRequiredAuthRouter();
 
-authProfileFactory.route(followProfileRoute, async ({ h, input, context }) => {
+authProfileRouter.route(followProfileRoute, async ({ h, input, context }) => {
   const profile = await followProfile(context.user, input.param.username);
   return h.json({ data: { profile } });
 });
 
-authProfileFactory.route(
-  unfollowProfileRoute,
-  async ({ h, input, context }) => {
-    const profile = await unfollowProfile(context.user, input.param.username);
-    return h.json({ data: { profile } });
-  },
-);
+authProfileRouter.route(unfollowProfileRoute, async ({ h, input, context }) => {
+  const profile = await unfollowProfile(context.user, input.param.username);
+  return h.json({ data: { profile } });
+});
 
-profileController.router('', checkedAuthFactory);
-profileController.router('', authProfileFactory);
+profileRouter.use('', checkedAuthRouter);
+profileRouter.use('', authProfileRouter);

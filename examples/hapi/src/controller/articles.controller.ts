@@ -1,7 +1,7 @@
-import { HapiRouteFactory } from '@node-openapi/hapi';
+import { OpenAPIRouter } from '@node-openapi/hapi';
 import {
-  createRequiredAuthFactory,
-  createOptionalAuthFactory,
+  createRequiredAuthRouter,
+  createOptionalAuthRouter,
 } from '../factories';
 import {
   createArticleRoute,
@@ -24,13 +24,13 @@ import {
   updateArticle,
 } from 'ws-common/service/articles.service';
 
-export const articlesController = new HapiRouteFactory();
+export const articlesRouter = new OpenAPIRouter();
 
-const optionalAuthFactory = createOptionalAuthFactory();
+const optionalAuthRouter = createOptionalAuthRouter();
 
-const requiredAuthFactory = createRequiredAuthFactory();
+const requiredAuthRouter = createRequiredAuthRouter();
 
-requiredAuthFactory.route(
+requiredAuthRouter.route(
   getArticlesFeedRoute,
   async ({ h, input, context }) => {
     const result = await getArticlesFeed(context.user, input.query);
@@ -39,25 +39,25 @@ requiredAuthFactory.route(
   },
 );
 
-optionalAuthFactory.route(getArticlesRoute, async ({ h, input, context }) => {
+optionalAuthRouter.route(getArticlesRoute, async ({ h, input, context }) => {
   const result = await getArticles(context.user, input.query);
 
   return h.json({ status: 200, data: result });
 });
 
-requiredAuthFactory.route(createArticleRoute, async ({ h, input, context }) => {
+requiredAuthRouter.route(createArticleRoute, async ({ h, input, context }) => {
   const result = await createArticle(context.user, input.json.article);
 
   return h.json({ status: 201, data: { article: result } });
 });
 
-optionalAuthFactory.route(getArticleRoute, async ({ h, input, context }) => {
+optionalAuthRouter.route(getArticleRoute, async ({ h, input, context }) => {
   const result = await getArticle(input.param.slug, context.user);
 
   return h.json({ status: 200, data: { article: result } });
 });
 
-requiredAuthFactory.route(updateArticleRoute, async ({ h, input, context }) => {
+requiredAuthRouter.route(updateArticleRoute, async ({ h, input, context }) => {
   const result = await updateArticle(
     context.user,
     input.param.slug,
@@ -67,12 +67,12 @@ requiredAuthFactory.route(updateArticleRoute, async ({ h, input, context }) => {
   return h.json({ status: 200, data: { article: result } });
 });
 
-requiredAuthFactory.route(deleteArticleRoute, async ({ h, input, context }) => {
+requiredAuthRouter.route(deleteArticleRoute, async ({ h, input, context }) => {
   await deleteArticle(context.user, input.param.slug);
   return h.response().code(200);
 });
 
-requiredAuthFactory.route(
+requiredAuthRouter.route(
   favoriteArticleRoute,
   async ({ h, input, context }) => {
     const result = await favoriteArticle(context.user, input.param.slug);
@@ -81,7 +81,7 @@ requiredAuthFactory.route(
   },
 );
 
-requiredAuthFactory.route(
+requiredAuthRouter.route(
   unfavoriteArticleRoute,
   async ({ h, input, context }) => {
     const result = await unfavoriteArticle(context.user, input.param.slug);
@@ -90,5 +90,5 @@ requiredAuthFactory.route(
   },
 );
 
-articlesController.router('', requiredAuthFactory);
-articlesController.router('', optionalAuthFactory);
+articlesRouter.use('', requiredAuthRouter);
+articlesRouter.use('', optionalAuthRouter);

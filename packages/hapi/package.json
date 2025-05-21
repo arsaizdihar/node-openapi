@@ -23,9 +23,14 @@
       }
     }
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["openapi", "hapi", "zod", "typescript", "swagger"],
+  "author": "Arsa Izdihar",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arsaizdihar/node-openapi.git",
+    "directory": "packages/hapi"
+  },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
     "@hapi/hapi": "^21",

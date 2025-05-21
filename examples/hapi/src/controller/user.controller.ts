@@ -1,4 +1,4 @@
-import { HapiRouteFactory } from '@node-openapi/hapi';
+import { OpenAPIRouter } from '@node-openapi/hapi';
 import {
   getCurrentUserRoute,
   loginRoute,
@@ -11,12 +11,12 @@ import {
   updateUser,
   UserNotFoundError,
 } from 'ws-common/service/user.service';
-import { createRequiredAuthFactory } from '../factories';
+import { createRequiredAuthRouter } from '../factories';
 import { HttpError } from 'ws-common/service/error.service';
 
-export const userController = new HapiRouteFactory();
+export const userRouter = new OpenAPIRouter();
 
-userController.route(loginRoute, async ({ h, input }) => {
+userRouter.route(loginRoute, async ({ h, input }) => {
   try {
     const result = await loginUser(input.json.user);
     return h.json({ status: 200, data: { user: result } });
@@ -28,20 +28,20 @@ userController.route(loginRoute, async ({ h, input }) => {
   }
 });
 
-userController.route(registerRoute, async ({ h, input }) => {
+userRouter.route(registerRoute, async ({ h, input }) => {
   const result = await registerUser(input.json.user);
   return h.json({ status: 201, data: { user: result } });
 });
 
-const checkedAuthFactory = createRequiredAuthFactory();
+const checkedAuthRouter = createRequiredAuthRouter();
 
-checkedAuthFactory.route(getCurrentUserRoute, async ({ h, context }) => {
+checkedAuthRouter.route(getCurrentUserRoute, async ({ h, context }) => {
   return h.json({ data: { user: context.user } });
 });
 
-checkedAuthFactory.route(updateUserRoute, async ({ h, input, context }) => {
+checkedAuthRouter.route(updateUserRoute, async ({ h, input, context }) => {
   const result = await updateUser(context.user.username, input.json.user);
   return h.json({ data: { user: result } });
 });
 
-userController.router('', checkedAuthFactory);
+userRouter.use('', checkedAuthRouter);

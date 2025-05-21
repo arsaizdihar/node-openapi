@@ -4,9 +4,9 @@ import { HttpError } from 'ws-common/service/error.service';
 import { getUserByToken } from 'ws-common/service/user.service';
 
 export function createOptionalAuthRouter() {
-  const factory = new OpenAPIRouter<{ user: User | null }>();
+  const router = new OpenAPIRouter<{ user: User | null }>();
 
-  factory.middleware(async (req, _reply, { context }) => {
+  router.middleware(async (req, _reply, { context }) => {
     const token = req.headers.authorization;
     if (!token) {
       context.user = null;
@@ -23,17 +23,17 @@ export function createOptionalAuthRouter() {
     context.user = user;
   });
 
-  return factory;
+  return router;
 }
 
 export function createRequiredAuthRouter() {
-  const factory = createOptionalAuthRouter().extend<{ user: User }>();
+  const router = createOptionalAuthRouter().extend<{ user: User }>();
 
-  factory.middleware(async (_req, _reply, { context }) => {
+  router.middleware(async (_req, _reply, { context }) => {
     if (!context.user) {
       throw new HttpError('Unauthorized', 401);
     }
   });
 
-  return factory;
+  return router;
 }

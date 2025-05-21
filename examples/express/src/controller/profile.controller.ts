@@ -31,33 +31,27 @@ checkedAuthRouter.route(
   },
 );
 
-const authProfileFactory = createRequiredAuthRouter();
+const authRouter = createRequiredAuthRouter();
 
-authProfileFactory.route(
-  followProfileRoute,
-  async ({ input, context, h }, next) => {
-    const username = input.param.username;
-    try {
-      const profile = await followProfile(context.user, username);
-      h.json({ status: 200, data: { profile } });
-    } catch (error) {
-      next(error);
-    }
-  },
-);
+authRouter.route(followProfileRoute, async ({ input, context, h }, next) => {
+  const username = input.param.username;
+  try {
+    const profile = await followProfile(context.user, username);
+    h.json({ status: 200, data: { profile } });
+  } catch (error) {
+    next(error);
+  }
+});
 
-authProfileFactory.route(
-  unfollowProfileRoute,
-  async ({ input, context, h }, next) => {
-    const username = input.param.username;
-    try {
-      const profile = await unfollowProfile(context.user, username);
-      h.json({ data: { profile } });
-    } catch (error) {
-      next(error);
-    }
-  },
-);
+authRouter.route(unfollowProfileRoute, async ({ input, context, h }, next) => {
+  const username = input.param.username;
+  try {
+    const profile = await unfollowProfile(context.user, username);
+    h.json({ data: { profile } });
+  } catch (error) {
+    next(error);
+  }
+});
 
 profileRouter.use('', checkedAuthRouter);
-profileRouter.use('', authProfileFactory);
+profileRouter.use('', authRouter);

@@ -2,15 +2,15 @@ import 'dotenv/config';
 
 import { Server } from '@hapi/hapi';
 import Inert from '@hapi/inert';
-import { HapiRouteFactory } from '@node-openapi/hapi';
+import { OpenAPIRouter } from '@node-openapi/hapi';
 import { getAbsoluteFSPath } from 'swagger-ui-dist';
 import { HttpError } from 'ws-common/service/error.service';
 import { ZodError } from 'zod';
-import { commentsController } from './controller/comments.controller';
-import { profileController } from './controller/profile.controller';
-import { tagsController } from './controller/tags.controller';
-import { userController } from './controller/user.controller';
-import { articlesController } from './controller/articles.controller';
+import { commentsRouter } from './controller/comments.controller';
+import { profileRouter } from './controller/profile.controller';
+import { tagsRouter } from './controller/tags.controller';
+import { userRouter } from './controller/user.controller';
+import { articlesRouter } from './controller/articles.controller';
 
 const server = new Server({
   port: process.env.PORT ?? 3000,
@@ -61,15 +61,15 @@ server.ext('onPreResponse', (request, h) => {
   return h.continue;
 });
 
-const mainFactory = new HapiRouteFactory();
+const mainRouter = new OpenAPIRouter();
 
-mainFactory.router('/api', articlesController);
-mainFactory.router('/api', profileController);
-mainFactory.router('/api', userController);
-mainFactory.router('/api', commentsController);
-mainFactory.router('/api', tagsController);
+mainRouter.use('/api', articlesRouter);
+mainRouter.use('/api', profileRouter);
+mainRouter.use('/api', userRouter);
+mainRouter.use('/api', commentsRouter);
+mainRouter.use('/api', tagsRouter);
 
-mainFactory.doc('/docs', {
+mainRouter.doc('/docs', {
   openapi: '3.1.0',
   info: {
     title: 'API',
@@ -108,7 +108,7 @@ const init = async () => {
 
   const swaggerUIPath = getAbsoluteFSPath();
 
-  await mainFactory.registerServer(server);
+  await mainRouter.registerServer(server);
 
   server.route({
     method: 'GET',
