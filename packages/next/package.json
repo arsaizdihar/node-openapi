@@ -1,6 +1,6 @@
 {
   "name": "@node-openapi/next",
-  "version": "0.0.1-beta.1",
+  "version": "0.1.0",
   "description": "Next.js adapter for node-openapi",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
