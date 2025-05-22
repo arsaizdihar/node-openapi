@@ -1,7 +1,7 @@
-import { NextRouteFactory } from '@node-openapi/next';
+import { OpenAPIRouter } from '@node-openapi/next';
 import {
-  createRequiredAuthFactory,
-  createOptionalAuthFactory,
+  createRequiredAuthRouter,
+  createOptionalAuthRouter,
 } from '../factories';
 import {
   createCommentRoute,
@@ -13,20 +13,20 @@ import {
   deleteComment,
   getComments,
 } from 'ws-common/service/comments.service';
-export const commentsController = new NextRouteFactory();
+export const commentsRouter = new OpenAPIRouter();
 
-const checkedAuthFactory = createOptionalAuthFactory();
+const optionalAuthRouter = createOptionalAuthRouter();
 
-checkedAuthFactory.route(getCommentsRoute, async ({ input, context, h }) => {
+optionalAuthRouter.route(getCommentsRoute, async ({ input, context, h }) => {
   const slug = input.param.slug;
   const comments = await getComments(slug, context.user);
 
   return h.json({ data: { comments } });
 });
 
-const authFactory = createRequiredAuthFactory();
+const authRouter = createRequiredAuthRouter();
 
-authFactory.route(createCommentRoute, async ({ input, context, h }) => {
+authRouter.route(createCommentRoute, async ({ input, context, h }) => {
   const { slug } = input.param;
   const { comment } = input.json;
   const newComment = await createComment(slug, comment.body, context.user);
@@ -34,12 +34,12 @@ authFactory.route(createCommentRoute, async ({ input, context, h }) => {
   return h.json({ data: { comment: newComment }, status: 201 });
 });
 
-authFactory.route(deleteCommentRoute, async ({ input, context, h }) => {
+authRouter.route(deleteCommentRoute, async ({ input, context, h }) => {
   const { slug, id } = input.param;
   const deletedComment = await deleteComment(slug, id, context.user);
 
   return h.json({ data: { comment: deletedComment } });
 });
 
-commentsController.router('', checkedAuthFactory);
-commentsController.router('', authFactory);
+commentsRouter.use('', optionalAuthRouter);
+commentsRouter.use('', authRouter);

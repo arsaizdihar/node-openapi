@@ -1,10 +1,10 @@
-import { NextRouteFactory } from '@node-openapi/next';
+import { OpenAPIRouter } from '@node-openapi/next';
 import { getTagsRoute } from '../routes/tags.routes';
 import { getTags } from 'ws-common/service/tags.service';
 
-export const tagsController = new NextRouteFactory();
+export const tagsRouter = new OpenAPIRouter();
 
-tagsController.route(getTagsRoute, async ({ h }) => {
+tagsRouter.route(getTagsRoute, async ({ h }) => {
   const tags = await getTags();
 
   return h.json({ data: { tags } });

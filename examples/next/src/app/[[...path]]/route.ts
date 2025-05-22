@@ -1,22 +1,22 @@
-import { NextRouteFactory } from '@node-openapi/next';
-import { tagsController } from './controller/tags.controller';
-import { userController } from './controller/user.controller';
-import { profileController } from './controller/profile.controller';
-import { commentsController } from './controller/comments.controller';
-import { articlesController } from './controller/articles.controller';
+import { OpenAPIRouter } from '@node-openapi/next';
+import { tagsRouter } from './controller/tags.controller';
+import { userRouter } from './controller/user.controller';
+import { profileRouter } from './controller/profile.controller';
+import { commentsRouter } from './controller/comments.controller';
+import { articlesRouter } from './controller/articles.controller';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { HttpError } from 'ws-common/service/error.service';
 
-const mainFactory = new NextRouteFactory();
+const mainRouter = new OpenAPIRouter();
 
-mainFactory.router('/api', articlesController);
-mainFactory.router('/api', profileController);
-mainFactory.router('/api', userController);
-mainFactory.router('/api', commentsController);
-mainFactory.router('/api', tagsController);
+mainRouter.use('/api', articlesRouter);
+mainRouter.use('/api', profileRouter);
+mainRouter.use('/api', userRouter);
+mainRouter.use('/api', commentsRouter);
+mainRouter.use('/api', tagsRouter);
 
-mainFactory.doc('/doc', {
+mainRouter.doc('/doc', {
   openapi: '3.1.0',
   info: {
     title: 'API',
@@ -24,7 +24,7 @@ mainFactory.doc('/doc', {
   },
 });
 
-mainFactory.afterResponse((_, res) => {
+mainRouter.afterResponse((_, res) => {
   res.headers.set('Access-Control-Allow-Origin', '*');
   res.headers.set(
     'Access-Control-Allow-Methods',
@@ -33,11 +33,11 @@ mainFactory.afterResponse((_, res) => {
   res.headers.set('Access-Control-Allow-Headers', '*');
 });
 
-mainFactory.options('/**', () => {
+mainRouter.options('/**', () => {
   return new NextResponse(null, { status: 204 });
 });
 
-mainFactory.onError((_, err) => {
+mainRouter.onError((_, err) => {
   console.error(err);
   if (err instanceof ZodError) {
     return NextResponse.json(
@@ -74,4 +74,4 @@ mainFactory.onError((_, err) => {
   );
 });
 
-export const { GET, POST, PUT, DELETE, PATCH, OPTIONS } = mainFactory.handlers;
+export const { GET, POST, PUT, DELETE, PATCH, OPTIONS } = mainRouter.handlers;
