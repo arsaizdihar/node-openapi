@@ -1,6 +1,6 @@
 {
   "name": "@node-openapi/fastify",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Fastify adapter for node-openapi",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -23,9 +23,9 @@
       }
     }
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["openapi", "fastify", "zod", "typescript", "swagger"],
+  "author": "Arsa Izdihar",
+  "license": "MIT",
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
     "@node-openapi/core": "workspace:*",
