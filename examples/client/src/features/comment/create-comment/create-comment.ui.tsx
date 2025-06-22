@@ -60,9 +60,8 @@ function BaseCreateCommentForm(props: CreateCommentFormProps) {
     <>
       {isError && (
         <ul className="error-messages">
-          {mutationErrors.map((err) => (
-            <li key={err}>{err}</li>
-          ))}
+          {Array.isArray(mutationErrors) &&
+            mutationErrors.map((err) => <li key={err}>{err}</li>)}
         </ul>
       )}
 
@@ -80,9 +79,20 @@ function BaseCreateCommentForm(props: CreateCommentFormProps) {
           </fieldset>
         </div>
         <div className="card-footer">
-          <img src={user.image} className="comment-author-img" alt={user.username} />
+          <img
+            src={
+              user.image ||
+              'https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png'
+            }
+            className="comment-author-img"
+            alt={user.username}
+          />
 
-          <button className="btn btn-sm btn-primary" type="submit" disabled={!canSubmit}>
+          <button
+            className="btn btn-sm btn-primary"
+            type="submit"
+            disabled={!canSubmit}
+          >
             Post Comment
           </button>
         </div>

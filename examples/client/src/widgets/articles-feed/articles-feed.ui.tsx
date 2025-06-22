@@ -2,7 +2,12 @@ import { ReactNode, Suspense } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
 import { IoHeart } from 'react-icons/io5';
-import { Link, useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Link,
+  useLoaderData,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
 import { pathKeys } from '~shared/router';
 import { Button } from '~shared/ui/button/button.ui';
 import { logError } from '~shared/ui/error-handler/error-handler.lib';
@@ -42,18 +47,31 @@ function BaseArticlesFeed() {
   return (
     <>
       {Object.values(data.articles || 0).map((article) => (
-        <ArticleMeta key={article.slug} article={article} action={<FavoriteArticleAction article={article} />} />
+        <ArticleMeta
+          key={article.slug}
+          article={article}
+          action={<FavoriteArticleAction article={article} />}
+        />
       ))}
 
-      {data.articlesCount === 0 && <div className="article-preview">No articles are here... yet.</div>}
+      {data.articlesCount === 0 && (
+        <div className="article-preview">No articles are here... yet.</div>
+      )}
 
       <ul className="pagination">
         {Array(Math.ceil(data.articlesCount / 10))
           .fill(0)
           .map((_, i) => (i + 1).toString())
           .map((page) => (
-            <li key={page} className={`page-item ${page === filterQuery.page ? 'active' : ''}`}>
-              <button className="page-link" type="button" onClick={onPageClick(page)}>
+            <li
+              key={page}
+              className={`page-item ${page === filterQuery.page ? 'active' : ''}`}
+            >
+              <button
+                className="page-link"
+                type="button"
+                onClick={onPageClick(page)}
+              >
                 {page}
               </button>
             </li>
@@ -78,11 +96,20 @@ function ArticleMeta(props: ArticleMetaProps) {
     <div className="article-preview">
       <div className="article-meta">
         <Link to={pathKeys.profile.byUsername(author.username)}>
-          <img src={author.image} alt={author.username} />
+          <img
+            src={
+              author.image ||
+              'https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png'
+            }
+            alt={author.username}
+          />
         </Link>
 
         <div className="info">
-          <Link className="author" to={pathKeys.profile.byUsername(author.username)}>
+          <Link
+            className="author"
+            to={pathKeys.profile.byUsername(author.username)}
+          >
             {author.username}
           </Link>
 

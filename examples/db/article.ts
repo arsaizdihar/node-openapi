@@ -69,6 +69,11 @@ export async function articleFeed(
   offset = 0,
 ) {
   const articles = await prisma.article.findMany({
+    where: {
+      author: {
+        followedBy: { some: { id: currentUserId } },
+      },
+    },
     include: {
       tagList: true,
       author: {

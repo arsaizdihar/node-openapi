@@ -21,8 +21,9 @@ export function CommentsFeed(props: { slug: string }) {
     <>
       {!canCreateComment && (
         <p>
-          <Link to={pathKeys.login}>Sign in</Link> or <Link to={pathKeys.register}>sign up</Link> to add comments on
-          this article.
+          <Link to={pathKeys.login}>Sign in</Link> or{' '}
+          <Link to={pathKeys.register}>sign up</Link> to add comments on this
+          article.
         </p>
       )}
       {canCreateComment && <CreateCommentForm slug={slug} />}
@@ -51,7 +52,10 @@ function BaseCommentsList(props: CommentsListProps) {
   return (
     <div>
       {Array.from(data.values())
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        )
         .map((comment) => (
           <CommentCard
             key={comment.id}
@@ -79,11 +83,24 @@ function CommentCard(props: { comment: Comment; actions?: ReactNode }) {
         <p className="card-text">{comment.body}</p>
       </div>
       <div className="card-footer">
-        <Link to={pathKeys.profile.byUsername(comment.author.username)} className="comment-author">
-          <img src={comment.author.image} className="comment-author-img" alt={comment.author.username} />
+        <Link
+          to={pathKeys.profile.byUsername(comment.author.username)}
+          className="comment-author"
+        >
+          <img
+            src={
+              comment.author.image ||
+              'https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png'
+            }
+            className="comment-author-img"
+            alt={comment.author.username}
+          />
         </Link>
         &nbsp;
-        <Link to={pathKeys.profile.byUsername(comment.author.username)} className="comment-author">
+        <Link
+          to={pathKeys.profile.byUsername(comment.author.username)}
+          className="comment-author"
+        >
           {comment.author.username}
         </Link>
         <span className="date-posted">{formattedDate}</span>
@@ -101,5 +118,7 @@ function DeleteCommentAction(props: { slug: string; comment: Comment }) {
     commentAuthorId: author.username,
   });
 
-  return canDeleteComment && <DeleteCommentButtton slug={slug} id={comment.id} />;
+  return (
+    canDeleteComment && <DeleteCommentButtton slug={slug} id={comment.id} />
+  );
 }

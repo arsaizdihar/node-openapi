@@ -30,7 +30,7 @@ export class FastifyRequestAdapter implements RequestLike {
   }
 
   get form() {
-    return {};
+    return this.req.body as Record<string, string>;
   }
 
   get json() {

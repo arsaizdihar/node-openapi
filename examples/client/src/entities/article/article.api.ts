@@ -35,10 +35,10 @@ export const articlesQueryOptions = (filter: FilterQuery) => {
     queryKey: [...ARTICLES_ROOT_QUERY_KEY, filter],
 
     queryFn: async ({ signal }) => {
-      const config = { signal, params: filter };
+      const config = { signal, query: filter };
       const request = isGlobal
         ? getApiArticles(config)
-        : getApiArticlesFeed(config);
+        : getApiArticlesFeed(config as { signal: AbortSignal });
       const { data } = await request;
       return data;
     },

@@ -1,6 +1,7 @@
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
 import {
   Context as CoreContext,
+  CoreOpenAPIRouter,
   InputTypeCookie,
   InputTypeForm,
   InputTypeHeader,
@@ -9,7 +10,6 @@ import {
   InputTypeQuery,
   OpenAPIDefinitions,
   RouteConfig,
-  CoreOpenAPIRouter,
 } from '@node-openapi/core';
 import {
   Env,
@@ -21,6 +21,7 @@ import {
   Next,
   ValidationTargets,
 } from 'hono';
+import { getCookie } from 'hono/cookie';
 import { BlankEnv } from 'hono/types';
 import { ContentfulStatusCode } from 'hono/utils/http-status';
 import { HonoRequestAdapter } from './request';
@@ -231,7 +232,20 @@ export class OpenAPIRouter<
       ...this._middlewares,
       async (c: HonoContext<E>, next: Next) => {
         const coreProcessingContext: CoreContext<HonoRequestAdapter> = {
-          req: new HonoRequestAdapter(c.req),
+          req: new HonoRequestAdapter(
+            c.req,
+            new Proxy(
+              {},
+              {
+                get: (_, prop) => {
+                  if (typeof prop === 'string') {
+                    return getCookie(c, prop);
+                  }
+                  return undefined;
+                },
+              },
+            ),
+          ),
           input: {},
         };
 

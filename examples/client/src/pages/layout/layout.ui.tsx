@@ -152,7 +152,14 @@ function ProfileLink() {
       className="nav-link"
       to={pathKeys.profile.byUsername(user.username)}
     >
-      <img className="user-pic" src={user.image} alt={user.username} />{' '}
+      <img
+        className="user-pic"
+        src={
+          user.image ||
+          'https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png'
+        }
+        alt={user.username}
+      />{' '}
       {user.username}
     </NavLink>
   );

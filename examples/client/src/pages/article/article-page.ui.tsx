@@ -41,7 +41,10 @@ function BaseArticlePage() {
       <div className="banner">
         <div className="container">
           <h1>{article.title}</h1>
-          <ArticleMeta article={article} actions={<ArticleActions article={article} />} />
+          <ArticleMeta
+            article={article}
+            actions={<ArticleActions article={article} />}
+          />
         </div>
       </div>
 
@@ -64,7 +67,10 @@ function BaseArticlePage() {
         <hr />
 
         <div className="article-actions">
-          <ArticleMeta article={article} actions={<ArticleActions article={article} />} />
+          <ArticleMeta
+            article={article}
+            actions={<ArticleActions article={article} />}
+          />
         </div>
 
         <div className="row">
@@ -91,10 +97,19 @@ function ArticleMeta(props: { article: Article; actions?: ReactNode }) {
   return (
     <div className="article-meta">
       <Link to={pathKeys.profile.byUsername(author.username)}>
-        <img src={author.image} alt={author.username} />
+        <img
+          src={
+            author.image ||
+            'https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png'
+          }
+          alt={author.username}
+        />
       </Link>
       <div className="info">
-        <Link className="author" to={pathKeys.profile.byUsername(author.username)}>
+        <Link
+          className="author"
+          to={pathKeys.profile.byUsername(author.username)}
+        >
           {author.username}
         </Link>
         <span className="date">{formattedDate}</span>
@@ -143,7 +158,9 @@ function ToggleFollowProfile(props: { profile: Profile }) {
     <>
       {canFollow && <FollowUserButton username={username} />}
       {canUnfollow && <UnfollowUserButton username={username} />}
-      {cannotFollowOrUnfollow && <NavigateToLoginButtonFollow username={profile.username} />}
+      {cannotFollowOrUnfollow && (
+        <NavigateToLoginButtonFollow username={profile.username} />
+      )}
     </>
   );
 }
@@ -163,7 +180,11 @@ function ToggleFavoriteArticle(props: { article: Article }) {
     <>
       {canLike && <FavoriteArticleExtendedButton article={article} />}
       {canDislike && <UnfavoriteArticleExtendedButton article={article} />}
-      {cannotLikeOrDislike && <NavigateToLoginButtonFavorite favoritesCount={article.favoritesCount} />}
+      {cannotLikeOrDislike && (
+        <NavigateToLoginButtonFavorite
+          favoritesCount={article.favoritesCount}
+        />
+      )}
     </>
   );
 }
@@ -172,7 +193,10 @@ function EditArticleLink(props: { slug: string }) {
   const { slug } = props;
 
   return (
-    <Link className="btn btn-outline-secondary btn-sm" to={pathKeys.editor.bySlug(slug)}>
+    <Link
+      className="btn btn-outline-secondary btn-sm"
+      to={pathKeys.editor.bySlug(slug)}
+    >
       <IoPencil size={16} />
       Edit Article
     </Link>
@@ -187,7 +211,12 @@ function NavigateToLoginButtonFollow(props: { username: string }) {
   const onClick = () => navigate(pathKeys.login);
 
   return (
-    <Button color="secondary" variant="outline" className="action-btn " onClick={onClick}>
+    <Button
+      color="secondary"
+      variant="outline"
+      className="action-btn "
+      onClick={onClick}
+    >
       <IoAdd size={16} />
       &nbsp; Follow {username}
     </Button>

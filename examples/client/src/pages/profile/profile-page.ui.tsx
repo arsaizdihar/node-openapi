@@ -60,7 +60,14 @@ function BaseProfileInfo() {
 
   return (
     <>
-      <img src={profile.image} className="user-img" alt={profile.username} />
+      <img
+        src={
+          profile.image ||
+          'https://www.transparentpng.com/thumb/user/gray-user-profile-icon-png-fP8Q1P.png'
+        }
+        className="user-img"
+        alt={profile.username}
+      />
       <h4>{profile.username}</h4>
       <p>{profile.bio}</p>
 
@@ -87,7 +94,9 @@ function ToggleFollowProfile(props: { profile: Profile }) {
       {canFollowProfile && <FollowUserButton username={username} />}
       {canUnfollowProfile && <UnfollowUserButton username={username} />}
       {canUpdateProfile && <NavigateToSettingsButton />}
-      {cannotFollowAndUnfollowProfile && <NavigateToLoginButton username={profile.username} />}
+      {cannotFollowAndUnfollowProfile && (
+        <NavigateToLoginButton username={profile.username} />
+      )}
     </>
   );
 }
@@ -96,7 +105,12 @@ function NavigateToSettingsButton() {
   const navigate = useNavigate();
 
   return (
-    <Button color="secondary" variant="outline" className="action-btn" onClick={() => navigate(pathKeys.settings)}>
+    <Button
+      color="secondary"
+      variant="outline"
+      className="action-btn"
+      onClick={() => navigate(pathKeys.settings)}
+    >
       <IoSettingsSharp size={14} />
       &nbsp; Edit Profile Settings
     </Button>
@@ -111,7 +125,12 @@ function NavigateToLoginButton(props: { username: string }) {
   const onClick = () => navigate(pathKeys.login);
 
   return (
-    <Button color="secondary" variant="outline" className="action-btn " onClick={onClick}>
+    <Button
+      color="secondary"
+      variant="outline"
+      className="action-btn "
+      onClick={onClick}
+    >
       <IoAdd size={16} />
       &nbsp; Follow {username}
     </Button>
