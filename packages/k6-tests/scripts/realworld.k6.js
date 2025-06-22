@@ -11,8 +11,8 @@ const startTime = Date.now();
 
 export const options = {
   stages: [
-    { duration: '30s', target: 10 }, // Simulate ramp-up of traffic
-    { duration: '1m', target: 10 }, // Stay at 10 users for 1 minute
+    { duration: '15s', target: 50 }, // Simulate ramp-up of traffic
+    { duration: '30s', target: 50 }, // Stay at 10 users for 1 minute
     { duration: '10s', target: 0 }, // Ramp-down to 0 users
   ],
   thresholds: {
