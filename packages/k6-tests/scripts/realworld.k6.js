@@ -11,13 +11,25 @@ const startTime = Date.now();
 
 export const options = {
   stages: [
-    { duration: '15s', target: 50 }, // Simulate ramp-up of traffic
-    { duration: '30s', target: 50 }, // Stay at 10 users for 1 minute
-    { duration: '10s', target: 0 }, // Ramp-down to 0 users
+    // Warm-up phase - gentle start
+    { duration: '30s', target: 10 }, // Warm-up to 10 users
+    { duration: '30s', target: 10 }, // Maintain 10 users for baseline
+
+    // Load testing phase - typical usage
+    { duration: '1m', target: 50 }, // Ramp up to moderate load
+    { duration: '2m', target: 50 }, // Sustained moderate load
+
+    // Stress testing phase - push boundaries
+    { duration: '1m', target: 100 }, // Increase to stress level
+    { duration: '2m', target: 100 }, // Sustained stress testing
+
+    // Ramp down gracefully
+    { duration: '1m', target: 0 }, // Gradual ramp-down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<500'], // 95% of requests must complete within 500ms
-    http_req_failed: ['rate<0.01'], // Error rate should be less than 1%
+    http_req_duration: ['p(95)<1500', 'p(50)<300'], // 95% under 1.5s, 50% under 300ms
+    http_req_failed: ['rate<0.01'], // Error rate under 1%
+    http_reqs: ['rate>50'], // Minimum 50 requests per second
   },
 };
 
