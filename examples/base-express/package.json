@@ -4,10 +4,9 @@
   "description": "A RealWorld Backend API made with express + prisma",
   "main": "dist/server.js",
   "scripts": {
-    "build": "dotenv -e .env -- npx tsc",
-    "start": "node dist/server.js",
-    "start:debug": "DEBUG=express:* node dist/server.js",
-    "dev": "DEBUG=express:* dotenv -e .env.development -- npx ts-node-dev --rs --clear --exit-child src/server.ts",
+    "start": "dotenv -e .env -- tsx src/server.ts",
+    "start:debug": "DEBUG=express:* dotenv -e .env -- tsx src/server.ts",
+    "dev": "DEBUG=express:* dotenv -e .env.development -- tsx src/server.ts",
     "studio:develop": "dotenv -e .env.development -- npx prisma studio",
     "migrate:develop": "dotenv -e .env.development -- npx prisma db push",
     "lint": "npx eslint .",
@@ -51,10 +50,12 @@
     "prettier": "^2.8.8",
     "ts-jest": "^29.3.2",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.19.3",
     "typescript": "catalog:"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5",
