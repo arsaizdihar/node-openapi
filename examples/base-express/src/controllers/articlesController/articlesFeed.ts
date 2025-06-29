@@ -1,5 +1,6 @@
 import { NextFunction, Response, Request } from 'express';
 import { getArticlesFeed } from 'ws-common/service/articles.service';
+import { parseArticleFeedQuery } from '../../utils/parseQuery';
 
 /**
  * Article controller that must receive a request with an authenticated user.
@@ -14,7 +15,8 @@ export default async function articlesFeedController(
   next: NextFunction,
 ) {
   try {
-    const result = await getArticlesFeed(req.user, req.query);
+    const query = parseArticleFeedQuery(req.query);
+    const result = await getArticlesFeed(req.user, query);
     res.json(result);
     return;
   } catch (error) {

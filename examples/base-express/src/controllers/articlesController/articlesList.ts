@@ -1,5 +1,6 @@
 import { NextFunction, Response, Request } from 'express';
 import { getArticles } from 'ws-common/service/articles.service';
+import { parseArticleQuery } from '../../utils/parseQuery';
 
 /**
  * Article controller that must receive a request.
@@ -14,7 +15,8 @@ export default async function articlesListController(
   next: NextFunction,
 ) {
   try {
-    const result = await getArticles(req.user, req.query);
+    const query = parseArticleQuery(req.query);
+    const result = await getArticles(req.user, query);
     res.json(result);
     return;
   } catch (error) {

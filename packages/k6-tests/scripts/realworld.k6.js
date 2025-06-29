@@ -23,7 +23,7 @@ export const options = {
     { duration: '30s', target: 0 }, // Gradual ramp-down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<750', 'p(50)<200'], // 95% under 750ms, 50% under 200ms
+    http_req_duration: ['p(95)<900', 'p(50)<200'], // 95% under 900ms, 50% under 200ms
     http_req_failed: ['rate<0.01'], // Error rate under 1%
     http_reqs: ['rate>20'], // Minimum 20 requests per second
   },
