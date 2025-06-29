@@ -1,8 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import createUserToken from '../../utils/auth/createUserToken';
-import { userCreate } from 'ws-db';
-import { hashPassword } from '../../utils/hashPasswords';
-import userViewer from '../../view/userViewer';
+import { registerUser } from 'ws-common/service/user.service';
 
 /**
  * Users controller that registers the user with information given in the body of the request.
@@ -11,26 +8,15 @@ import userViewer from '../../view/userViewer';
  * @param next NextFunction
  * @returns
  */
-export default async function usersRegister(
+export default async function usersRegisterController(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  const { email, password, username } = req.body.user;
+  const { user } = req.body;
   try {
-    // Hash password
-    const hashed = hashPassword(password);
-
-    // Create the new user on the database
-    const user = await userCreate(username, email, hashed);
-
-    // Create the authentication token for future use
-    const token = createUserToken(user);
-
-    // Create the user view with the authentication token
-    const userView = userViewer(user, token);
-
-    res.status(201).json(userView);
+    const result = await registerUser(user);
+    res.status(201).json({ user: result });
     return;
   } catch (error) {
     return next(error);

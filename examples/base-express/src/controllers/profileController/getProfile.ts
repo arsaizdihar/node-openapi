@@ -1,7 +1,5 @@
-import { NextFunction, Response } from 'express';
-import { Request as JWTRequest } from 'express-jwt';
-import { userGet } from 'ws-db';
-import profileViewer from '../../view/profileViewer';
+import { NextFunction, Response, Request } from 'express';
+import { getProfile as getProfileService } from 'ws-common/service/user.service';
 
 /**
  * Profile controller that takes the username in the parameters and returns its profile.
@@ -11,31 +9,16 @@ import profileViewer from '../../view/profileViewer';
  * @param next NextFunction
  * @returns void
  */
-export default async function getProfile(
-  req: JWTRequest,
+export default async function getProfileController(
+  req: Request,
   res: Response,
   next: NextFunction,
 ) {
   const { username } = req.params;
-  const currentUsername = req.auth?.user?.username; // The current user's username
 
   try {
-    // Get current user from database
-    const currentUser = await userGet(currentUsername);
-
-    // Get the desired profile
-    const profile = await userGet(username);
-    if (!profile) {
-      res.sendStatus(404);
-      return;
-    }
-
-    // Create the profile view
-    const profileView = currentUser
-      ? profileViewer(profile, currentUser)
-      : profileViewer(profile);
-
-    res.json({ profile: profileView });
+    const result = await getProfileService(username, req.user);
+    res.json({ profile: result });
     return;
   } catch (error) {
     return next(error);

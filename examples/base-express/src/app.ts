@@ -1,19 +1,15 @@
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import usersRouter from './routes/api/users';
 import userRouter from './routes/api/user';
 import profilesRouter from './routes/api/profiles';
 import articlesRouter from './routes/api/articles';
 import tagsRouter from './routes/api/tags';
-import generalErrorHandler from './middleware/errorHandling/generalErrorHandler';
-import {
-  authErrorHandler,
-  prismaErrorHandler,
-} from './middleware/errorHandling';
 import YAML from 'yaml';
 import fs from 'fs';
 import swaggerUi from 'swagger-ui-express';
 import path from 'path';
 import cors from 'cors';
+import { HttpError } from 'ws-common/service/error.service';
 
 const app = express();
 
@@ -41,10 +37,33 @@ app.get('/', function (_req, res) {
   res.send('This is just the backend for RealWorld');
 });
 
-app.use(authErrorHandler);
+// Simplified error handler (same as library version but without Zod)
+function errorHandler(
+  err: Error,
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  if (err instanceof HttpError) {
+    res.status(err.statusCode).json({
+      status: err.statusCode,
+      errors: {
+        body: [err.message],
+      },
+    });
+    next(err);
+    return;
+  }
 
-app.use(prismaErrorHandler);
+  res.status(500).json({
+    status: 500,
+    errors: {
+      body: ['Internal Server Error'],
+    },
+  });
+  next(err);
+}
 
-app.use(generalErrorHandler);
+app.use(errorHandler);
 
 export default app;

@@ -1,45 +1,23 @@
-import { NextFunction, Response } from 'express';
-import { Request } from 'express-jwt';
-import createUserToken from '../../utils/auth/createUserToken';
-import { userUpdate } from 'ws-db';
-import userViewer from '../../view/userViewer';
-import { hashPassword } from '../../utils/hashPasswords';
+import { NextFunction, Response, Request } from 'express';
+import { updateUser } from 'ws-common/service/user.service';
 
 /**
  * User controller that updates the current user with info given on the body of the request.
- * @param req Request with authenticated user in the auth property and new information on the body of the request
+ * @param req Request with authenticated user and new information on the body of the request
  * @param res Response
  * @param next NextFunction
  * @returns
  */
-export default async function userUpdateHandler(
+export default async function userUpdateController(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  const username = req.auth?.user?.username;
-  const info = req.body.user;
+  const { user } = req.body;
+  const currentUser = req.user;
   try {
-    const hashedPassword = info.password
-      ? hashPassword(info.password)
-      : undefined;
-    // Get current user
-    const user = await userUpdate(username, {
-      ...info,
-      password: hashedPassword,
-    });
-    if (!user) {
-      res.sendStatus(404);
-      return;
-    }
-
-    // Create the user token for future authentications
-    const token = createUserToken(user);
-
-    // Create the user view with the authenticated token
-    const userView = userViewer(user, token);
-
-    res.json(userView);
+    const result = await updateUser(currentUser.username, user);
+    res.json({ user: result });
     return;
   } catch (error) {
     return next(error);

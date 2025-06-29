@@ -1,37 +1,23 @@
-import { NextFunction, Response } from 'express';
-import { Request } from 'express-jwt';
-import { userGet, userUnFollowProfile } from 'ws-db';
-import profileViewer from '../../view/profileViewer';
+import { NextFunction, Response, Request } from 'express';
+import { unfollowProfile as unfollowProfileService } from 'ws-common/service/user.service';
 
 /**
  * Profile controller that removes the username in the parameters to the current user followers list.
- * @param req Request with an authenticated user in the auth property
+ * @param req Request with an authenticated user
  * @param res Response
  * @param next NextFunction
  * @returns
  */
-export default async function unFollowProfile(
+export default async function unfollowProfileController(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  const username = req.params.username;
-  const currentUsername = req.auth?.user?.username;
+  const { username } = req.params;
 
   try {
-    // Get current user
-    const currentUser = await userGet(currentUsername);
-    if (!currentUser) {
-      res.sendStatus(401);
-      return;
-    }
-
-    // Get the desired profile
-    const profile = await userUnFollowProfile(currentUser.id, username);
-
-    // Create the profile view
-    const profileView = profileViewer(profile, currentUser);
-    res.json({ profile: profileView });
+    const result = await unfollowProfileService(req.user, username);
+    res.json({ profile: result });
     return;
   } catch (error) {
     return next(error);

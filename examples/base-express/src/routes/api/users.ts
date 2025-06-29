@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { usersLogin, usersRegister } from '../../controllers/usersController';
-import * as validator from '../../middleware/userValidator';
+import usersLoginController from '../../controllers/usersController/usersLogin';
+import usersRegisterController from '../../controllers/usersController/usersRegister';
 
 const router = Router();
 
-router.post('/login', validator.userLoginValidator, usersLogin);
+router.post('/login', usersLoginController);
 
-router.post('/', validator.userRegisterValidator, usersRegister);
+router.post('/', usersRegisterController);
 
 export default router;

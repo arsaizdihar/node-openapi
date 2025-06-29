@@ -1,41 +1,24 @@
-import { NextFunction, Response } from 'express';
-import { Request } from 'express-jwt';
-import { commentsGet, userGet } from 'ws-db';
-import commentViewer from '../../view/commentViewer';
+import { NextFunction, Response, Request } from 'express';
+import { getComments } from 'ws-common/service/comments.service';
 
 /**
  * Comment controller that must receive a request with an optionally authenticated user.
  * The parameters of the request must have a slug to the article the comment belongs to.
- * @param req Request with an optionally jwt token verified
+ * @param req Request with an optionally authenticated user
  * @param res Response
  * @param next NextFunction
  * @returns void
  */
-export default async function getComments(
+export default async function getCommentsController(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  const slug = req.params.slug;
-  const username = req.auth?.user?.username;
+  const { slug } = req.params;
 
   try {
-    // Get current user from database
-    const currentUser = await userGet(username);
-
-    // Get comments from database
-    const comments = currentUser
-      ? await commentsGet(slug, currentUser.id)
-      : await commentsGet(slug);
-
-    // Create comment view
-    const commentsView = comments.map((comment) =>
-      currentUser
-        ? commentViewer(comment, currentUser)
-        : commentViewer(comment),
-    );
-
-    res.json({ comments: commentsView });
+    const comments = await getComments(slug, req.user);
+    res.json({ comments });
     return;
   } catch (error) {
     return next(error);

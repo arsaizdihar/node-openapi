@@ -1,38 +1,23 @@
-import { NextFunction, Response } from 'express';
-import { Request } from 'express-jwt';
-import { userFollowProfile, userGet } from 'ws-db';
-import profileViewer from '../../view/profileViewer';
+import { NextFunction, Response, Request } from 'express';
+import { followProfile as followProfileService } from 'ws-common/service/user.service';
 
 /**
  * Profile controller that adds the username in the parameters to the current user followers list.
  * The parameters of the request must contain the username that will be followed by the authenticated user.
- * @param req Request with authenticated user in the auth property.
+ * @param req Request with authenticated user.
  * @param res Response
  * @param next NextFunction
  * @returns void
  */
-export default async function followProfile(
+export default async function followProfileController(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  const username = req.params.username;
-  const currentUsername = req.auth?.user?.username;
+  const { username } = req.params;
   try {
-    // Get current user
-    const currentUser = await userGet(currentUsername);
-    if (!currentUser) {
-      res.sendStatus(401);
-      return;
-    }
-
-    // Get the user profile to follow
-    const profile = await userFollowProfile(currentUser.id, username);
-
-    // Create the profile view.
-    const profileView = profileViewer(profile, currentUser);
-
-    res.json({ profile: profileView });
+    const result = await followProfileService(req.user, username);
+    res.json({ profile: result });
   } catch (error) {
     return next(error);
   }

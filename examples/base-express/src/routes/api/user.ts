@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { userGet, userUpdate } from '../../controllers/userController';
+import userGetController from '../../controllers/userController/userGet';
+import userUpdateController from '../../controllers/userController/userUpdate';
 import { authenticate } from '../../middleware/auth/authenticator';
-import { userUpdateValidator } from '../../middleware/userValidator';
 
 const router = Router();
 
-router.get('/', authenticate, userGet);
+router.get('/', authenticate, userGetController);
 
-router.put('/', authenticate, userUpdateValidator, userUpdate);
+router.put('/', authenticate, userUpdateController);
 
 export default router;

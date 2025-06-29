@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { tagsGet } from 'ws-db';
-import tagViewer from '../../view/tagViewer';
+import { getTags } from 'ws-common/service/tags.service';
 
 /**
  * Tags controller that responds with a list of all the tags on the system.
@@ -8,12 +7,7 @@ import tagViewer from '../../view/tagViewer';
  * @param res
  * @returns
  */
-export default async function getTags(_req: Request, res: Response) {
-  // Get all the tags
-  const tags = await tagsGet();
-
-  // Create the tags view
-  const tagsView = tags.map((tag) => tagViewer(tag));
-
-  res.json({ tags: tagsView });
+export default async function getTagsController(_req: Request, res: Response) {
+  const tags = await getTags();
+  res.json({ tags });
 }

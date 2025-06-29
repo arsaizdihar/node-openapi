@@ -1,5 +1,4 @@
-import { Response } from 'express';
-import { Request } from 'express-jwt';
+import { Request, Response } from 'express';
 import commentCreateValidator from './commentCreateValidator';
 
 // The mock response creation in order to reset mock calls

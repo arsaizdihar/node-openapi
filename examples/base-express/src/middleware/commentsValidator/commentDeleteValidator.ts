@@ -1,5 +1,4 @@
-import { NextFunction, Response } from 'express';
-import { Request } from 'express-jwt';
+import { NextFunction, Request, Response } from 'express';
 
 /**
  * Middleware that validates the id parameter for the comment deletion controller.

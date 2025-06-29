@@ -1,5 +1,4 @@
-import { NextFunction, Response } from 'express';
-import { Request } from 'express-jwt';
+import { NextFunction, Response, Request } from 'express';
 import { ValidationError } from '../../utils/types';
 
 /**

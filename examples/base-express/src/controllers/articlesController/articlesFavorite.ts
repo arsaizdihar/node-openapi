@@ -1,49 +1,24 @@
-import { NextFunction, Response } from 'express';
-import { Request } from 'express-jwt';
-import { articleFavorite, userGet } from 'ws-db';
-import articleViewer from '../../view/articleViewer';
+import { NextFunction, Response, Request } from 'express';
+import { favoriteArticle } from 'ws-common/service/articles.service';
 
 /**
  * Article controller that must receive a request with an authenticated user.
  * The parameters of the request must have a slug.
- * @param req Request with a jwt token verified
+ * @param req Request with authenticated user
  * @param res Response
  * @param next NextFunction
  * @returns void
  */
-export default async function articlesFavorite(
+export default async function articlesFavoriteController(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  const slug = req.params.slug;
-  const username = req.auth?.user.username;
+  const { slug } = req.params;
 
   try {
-    // Get current user
-    let currentUser = await userGet(username);
-    if (!currentUser) {
-      res.sendStatus(401);
-      return;
-    }
-
-    // Favorite the article
-    const article = await articleFavorite(currentUser.id, slug);
-    if (!article) {
-      res.sendStatus(404);
-      return;
-    }
-
-    // Retrieve current user after update of its favorited articles
-    currentUser = await userGet(username);
-    if (!currentUser) {
-      res.sendStatus(500);
-      return;
-    }
-
-    // Create article view
-    const articleView = articleViewer(article, currentUser);
-    res.json({ article: articleView });
+    const article = await favoriteArticle(req.user, slug);
+    res.json({ article });
     return;
   } catch (error) {
     next(error);

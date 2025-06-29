@@ -1,40 +1,26 @@
-import { NextFunction, Response } from 'express';
-import { Request } from 'express-jwt';
-import { commentCreate, userGet } from 'ws-db';
-import commentViewer from '../../view/commentViewer';
+import { NextFunction, Response, Request } from 'express';
+import { createComment } from 'ws-common/service/comments.service';
 
 /**
  * Comment controller that must receive a request with an authenticated user.
  * The parameters of the request must have a slug to the article the comment belongs to.
  * The body of the request must have an comment object with a body string.
- * @param req Request with a jwt token verified
+ * @param req Request with authenticated user
  * @param res Response
  * @param next NextFunction
  * @returns void
  */
-export default async function createComment(
+export default async function createCommentController(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  const slug = req.params.slug;
-  const { body: commentContent } = req.body.comment;
-  const username = req.auth?.user?.username;
+  const { slug } = req.params;
+  const { comment } = req.body;
 
   try {
-    // Get currentUser
-    const currentUser = await userGet(username);
-    if (!currentUser) {
-      res.sendStatus(401);
-      return;
-    }
-
-    // Add comment to database
-    const comment = await commentCreate(slug, commentContent, currentUser.id);
-
-    // Create comment view
-    const commentView = commentViewer(comment, currentUser);
-    res.status(201).json({ comment: commentView });
+    const result = await createComment(slug, comment.body, req.user);
+    res.status(201).json({ comment: result });
     return;
   } catch (error) {
     return next(error);
