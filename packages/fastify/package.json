@@ -9,7 +9,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup ./src/index.ts --format esm,cjs --dts"
+    "build": "tsup ./src/index.ts --format esm,cjs --dts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "exports": {
     ".": {
@@ -23,17 +26,26 @@
       }
     }
   },
-  "keywords": ["openapi", "fastify", "zod", "typescript", "swagger"],
+  "keywords": [
+    "openapi",
+    "fastify",
+    "zod",
+    "typescript",
+    "swagger"
+  ],
   "author": "Arsa Izdihar",
   "license": "MIT",
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
+    "@fastify/cookie": "^11.0.2",
     "@node-openapi/core": "workspace:*",
     "fastify": "^5",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

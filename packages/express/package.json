@@ -25,7 +25,13 @@
       }
     }
   },
-  "keywords": ["openapi", "express", "zod", "typescript", "swagger"],
+  "keywords": [
+    "openapi",
+    "express",
+    "zod",
+    "typescript",
+    "swagger"
+  ],
   "author": "Arsa Izdihar",
   "license": "MIT",
   "repository": {
@@ -35,12 +41,14 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
-    "@node-openapi/core": "workspace:*"
+    "@node-openapi/core": "workspace:*",
+    "cookie-parser": "^1.4.7"
   },
   "peerDependencies": {
     "express": "^5"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5",
     "@types/supertest": "^6.0.3",
     "@vitest/coverage-v8": "^3.1.4",

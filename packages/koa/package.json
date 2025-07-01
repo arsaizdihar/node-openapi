@@ -9,7 +9,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup ./src/index.ts --format esm,cjs --dts"
+    "build": "tsup ./src/index.ts --format esm,cjs --dts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "exports": {
     ".": {
@@ -23,12 +26,18 @@
       }
     }
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "openapi",
+    "koa",
+    "zod",
+    "typescript",
+    "swagger"
+  ],
+  "author": "Arsa Izdihar",
+  "license": "MIT",
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "catalog:",
-    "@koa/bodyparser": "^5",
+    "@koa/bodyparser": "^5.1.1",
     "@node-openapi/core": "workspace:*",
     "koa": "^2",
     "koa-router": "^13",
@@ -37,7 +46,11 @@
   "devDependencies": {
     "@types/koa": "^2",
     "@types/koa-router": "^7",
+    "@types/supertest": "^6.0.3",
+    "@vitest/coverage-v8": "catalog:",
+    "supertest": "^7.1.0",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

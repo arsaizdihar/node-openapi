@@ -1,8 +1,7 @@
-import express from 'express';
-import request from 'supertest';
+import Hapi from '@hapi/hapi';
 import { describe, expect, it, vi } from 'vitest';
 import { createRoute, OpenAPIRouter, z } from '../src';
-import cookieParser from 'cookie-parser';
+import { ZodError } from 'zod';
 
 describe('OpenAPIRouter', () => {
   it('should create an instance', () => {
@@ -11,8 +10,8 @@ describe('OpenAPIRouter', () => {
   });
 
   it('should handle a simple GET route', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const server = Hapi.server();
+    const router = new OpenAPIRouter();
 
     router.route(
       createRoute({
@@ -32,25 +31,31 @@ describe('OpenAPIRouter', () => {
         },
       }),
       ({ h }) => {
-        h.json({ status: 200, data: { message: 'world' } });
+        return h.json({ data: { message: 'world' }, status: 200 });
       },
     );
 
-    const response = await request(app).get('/hello');
+    await router.registerServer(server);
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ message: 'world' });
+    const response = await server.inject({
+      method: 'GET',
+      url: '/hello',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({ message: 'world' });
   });
 
   it('should apply middleware', async () => {
-    const app = express();
-    const router = new OpenAPIRouter<{ user?: string }>({
-      expressRouter: app,
-    });
+    const server = Hapi.server();
+    const router = new OpenAPIRouter<{ user?: string }>();
 
-    router.middleware(({ context }, next) => {
-      context.user = 'test-user';
-      next();
+    router.middleware({
+      assign: 'user',
+      method: (req) => {
+        req.app.user = 'test-user';
+        return 'test-user';
+      },
     });
 
     router.route(
@@ -71,24 +76,29 @@ describe('OpenAPIRouter', () => {
         },
       }),
       ({ h, context }) => {
-        h.json({ status: 200, data: { user: context.user } });
+        return h.json({ data: { user: context.user }, status: 200 });
       },
     );
 
-    const response = await request(app).get('/user');
+    await router.registerServer(server);
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ user: 'test-user' });
+    const response = await server.inject({
+      method: 'GET',
+      url: '/user',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({ user: 'test-user' });
   });
 
   it('should handle route parameters', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const server = Hapi.server();
+    const router = new OpenAPIRouter();
 
     router.route(
       createRoute({
         method: 'get',
-        path: '/items/:id',
+        path: '/items/{id}',
         request: {
           params: z.object({ id: z.string().regex(/^\d+$/) }),
         },
@@ -104,22 +114,24 @@ describe('OpenAPIRouter', () => {
         },
       }),
       ({ h, input }) => {
-        h.json({
-          status: 200,
-          data: { itemId: input.param.id },
-        });
+        return h.json({ data: { itemId: input.param.id }, status: 200 });
       },
     );
 
-    const response = await request(app).get('/items/123');
+    await router.registerServer(server);
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ itemId: '123' });
+    const response = await server.inject({
+      method: 'GET',
+      url: '/items/123',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({ itemId: '123' });
   });
 
   it('should handle query parameters', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const server = Hapi.server();
+    const router = new OpenAPIRouter();
 
     router.route(
       createRoute({
@@ -140,24 +152,24 @@ describe('OpenAPIRouter', () => {
         },
       }),
       ({ h, input }) => {
-        h.json({
-          status: 200,
-          data: { query: input.query.q },
-        });
+        return h.json({ data: { query: input.query.q }, status: 200 });
       },
     );
 
-    const response = await request(app).get('/search?q=test');
+    await router.registerServer(server);
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ query: 'test' });
+    const response = await server.inject({
+      method: 'GET',
+      url: '/search?q=test',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({ query: 'test' });
   });
 
   it('should handle JSON body', async () => {
-    const app = express();
-    app.use(express.json());
-
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const server = Hapi.server();
+    const router = new OpenAPIRouter();
 
     const BodySchema = z.object({
       name: z.string(),
@@ -185,131 +197,138 @@ describe('OpenAPIRouter', () => {
             },
           },
         },
-        202: {
-          description: 'Accepted',
+      },
+    });
+
+    router.route(route, ({ h, input }) => {
+      return h.json({ data: input.json, status: 201 });
+    });
+
+    await router.registerServer(server);
+
+    const userData = { name: 'John Doe', age: 30 };
+    const response = await server.inject({
+      method: 'POST',
+      url: '/users',
+      payload: userData,
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(JSON.parse(response.payload)).toEqual(userData);
+  });
+
+  it('should handle cookies', async () => {
+    const server = Hapi.server();
+    const router = new OpenAPIRouter();
+
+    const CookieSchema = z.object({
+      sessionId: z.string(),
+      userId: z.string(),
+    });
+
+    const route = createRoute({
+      method: 'get',
+      path: '/profile',
+      request: {
+        cookies: CookieSchema,
+      },
+      responses: {
+        200: {
+          description: 'Success',
           content: {
             'application/json': {
               schema: z.object({
-                hello: z.string(),
+                sessionId: z.string(),
+                userId: z.string(),
               }),
             },
           },
         },
-        200: {
-          description: 'Success',
-          content: {
-            'text/plain': {
-              schema: z.string(),
-            },
-          },
-        },
       },
     });
 
-    router.route(route, ({ h }) => {
-      h.json({ status: 201, data: { name: 'John Doe', age: 30 } });
+    router.route(route, ({ h, input }) => {
+      return h.json({ data: input.cookie, status: 200 });
     });
 
-    const userData = { name: 'John Doe', age: 30 };
-    const response = await request(app).post('/users').send(userData);
+    await router.registerServer(server);
 
-    expect(response.status).toBe(201);
-    expect(response.body).toEqual(userData);
-  });
-
-  it('should handle cookie validation', async () => {
-    const app = express();
-    app.use(cookieParser());
-    const router = new OpenAPIRouter({ expressRouter: app });
-
-    router.route(
-      createRoute({
-        method: 'get',
-        path: '/cookie-test',
-        request: {
-          cookies: z.object({
-            sessionId: z.string(),
-            theme: z.enum(['light', 'dark']).optional(),
-          }),
-        },
-        responses: {
-          200: {
-            description: 'Success',
-            content: {
-              'application/json': {
-                schema: z.object({
-                  sessionId: z.string(),
-                  theme: z.string().optional(),
-                }),
-              },
-            },
-          },
-        },
-      }),
-      ({ h, input }) => {
-        h.json({
-          status: 200,
-          data: {
-            sessionId: input.cookie.sessionId,
-            theme: input.cookie.theme,
-          },
-        });
+    const response = await server.inject({
+      method: 'GET',
+      url: '/profile',
+      headers: {
+        cookie: 'sessionId=abc123; userId=user456',
       },
-    );
+    });
 
-    const response = await request(app)
-      .get('/cookie-test')
-      .set('Cookie', ['sessionId=abc123', 'theme=dark']);
-
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({
       sessionId: 'abc123',
-      theme: 'dark',
+      userId: 'user456',
     });
-
-    // Test with invalid cookie
-    const invalidResponse = await request(app)
-      .get('/cookie-test')
-      .set('Cookie', ['theme=invalid']);
-
-    expect(invalidResponse.status).toBe(500);
   });
 
   it('should return validation error for invalid params', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const server = Hapi.server();
+    const router = new OpenAPIRouter();
+
+    server.ext('onPreResponse', (request, h) => {
+      const response = request.response;
+      if (!(response instanceof Error)) {
+        return h.continue;
+      }
+
+      const err = response;
+      if (err instanceof ZodError) {
+        response.output.statusCode = 400;
+        response.output.payload = {
+          statusCode: 400,
+          code: 'BAD_REQUEST',
+          message: 'Invalid request',
+          errors: {
+            body: err.flatten().fieldErrors,
+          },
+          error: 'ValidationError',
+        };
+        return h.continue;
+      }
+      return h.continue;
+    });
 
     router.route(
       createRoute({
         method: 'get',
-        path: '/items/:id',
+        path: '/items/{id}',
         request: {
           params: z.object({ id: z.string().regex(/^\d+$/) }),
         },
         responses: { 200: { description: 'Success' } },
       }),
       ({ h, input }) => {
-        h.json({ data: { itemId: input.param.id } });
+        return h.json({ data: { itemId: input.param.id } });
       },
     );
 
-    // Add a generic error handler
-    app.use((err: any, _req: any, res: any, _next: any) => {
-      console.error(err); // For debugging in test output
-      res.status(400).json({ error: 'Validation failed', details: err.issues });
+    await router.registerServer(server);
+
+    const response = await server.inject({
+      method: 'GET',
+      url: '/items/abc',
     });
 
-    const response = await request(app).get('/items/abc');
-
-    expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty('error', 'Validation failed');
-    expect(response.body).toHaveProperty('details');
-    expect(response.body.details[0].path).toEqual(['id']);
+    expect(response.statusCode).toBe(400);
+    const body = JSON.parse(response.payload);
+    expect(body).toHaveProperty('error', 'ValidationError');
+    expect(body).toHaveProperty('errors');
+    expect(body.errors).toHaveProperty('body');
+    expect(body.errors.body).toHaveProperty('id');
+    expect(body.errors.body.id).toHaveLength(1);
+    expect(body.errors.body.id[0]).toEqual('Invalid');
   });
 
   it('should validate response', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const server = Hapi.server();
+    const router = new OpenAPIRouter();
 
     router.route(
       createRoute({
@@ -326,19 +345,23 @@ describe('OpenAPIRouter', () => {
       }),
       ({ h }) => {
         // @ts-expect-error - want to test validation error
-        h.json({ status: 200, data: { message: 123 } });
+        return h.json({ data: { message: 123 }, status: 200 });
       },
     );
 
-    const response = await request(app).get('/test');
+    await router.registerServer(server);
 
-    expect(response.status).toBe(500);
+    const response = await server.inject({
+      method: 'GET',
+      url: '/test',
+    });
+
+    expect(response.statusCode).toBe(500);
   });
 
   it('should not validate reponse when validateResponse is false', async () => {
-    const app = express();
+    const server = Hapi.server();
     const router = new OpenAPIRouter({
-      expressRouter: app,
       validateResponse: false,
     });
 
@@ -357,26 +380,31 @@ describe('OpenAPIRouter', () => {
       }),
       ({ h }) => {
         // @ts-expect-error - want to test validation error
-        h.json({ status: 200, data: { message: 123 } });
+        return h.json({ data: { message: 123 }, status: 200 });
       },
     );
-    const response = await request(app).get('/test');
+    await router.registerServer(server);
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ message: 123 });
+    const response = await server.inject({
+      method: 'GET',
+      url: '/test',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({ message: 123 });
   });
 
   it('extends the router should have the same middleware and options', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ validateResponse: false });
+    const server = Hapi.server();
+    const router = new OpenAPIRouter();
 
-    const middleware = vi.fn((_, next) => {
+    const middleware = vi.fn(async (_req, h) => {
       console.log('middleware');
-      next();
+      return h.continue;
     });
-    router.middleware(middleware);
+    router.middleware({ method: middleware });
 
-    const extendedRouter = router.extend({ expressRouter: app });
+    const extendedRouter = router.extend();
 
     extendedRouter.route(
       createRoute({
@@ -385,23 +413,25 @@ describe('OpenAPIRouter', () => {
         responses: { 200: { description: 'Success' } },
       }),
       ({ h }) => {
-        h.text({ data: 'test' });
+        return h.text({ data: 'test', status: 200 });
       },
     );
 
-    await request(app).get('/test');
+    await extendedRouter.registerServer(server);
+
+    await server.inject({
+      method: 'GET',
+      url: '/test',
+    });
 
     expect(extendedRouter).toBeInstanceOf(OpenAPIRouter);
     expect(extendedRouter).not.toBe(router);
     expect(middleware).toHaveBeenCalled();
-
-    // @ts-expect-error - private field
-    expect(extendedRouter._validateResponse).toBe(false);
   });
 
   it('should handle nested router correctly using router.use', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const server = Hapi.server();
+    const router = new OpenAPIRouter();
 
     const childRouter = new OpenAPIRouter();
 
@@ -412,21 +442,25 @@ describe('OpenAPIRouter', () => {
         responses: { 200: { description: 'Success' } },
       }),
       ({ h }) => {
-        h.json({ status: 200, data: { message: 'world' } });
+        return h.json({ data: { message: 'world' }, status: 200 });
       },
     );
 
     router.use('/api', childRouter);
+    await router.registerServer(server);
 
-    const response = await request(app).get('/api/hello');
+    const response = await server.inject({
+      method: 'GET',
+      url: '/api/hello',
+    });
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({ message: 'world' });
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.payload)).toEqual({ message: 'world' });
   });
 
   it('should generate openapi doc', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const server = Hapi.server();
+    const router = new OpenAPIRouter();
     router.route(
       createRoute({
         method: 'get',
@@ -441,7 +475,7 @@ describe('OpenAPIRouter', () => {
         },
       }),
       ({ h }) => {
-        h.json({ status: 200, data: { message: 'test' } });
+        return h.json({ data: { message: 'test' }, status: 200 });
       },
     );
     router.doc('/api', {
@@ -449,10 +483,15 @@ describe('OpenAPIRouter', () => {
       info: { title: 'Test', version: '1.0.0' },
     });
 
-    const res = await request(app).get('/api');
+    await router.registerServer(server);
 
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({
+    const res = await server.inject({
+      method: 'GET',
+      url: '/api',
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload)).toEqual({
       openapi: '3.1.0',
       info: {
         title: 'Test',

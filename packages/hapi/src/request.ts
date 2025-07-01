@@ -7,7 +7,7 @@ export class HapiRequestAdapter extends RequestLike {
   }
 
   get url() {
-    return this.request.url.toString();
+    return this.request.url.pathname + this.request.url.search;
   }
 
   get method() {
@@ -35,7 +35,7 @@ export class HapiRequestAdapter extends RequestLike {
   }
 
   get cookies() {
-    return this.request.headers.cookie;
+    return this.request.state;
   }
 
   get params() {

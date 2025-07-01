@@ -1,4 +1,4 @@
-import { RequestLike } from '@node-openapi/core';
+import { MaybePromise, RequestLike } from '@node-openapi/core';
 import { NextRequest } from 'next/server';
 
 export class NextRequestAdapter extends RequestLike {
@@ -82,5 +82,20 @@ export class NextRequestAdapter extends RequestLike {
 
   get cookies() {
     return this._cookies;
+  }
+
+  get form(): MaybePromise<Record<string, any>> {
+    return this.req.formData().then((formData) => {
+      const form: Record<string, any> = {};
+      for (const key of formData.keys()) {
+        const values = formData.getAll(key);
+        if (values.length === 1) {
+          form[key] = values[0];
+        } else {
+          form[key] = values;
+        }
+      }
+      return form;
+    });
   }
 }

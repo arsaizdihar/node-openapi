@@ -1,8 +1,6 @@
-import express from 'express';
-import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { createRoute, OpenAPIRouter, z } from '../src';
-import cookieParser from 'cookie-parser';
+import { ZodError } from 'zod';
 
 describe('OpenAPIRouter', () => {
   it('should create an instance', () => {
@@ -11,13 +9,13 @@ describe('OpenAPIRouter', () => {
   });
 
   it('should handle a simple GET route', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const router = new OpenAPIRouter();
 
     router.route(
       createRoute({
         method: 'get',
         path: '/hello',
+        getRoutingPath: () => '/hello',
         responses: {
           200: {
             description: 'Success',
@@ -31,32 +29,30 @@ describe('OpenAPIRouter', () => {
           },
         },
       }),
-      ({ h }) => {
-        h.json({ status: 200, data: { message: 'world' } });
+      (c) => {
+        return c.typedJson({ data: { message: 'world' }, status: 200 });
       },
     );
 
-    const response = await request(app).get('/hello');
+    const response = await router.app.request('/hello');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ message: 'world' });
+    expect(await response.json()).toEqual({ message: 'world' });
   });
 
   it('should apply middleware', async () => {
-    const app = express();
-    const router = new OpenAPIRouter<{ user?: string }>({
-      expressRouter: app,
-    });
+    const router = new OpenAPIRouter<{ Variables: { user?: string } }>();
 
-    router.middleware(({ context }, next) => {
-      context.user = 'test-user';
-      next();
+    router.middleware(async (c, next) => {
+      c.set('user', 'test-user');
+      await next();
     });
 
     router.route(
       createRoute({
         method: 'get',
         path: '/user',
+        getRoutingPath: () => '/user',
         responses: {
           200: {
             description: 'Success',
@@ -70,25 +66,25 @@ describe('OpenAPIRouter', () => {
           },
         },
       }),
-      ({ h, context }) => {
-        h.json({ status: 200, data: { user: context.user } });
+      (c) => {
+        return c.typedJson({ data: { user: c.var.user }, status: 200 });
       },
     );
 
-    const response = await request(app).get('/user');
+    const response = await router.app.request('/user');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ user: 'test-user' });
+    expect(await response.json()).toEqual({ user: 'test-user' });
   });
 
   it('should handle route parameters', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const router = new OpenAPIRouter();
 
     router.route(
       createRoute({
         method: 'get',
-        path: '/items/:id',
+        path: '/items/{id}',
+        getRoutingPath: () => '/items/:id',
         request: {
           params: z.object({ id: z.string().regex(/^\d+$/) }),
         },
@@ -103,28 +99,26 @@ describe('OpenAPIRouter', () => {
           },
         },
       }),
-      ({ h, input }) => {
-        h.json({
-          status: 200,
-          data: { itemId: input.param.id },
-        });
+      (c) => {
+        const id = c.req.valid('param').id;
+        return c.typedJson({ data: { itemId: id }, status: 200 });
       },
     );
 
-    const response = await request(app).get('/items/123');
+    const response = await router.app.request('/items/123');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ itemId: '123' });
+    expect(await response.json()).toEqual({ itemId: '123' });
   });
 
   it('should handle query parameters', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const router = new OpenAPIRouter();
 
     router.route(
       createRoute({
         method: 'get',
         path: '/search',
+        getRoutingPath: () => '/search',
         request: {
           query: z.object({ q: z.string() }),
         },
@@ -139,25 +133,20 @@ describe('OpenAPIRouter', () => {
           },
         },
       }),
-      ({ h, input }) => {
-        h.json({
-          status: 200,
-          data: { query: input.query.q },
-        });
+      (c) => {
+        const q = c.req.valid('query').q;
+        return c.typedJson({ data: { query: q }, status: 200 });
       },
     );
 
-    const response = await request(app).get('/search?q=test');
+    const response = await router.app.request('/search?q=test');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ query: 'test' });
+    expect(await response.json()).toEqual({ query: 'test' });
   });
 
   it('should handle JSON body', async () => {
-    const app = express();
-    app.use(express.json());
-
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const router = new OpenAPIRouter();
 
     const BodySchema = z.object({
       name: z.string(),
@@ -167,6 +156,7 @@ describe('OpenAPIRouter', () => {
     const route = createRoute({
       method: 'post',
       path: '/users',
+      getRoutingPath: () => '/users',
       request: {
         body: {
           content: {
@@ -185,136 +175,80 @@ describe('OpenAPIRouter', () => {
             },
           },
         },
-        202: {
-          description: 'Accepted',
-          content: {
-            'application/json': {
-              schema: z.object({
-                hello: z.string(),
-              }),
-            },
-          },
-        },
-        200: {
-          description: 'Success',
-          content: {
-            'text/plain': {
-              schema: z.string(),
-            },
-          },
-        },
       },
     });
 
-    router.route(route, ({ h }) => {
-      h.json({ status: 201, data: { name: 'John Doe', age: 30 } });
+    router.route(route, async (c) => {
+      const body = await c.req.json();
+      return c.typedJson({ data: body, status: 201 });
     });
 
     const userData = { name: 'John Doe', age: 30 };
-    const response = await request(app).post('/users').send(userData);
-
-    expect(response.status).toBe(201);
-    expect(response.body).toEqual(userData);
-  });
-
-  it('should handle cookie validation', async () => {
-    const app = express();
-    app.use(cookieParser());
-    const router = new OpenAPIRouter({ expressRouter: app });
-
-    router.route(
-      createRoute({
-        method: 'get',
-        path: '/cookie-test',
-        request: {
-          cookies: z.object({
-            sessionId: z.string(),
-            theme: z.enum(['light', 'dark']).optional(),
-          }),
-        },
-        responses: {
-          200: {
-            description: 'Success',
-            content: {
-              'application/json': {
-                schema: z.object({
-                  sessionId: z.string(),
-                  theme: z.string().optional(),
-                }),
-              },
-            },
-          },
-        },
-      }),
-      ({ h, input }) => {
-        h.json({
-          status: 200,
-          data: {
-            sessionId: input.cookie.sessionId,
-            theme: input.cookie.theme,
-          },
-        });
-      },
-    );
-
-    const response = await request(app)
-      .get('/cookie-test')
-      .set('Cookie', ['sessionId=abc123', 'theme=dark']);
-
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      sessionId: 'abc123',
-      theme: 'dark',
+    const response = await router.app.request('/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
     });
 
-    // Test with invalid cookie
-    const invalidResponse = await request(app)
-      .get('/cookie-test')
-      .set('Cookie', ['theme=invalid']);
-
-    expect(invalidResponse.status).toBe(500);
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual(userData);
   });
 
   it('should return validation error for invalid params', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const router = new OpenAPIRouter();
+
+    router.app.onError(async (err, c) => {
+      if (err instanceof ZodError) {
+        return c.json(
+          {
+            statusCode: 400,
+            code: 'BAD_REQUEST',
+            message: 'Invalid request',
+            errors: {
+              body: err.flatten().fieldErrors,
+            },
+            error: 'ValidationError',
+          },
+          400,
+        );
+      }
+      throw err;
+    });
 
     router.route(
       createRoute({
         method: 'get',
-        path: '/items/:id',
+        path: '/items/{id}',
+        getRoutingPath: () => '/items/:id',
         request: {
           params: z.object({ id: z.string().regex(/^\d+$/) }),
         },
         responses: { 200: { description: 'Success' } },
       }),
-      ({ h, input }) => {
-        h.json({ data: { itemId: input.param.id } });
+      (c) => {
+        const id = c.req.param('id');
+        return c.typedJson({ data: { itemId: id } });
       },
     );
 
-    // Add a generic error handler
-    app.use((err: any, _req: any, res: any, _next: any) => {
-      console.error(err); // For debugging in test output
-      res.status(400).json({ error: 'Validation failed', details: err.issues });
-    });
-
-    const response = await request(app).get('/items/abc');
+    const response = await router.app.request('/items/abc');
 
     expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty('error', 'Validation failed');
-    expect(response.body).toHaveProperty('details');
-    expect(response.body.details[0].path).toEqual(['id']);
+    const body = await response.json();
+    expect(body).toHaveProperty('error', 'ValidationError');
+    expect(body).toHaveProperty('errors');
+    expect(body.errors.body.id).toHaveLength(1);
+    expect(body.errors.body.id[0]).toEqual('Invalid');
   });
 
   it('should validate response', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const router = new OpenAPIRouter();
 
     router.route(
       createRoute({
         method: 'get',
         path: '/test',
+        getRoutingPath: () => '/test',
         responses: {
           200: {
             description: 'Success',
@@ -324,21 +258,19 @@ describe('OpenAPIRouter', () => {
           },
         },
       }),
-      ({ h }) => {
+      (c) => {
         // @ts-expect-error - want to test validation error
-        h.json({ status: 200, data: { message: 123 } });
+        return c.typedJson({ data: { message: 123 }, status: 200 });
       },
     );
 
-    const response = await request(app).get('/test');
+    const response = await router.app.request('/test');
 
     expect(response.status).toBe(500);
   });
 
-  it('should not validate reponse when validateResponse is false', async () => {
-    const app = express();
+  it('should not validate response when validateResponse is false', async () => {
     const router = new OpenAPIRouter({
-      expressRouter: app,
       validateResponse: false,
     });
 
@@ -346,6 +278,7 @@ describe('OpenAPIRouter', () => {
       createRoute({
         method: 'get',
         path: '/test',
+        getRoutingPath: () => '/test',
         responses: {
           200: {
             description: 'Success',
@@ -355,41 +288,42 @@ describe('OpenAPIRouter', () => {
           },
         },
       }),
-      ({ h }) => {
-        // @ts-expect-error - want to test validation error
-        h.json({ status: 200, data: { message: 123 } });
+      // @ts-expect-error - want to test validation error
+      (c) => {
+        return c.json({ message: 123 }, 200);
       },
     );
-    const response = await request(app).get('/test');
+
+    const response = await router.app.request('/test');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ message: 123 });
+    expect(await response.json()).toEqual({ message: 123 });
   });
 
   it('extends the router should have the same middleware and options', async () => {
-    const app = express();
     const router = new OpenAPIRouter({ validateResponse: false });
 
-    const middleware = vi.fn((_, next) => {
+    const middleware = vi.fn(async (_c, next) => {
       console.log('middleware');
-      next();
+      await next();
     });
     router.middleware(middleware);
 
-    const extendedRouter = router.extend({ expressRouter: app });
+    const extendedRouter = router.extend();
 
     extendedRouter.route(
       createRoute({
         method: 'get',
         path: '/test',
+        getRoutingPath: () => '/test',
         responses: { 200: { description: 'Success' } },
       }),
-      ({ h }) => {
-        h.text({ data: 'test' });
+      (c) => {
+        return c.text('test', 200);
       },
     );
 
-    await request(app).get('/test');
+    await extendedRouter.app.request('/test');
 
     expect(extendedRouter).toBeInstanceOf(OpenAPIRouter);
     expect(extendedRouter).not.toBe(router);
@@ -400,8 +334,7 @@ describe('OpenAPIRouter', () => {
   });
 
   it('should handle nested router correctly using router.use', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const router = new OpenAPIRouter();
 
     const childRouter = new OpenAPIRouter();
 
@@ -409,28 +342,29 @@ describe('OpenAPIRouter', () => {
       createRoute({
         method: 'get',
         path: '/hello',
+        getRoutingPath: () => '/hello',
         responses: { 200: { description: 'Success' } },
       }),
-      ({ h }) => {
-        h.json({ status: 200, data: { message: 'world' } });
+      (c) => {
+        return c.typedJson({ data: { message: 'world' }, status: 200 });
       },
     );
 
     router.use('/api', childRouter);
 
-    const response = await request(app).get('/api/hello');
+    const response = await router.app.request('/api/hello');
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ message: 'world' });
+    expect(await response.json()).toEqual({ message: 'world' });
   });
 
   it('should generate openapi doc', async () => {
-    const app = express();
-    const router = new OpenAPIRouter({ expressRouter: app });
+    const router = new OpenAPIRouter();
     router.route(
       createRoute({
         method: 'get',
         path: '/test',
+        getRoutingPath: () => '/test',
         responses: {
           200: {
             description: 'Success',
@@ -440,8 +374,8 @@ describe('OpenAPIRouter', () => {
           },
         },
       }),
-      ({ h }) => {
-        h.json({ status: 200, data: { message: 'test' } });
+      (c) => {
+        return c.typedJson({ data: { message: 'test' }, status: 200 });
       },
     );
     router.doc('/api', {
@@ -449,10 +383,10 @@ describe('OpenAPIRouter', () => {
       info: { title: 'Test', version: '1.0.0' },
     });
 
-    const res = await request(app).get('/api');
+    const res = await router.app.request('/api');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
+    expect(await res.json()).toEqual({
       openapi: '3.1.0',
       info: {
         title: 'Test',

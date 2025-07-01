@@ -9,6 +9,7 @@ import {
   InputTypeForm,
   Input,
   Helper,
+  MaybePromise,
 } from '@node-openapi/core';
 import { HapiRequestAdapter } from './request';
 import { OpenAPIObjectConfigV31 } from '@asteasolutions/zod-to-openapi/dist/v3.1/openapi-generator';
@@ -267,7 +268,7 @@ export class OpenAPIRouter<
       h: ResponseToolkit<TRefs> & Helper<R, ResponseObject>;
       req: Request<TRefs>;
       context: TContext;
-    }) => Promise<ResponseObject>,
+    }) => MaybePromise<ResponseObject>,
   ) {
     if (route.method === 'head') {
       throw new Error('Hapi does not support the head method');
