@@ -194,6 +194,58 @@ describe('OpenAPIRouter', () => {
     expect(await response.json()).toEqual(userData);
   });
 
+  it('should handle cookies', async () => {
+    const router = new OpenAPIRouter();
+
+    const route = createRoute({
+      method: 'get',
+      path: '/cookies',
+      getRoutingPath: () => '/cookies',
+      request: {
+        cookies: z.object({
+          sessionId: z.string(),
+          theme: z.enum(['light', 'dark']),
+        }),
+      },
+      responses: {
+        200: {
+          description: 'Success',
+          content: {
+            'application/json': {
+              schema: z.object({
+                sessionId: z.string(),
+                theme: z.string(),
+              }),
+            },
+          },
+        },
+      },
+    });
+
+    router.route(route, (c) => {
+      const cookies = c.req.valid('cookie');
+      return c.typedJson({
+        data: {
+          sessionId: cookies.sessionId,
+          theme: cookies.theme,
+        },
+        status: 200,
+      });
+    });
+
+    const response = await router.app.request('/cookies', {
+      headers: {
+        Cookie: 'sessionId=abc123; theme=dark',
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      sessionId: 'abc123',
+      theme: 'dark',
+    });
+  });
+
   it('should return validation error for invalid params', async () => {
     const router = new OpenAPIRouter();
 

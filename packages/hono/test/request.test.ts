@@ -24,6 +24,7 @@ const createMockRequest = (
     }),
     json: () => Promise.resolve({ test: 'data' }),
     text: () => Promise.resolve('test data'),
+    parseBody: () => Promise.resolve({ field: 'value' }),
     bodyCache: {},
     ...overrides,
   } as unknown as HonoRequest;
@@ -75,6 +76,13 @@ describe('HonoRequestAdapter', () => {
       // Hono doesn't have cookies in the standard way, should return empty object
       expect(adapter.cookies).toEqual({});
     });
+
+    it('should return provided cookies from constructor', () => {
+      const req = createMockRequest();
+      const cookies = { session: 'abc123', theme: 'dark' };
+      const adapter = new HonoRequestAdapter(req, cookies);
+      expect(adapter.cookies).toEqual(cookies);
+    });
   });
 
   describe('getParams', () => {
@@ -93,6 +101,16 @@ describe('HonoRequestAdapter', () => {
       const adapter = new HonoRequestAdapter(req);
       expect(await adapter.body).toBe('body');
     });
+
+    it('should return cached body if available', async () => {
+      const cachedText = 'cached body content';
+      const req = createMockRequest({
+        bodyCache: { text: cachedText },
+        text: () => Promise.resolve('uncached body'),
+      });
+      const adapter = new HonoRequestAdapter(req);
+      expect(await adapter.body).toBe(cachedText);
+    });
   });
 
   describe('getJson', () => {
@@ -103,6 +121,40 @@ describe('HonoRequestAdapter', () => {
       });
       const adapter = new HonoRequestAdapter(req);
       expect(await adapter.json).toEqual(jsonBody);
+    });
+
+    it('should return cached JSON if available', async () => {
+      const cachedJson = { cached: true, data: 'test' };
+      const req = createMockRequest({
+        bodyCache: { json: cachedJson },
+        json: () => Promise.resolve({ cached: false }) as any,
+      });
+      const adapter = new HonoRequestAdapter(req);
+      expect(await adapter.json).toEqual(cachedJson);
+    });
+  });
+
+  describe('getForm', () => {
+    it('should return parsed form data', async () => {
+      const formData = { name: 'John', email: 'john@example.com' };
+      const req = createMockRequest({
+        parseBody: () => Promise.resolve(formData) as any,
+      });
+      const adapter = new HonoRequestAdapter(req);
+      expect(await adapter.form).toEqual(formData);
+    });
+
+    it('should return cached form data if available', async () => {
+      const cachedFormData = new FormData();
+      cachedFormData.append('cached', 'true');
+      cachedFormData.append('field', 'cached value');
+
+      const req = createMockRequest({
+        bodyCache: { formData: cachedFormData },
+        parseBody: () => Promise.resolve({ cached: false }) as any,
+      });
+      const adapter = new HonoRequestAdapter(req);
+      expect(await adapter.form).toBe(cachedFormData);
     });
   });
 });
