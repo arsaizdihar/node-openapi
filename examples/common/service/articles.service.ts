@@ -12,7 +12,7 @@ import {
   tagsCreate,
   UserDB,
   userGet,
-} from 'ws-db';
+} from '../db-adapter';
 import {
   Article,
   ArticleFeedQuery,

@@ -1,0 +1,9 @@
+{
+  "name": "ws-memory-db",
+  "version": "1.0.0",
+  "description": "In-memory database implementation for performance testing",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {},
+  "dependencies": {}
+}

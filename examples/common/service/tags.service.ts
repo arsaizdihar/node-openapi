@@ -1,4 +1,4 @@
-import { TagDB, tagsGet } from 'ws-db';
+import { TagDB, tagsGet } from '../db-adapter';
 
 export async function getTags(): Promise<string[]> {
   const tags = await tagsGet();

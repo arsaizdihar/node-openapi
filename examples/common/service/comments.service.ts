@@ -1,4 +1,4 @@
-import { commentCreate, CommentDB, commentDelete, commentsGet } from 'ws-db';
+import { commentCreate, CommentDB, commentDelete, commentsGet } from '../db-adapter';
 import { Comment } from '../domain/comment.domain';
 import { User } from '../domain/user.domain';
 import { toProfileView, UserWithFollow } from './user.service';

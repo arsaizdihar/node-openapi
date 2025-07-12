@@ -6,7 +6,7 @@ import {
   userGetByEmail,
   userUnFollowProfile,
   userUpdate,
-} from 'ws-db';
+} from '../db-adapter';
 import {
   LoginUser,
   Profile,
@@ -59,7 +59,7 @@ export async function loginUser(payload: LoginUser) {
     throw new UserNotFoundError('User not found');
   }
 
-  if (!compareWithHash(user.password, user.password)) {
+  if (!compareWithHash(payload.password, user.password)) {
     throw new InvalidCredentialsError('Invalid credentials');
   }
 
